@@ -5,6 +5,12 @@
 #
 #############################################################################
 
+use File::Copy;
+use Find::Bin qw($RealBin);
+
+use lib "$RealBin/../modules";
+use Opt_depot::Common;
+
 $version = "3.0";
 
 @opt_scripts = ("opt_depot",
@@ -17,115 +23,35 @@ $version = "3.0";
 @others = ("opt.config", "sites");
 
 @mans = ("man/manl/opt_depot.l", "man/manl/opt_link.l",
-	 "man/manl/opt_clean.l", "man/manl/opt_setup.l", "man/manl/opt_nuke.l");
+	 "man/manl/opt_clean.l", "man/manl/opt_setup.l",
+	 "man/manl/opt_nuke.l");
 
 #########################################################################
 #
-#                                                         removelastslash
-#
-# input: a pathname to test
-#
-# this function will remove a trailing slash from the directory name
-# input
+#                                                                mod_copy
+# input: the interpreter to specify on the #! line
+#        the input file
+#        the file to copy to
 #
 #########################################################################
-sub removelastslash {
-  my ($dir) = @_;
-
-  if ($dir =~ /\/$/) {
-    chop $dir;
-  }
-} # removelastslash
-
-#########################################################################
-#
-#                                                              create_dir
-# input: a pathname
-#
-# output: makes sure the specified directory exists. If it doesn't
-#         then check_dirs makes it (along with any super-directories)
-#
-#
-#########################################################################
-sub create_dir {
-  my ($file) = @_;
-  my ($temp, @components);
-
-  @components = split(/\//, $file);
-
-  foreach $comp (@components) {
-    $temp .= "$comp";
-
-    if (! -d $temp && ($temp ne "")) {
-      mkdir($temp, 0777) || print "Could not make dir $temp\n";
-    }
-
-    $temp .= "/";  # add trailing /
-  }
-}
-
-#########################################################################
-#
-#                                                                dircheck
-#
-# input: a pathname to test
-#
-# this function will trigger an exit if the parameter is not
-# a directory.
-#
-#########################################################################
-sub dircheck {
-  my($dir)= @_;
-  my($ans);
-
-  if (!(-d $dir)) {
-    print "\nThe directory $dir does not exist. Do you wish to create it?[Y/N]\n";
-    print"----> ";
-    $ans = <STDIN>;
-    unless ($ans =~ /^y/i) {
-      die "Installation process aborted\n";
-    }
-
-    create_dir($dir);
-  }
-} # dircheck
-
-
-#########################################################################
-#
-#                                                                add_line
-# input: the line to be added
-#        the name of the script to which line is added
-#
-# This subroutine takes a couple of parameters, the first being the location
-# of the perl interpreter we want to use to invoke the script, the second
-# being the the filename of the script file.
-#
-# We copy the script file from the filename given us to filename.new, with
-# the appropriate #! invocation line inserted at the top.
-#
-# Also, textural substitution is done to replace the string <<INSTALL-DIR>>
-# with the actual name of the directory where the opt_depot scripts are
-# installed
-#
-#########################################################################
-sub add_line {
-  my ($line, $script) = @_;
+sub mod_copy {
+  my ($line, $input, $output) = @_;
 
   my ($new_script);
 
-  open (OUT, ">scripts/$script.new") || die "could not open file scripts/$script.new";
+  # knit one
+
+  open (OUT, ">$output") || die "could not open file $output";
   print OUT "#!$line\n";
-  close (OUT);
 
-  # time to append...
+  # pearl two
 
-  open (OUT, ">>scripts/$script.new") || die "could not open file scripts/$script.new";
-  open (IN,"scripts/$script") || die "could not open file scripts/$script";
+  open (IN,"$input") || die "could not open file $input";
   while (<IN>) {
     print OUT; # copies the lines of old depot script to new one
   }
   close (IN);
+
   close (OUT);
 }
 
@@ -144,37 +70,27 @@ sub add_line {
 sub fix_perms {
   my ($fix_ans);
 
-  print "\nDo you wish to run the fixperms program to fix the file permissions\n";
-  print "of the opt_depot 2.0 package directory? [Y/N]\n";
-  print "----> ";
-  $fix_ans = <STDIN>;
+  print "\n";
 
-  if ($fix_ans =~ /^y/i) {
-    # yay! we get to run it! AWRIGHT.
-    print"\nPlease enter the name of the owner [Default is: root ]\n";
-    print"----> ";
-    $owner = <STDIN>;
+  my $done = 0;
 
-    chop ($owner);
-    if ($owner eq "") {
-      print "Default owner selected";
-      $owner = "root";
+  while (!$done) {
+    if (askyn("Do you wish to run the fixperms program to fix the file permissions " .
+	      "of the opt_depot 2.0 package directory?")) {
+      # yay! we get to run it! AWRIGHT.
+
+      $owner = askstring("Please enter the name of the owner", "root");
+      $group = askstring("Please enter the group name", "other");
+
+      if (askyn("Set ownership to $owner:$group?")) {
+	system("$dir/bin/fixperms", "-o$owner", "-g$group", "$dir");
+	$done = 1;
+      } else {
+	next;
+      }
     }
-
-    print "Please enter the group name [Default is: other ]\n";
-    print "----> ";
-    $group = <STDIN>;
-
-    chop ($group);
-    if ($group eq "") {
-      print "Default group name selected\n";
-      $group = "other";
-    }
-
-    system "$dir/bin/fixperms -o$owner -g$group $dir";
   }
 } # fix_perms
-
 
 ############################################################################
 #
@@ -185,55 +101,48 @@ sub fix_perms {
 ############################################################################
 
 $new_line = @ARGV[0];
-print"\n## Installing opt_depot ##\n\n";
-print"Note: the opt_depot scripts will be installed in a package style format, so the\n";
-print"lowest directory should be opt_depot, opt_depot2.0, or something similar\n";
-print"Example: /v/site/packages/opt_depot\n\n";
 
-print"Please enter the directory where you want the opt_depot package installed\n";
-print"----> ";
-$dir = <STDIN>;
-chop($dir);
-removelastslash($dir);
-
-if ($dir !~ /^\//) {
-  # the following lines of code are used in case a relative pathname is
-  # entered
-
-  $temp = `pwd`;
-  chop($temp);	
-  $dir = "$temp/$dir";
+if (!-x $new_line) {
+  die "opt_copy:  Couldn't execute interpeter $new_line";
 }
 
-dircheck($dir);
+print "\n## Installing opt_depot ##\n\n";
+
+printwrap("Note: the opt_depot scripts will be installed in a package style format, so the",
+	  "lowest directory should be opt_depot, opt_depot2.0, or something similar");
+
+print "Example: /v/site/packages/opt_depot\n\n";
+
+$dir = askstring("Please enter the directory where you want the opt_depot package installed");
+$dir = make_absolute(removelastslash($dir));
+testmakedir($dir);
+
 mkdir "$dir/bin", 0777;
 mkdir "$dir/man", 0777;
-mkdir "$dir/etc",0777;
-mkdir "$dir/man",0777;
-mkdir "$dir/man/manl",0777;
+mkdir "$dir/etc", 0777;
+mkdir "$dir/man", 0777;
+mkdir "$dir/man/manl", 0777;
 
 foreach $script (@opt_scripts) {
   if (-e "scripts/$script") {
-    add_line($new_line, $script);
-    system "cp scripts/$script.new $dir/bin/$script";
-    chmod 0755, "$dir/bin/$script";
-    unlink "scripts/$script.new";
+    mod_copy($new_line, "scripts/$script", "$dir/bin/$script");
+    chmod 0755, "$dir/bin/$script"; # fixperms doesn't know what's meant to be executable
   } else {
-    print"\tERROR: Could not locate scripts/$script for copying\n";
+    print "\tERROR: Could not locate scripts/$script for copying\n";
   }
 }
 
 foreach $file (@others) {
   if (-e $file) {
-    system "cp $file $dir/etc";
+    copy($file, "$dir/etc/");
   } else {
-    print"\tERROR: Could not locate file $file for copying\n";
+    print "\tERROR: Could not locate file $file for copying\n";
   }
 }
 
 foreach $manual (@mans) {
   if (-e $manual) {
-    system "cp $manual $dir/man/manl";
+    copy($manual, "$dir/man/manl/");
   } else {
     print "\tERROR: Could not locate $manual for copying\n";
   }
@@ -242,4 +151,3 @@ foreach $manual (@mans) {
 fix_perms(); # see if the installer wants to run the fixperms program
              # on the opt_depot package directory
 
-print"\n## Opt_depot installation process complete ##\n";
