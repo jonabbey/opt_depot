@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.16 $
-# Last Mod Date: $Date: 2003/08/08 01:22:31 $
+# Version: $Revision: 1.17 $
+# Last Mod Date: $Date: 2003/08/08 01:23:59 $
 #
 #####################################################################
 
@@ -109,8 +109,6 @@ sub mod_copy {
 ############################################################################
 sub fix_perms {
   my ($fix_ans);
-
-  print "\n";
 
   my $done = 0;
   my (@grouplist, $defgroup, $gid);
