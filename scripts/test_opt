@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.25 $
-# Last Mod Date: $Date: 2003/09/18 19:37:45 $
+# Version: $Revision: 1.26 $
+# Last Mod Date: $Date: 2003/09/20 01:19:33 $
 #
 #####################################################################
 
@@ -305,6 +305,54 @@ ENDSITES1
 	  exclude => 'packA',
 	  priority => 'packB',
 	  error_count => 0);
+
+%siteA = ([
+	   {name     => 'packA-1.0',
+	    files    => ['bin/hi',
+			 'lib/test.so'],
+	    excludes => ['packB-1.0']},
+	   {name     => 'packB-1.0',
+	    files    => ['bin/hi',
+			 'lib/test.so',
+			 'lib/test2.so']},
+	   {name     => 'packC-1.0',
+	    files    => ['bin/hiC',
+			 'man/manl/hiC.l',
+			 'include/hiC.h',
+			 'lib/testC.so'],
+	    excludes => ['packC-0.5']},
+	   {name     => 'packC-0.5',
+	    files    => ['bin/hiC',
+			 'man/manl/hiC.l',
+			 'include/hiC.h',
+			 'lib/testC.so']},
+	   {name     => 'packX-1.2',
+	    files    => ['bin/asteroids',
+			 'README.asteroids',
+			 'man/man1/asteroids.1']}
+	  ]);
+
+%siteB = ([
+	   {name     => 'packA-2.0',
+	    files    => ['bin/hi',
+			 'lib/test.so'],
+	    excludes => ['packA-1.0']},
+	   {name     => 'packB-2.0',
+	    files    => ['bin/hi',
+			 'lib/test.so',
+			 'lib/test2.so'],
+	    excludes => ['packB-1.0']},
+	   {name     => 'packC-2.0',
+	    files    => ['bin/hiC',
+			 'man/manl/hiC.l',
+			 'include/hiC.h',
+			 'lib/testC.so'],
+	    excludes => ['packC-1.0']},
+	   {name     => 'packY-4.51',
+	    files    => ['ARLUT_README',
+			 'bin/space invaders',
+			 'man/man5/space.5']}
+	  ]);
 
 @tests = (\%test0, \%test1, \%test2, \%test3,
 	  \%test4, \%test5, \%test6, \%test7,
