@@ -55,8 +55,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.43 $
-# Last Mod Date: $Date: 2003/10/06 22:07:31 $
+# Version: $Revision: 1.44 $
+# Last Mod Date: $Date: 2003/10/07 01:17:44 $
 #
 #####################################################################
 
@@ -470,7 +470,7 @@ sub smartlink {
 
   # if we are supposed to exclude this file, skip linking it
 
-  if (pathcheck($target, *exclude)) {
+  if (pathcheck($target, %exclude)) {
     logprint(" *** excluding $target\n", 0);
     return 0;
   }
@@ -478,7 +478,7 @@ sub smartlink {
   # if there's nothing in the location of our link target, make the
   # link and get out
 
-  if (!-e $link && !-l $link) {
+  if (!-e $link && !-l _) {
     logprint("Smartlink: No $link found, proceeding\n", -1);
     return fablink($link, $target);
   }
@@ -486,7 +486,7 @@ sub smartlink {
   # if there's something other than a symlink (a physical file,
   # directory, socket, etc.) report and get out
 
-  if (!-l $link) {
+  if (!-l _) {
     logprint("  ERROR:  $link already exists and is not a link\n", 0);
     logprint("          Did not make link to link $target\n", 0);
 
@@ -522,7 +522,7 @@ sub smartlink {
 
   # if the old link is excluded, for sure retarget the link
 
-  if (pathcheck($oldtarget, *exclude)) {
+  if (pathcheck($oldtarget, %exclude)) {
     return fablink($link, $target);
   }
 
@@ -549,8 +549,8 @@ sub smartlink {
 
   # now check for the old and new path priorities
 
-  $opp = pathcheck($oldtarget, *priority);
-  $npp = pathcheck($target, *priority);
+  $opp = pathcheck($oldtarget, %priority);
+  $npp = pathcheck($target, %priority);
 
   if ($npp > $opp) {
     return fablink($link, $target);
@@ -641,7 +641,7 @@ sub manlink {
 
   for $file (@files) {
 
-    if (pathcheck("$depot/$package/man/$file", *exclude)) {
+    if (pathcheck("$depot/$package/man/$file", %exclude)) {
       # do nothing.. don't link these manpages
 	
       logprint("  Excluding man directory $depot/$package/man/$file/\n", 0);
@@ -775,14 +775,14 @@ sub prepdirs {
   for $subdir (@subdirs) {
     if (!-e "$dest/$subdir") {
       makedir("$dest/$subdir");
-    } elsif (!-d "$dest/$subdir"){
+    } elsif (!-d _) {
       die "ERROR: $dest/$subdir is not a directory";
     }
   }
 
   if (!-e "$dest/man") {
     makedir("$dest/man");
-  } elsif (!-d "$dest/man") {
+  } elsif (!-d _) {
     die "ERROR: $dest/man is not a directory";
   }
 }
@@ -925,8 +925,8 @@ sub depth_first {
 
     if (!defined $merge_list{$merge_target}) {
       if ((-e $new_file && !-e $old_file) ||
-	  (pathcheck($new_file, *priority) > pathcheck($old_file, *priority))) {
-	if (pathcheck($new_file, *exclude)) {
+	  (pathcheck($new_file, %priority) > pathcheck($old_file, %priority))) {
+	if (pathcheck($new_file, %exclude)) {
 	  logprint("\n  *** EXCLUDING DIRECTORY: $new_file\n\n", 0);
 	} else {
 	  $merge_list{$merge_target} = 1;
@@ -964,7 +964,7 @@ sub link_me {
   logprint("LINKING:  $subdir\n", 0);
 
   foreach $package (@pack_list) {
-    if (pathcheck("$depot/$package/$subdir", *exclude)) {
+    if (pathcheck("$depot/$package/$subdir", %exclude)) {
       logprint("\n  *** EXCLUDING DIRECTORY: $depot/$package/$subdir\n\n", 0);
 
       next;

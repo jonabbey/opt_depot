@@ -54,8 +54,8 @@
 # Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.23 $
-# Last Mod Date: $Date: 2003/09/18 18:55:38 $
+# Version: $Revision: 1.24 $
+# Last Mod Date: $Date: 2003/10/07 01:17:55 $
 #
 #########################################################################
 
@@ -339,7 +339,7 @@ sub cleandir {
       # opt_depot to handle
 
       if (!(-e $reslink || -l $reslink) || $exclude{$reslink} ||
-	  $packexclude{$1} || pathcheck($reslink, *exclude)) {
+	  $packexclude{$1} || pathcheck($reslink, %exclude)) {
 	if (!unlink("$dir/$link")) {
 	  logprint("  ERROR: could not remove $dir/$link", 1);
 	} else {
