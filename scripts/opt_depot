@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.29 $
-# Last Mod Date: $Date: 2003/08/15 02:46:47 $
+# Version: $Revision: 1.30 $
+# Last Mod Date: $Date: 2003/08/15 02:52:03 $
 #
 #####################################################################
 
@@ -84,9 +84,6 @@ $opt_file = ".made_by_opt_depot";
 #####################################################################
 #
 # Internal Variables
-#
-# %packexclude - Associative Array used to keep track of packages
-#               that are to be excluded
 #
 # %exclude - Associative Array used to keep track of individual files
 #           to be excluded
@@ -174,11 +171,11 @@ sub needs_unify {
 #
 # input: name of an exclude file to process
 #
-# uses: %exclude %packexclude
+# uses: %exclude
 #
-# output: writes to associative arrays %exclude and %packexclude
+# output: writes to the %exclude associative array
 #
-# see the definition of %exclude and %packexclude at the top of this file
+# see the definition of %exclude at the top of this file
 #
 #########################################################################
 sub read_exfile {
@@ -219,21 +216,11 @@ sub read_exfile {
 	  # $1 is the complete absolute path/filename
 
 	  $exclude{"$1"}=1;
-	} elsif (/^([^\/]+\/.+)$/) {
-	  # No leading slash but there are embedded slashes..
+	} else {
 	  # take this as a depot directory relative path
 	  # $1 is the complete relative path and filename
 
 	  $exclude{"$depot/$1"}=1;
-	} elsif (/^([^\/]+)/) {
-	  # No leading slash and no embedded slashes
-	  # take this as a package name and version num
-	  # if any is included.
-	  # $1 is the complete package name
-
-	  $packexclude{$1}=1;
-	} else {
-	  logprint("  ERROR:  bad entry in .exclude file \"$_\"", 1);
 	}
       } else {
 
@@ -248,19 +235,11 @@ sub read_exfile {
 	  # $1 is the complete absolute path/filename
 
 	  $exclude{"$1"}=1;
-	} elsif (/^\s*([^\/]+\/\S*)/) {
-	  # No leading slash but there are embedded slashes..
+	} elsif (/^\s*(\S*)/) {
 	  # take this as a depot directory relative path
 	  # $1 is the complete relative path and filename
 	
 	  $exclude{"$depot/$1"}=1;
-	} elsif (/^\s*([^\/\s]+)/) {
-	  # No leading slash and no embedded slashes
-	  # take this as a package name and version num
-	  # if any is included.
-	  # $1 is the complete package name
-
-	  $packexclude{$1}=1;
 	} else {
 	  logprint("  ERROR:  bad entry in .exclude file \"$_\"", 1);
 	}
@@ -486,7 +465,7 @@ sub smartlink {
 
   # if we are supposed to exclude this file, skip linking it
 
-  if (pathcheck($target, *exclude) || $packexclude{$package}) {
+  if (pathcheck($target, *exclude)) {
     logprint(" *** excluding $target\n", 0);
     return 0;
   }
@@ -1003,7 +982,7 @@ sub link_me {
   logprint("LINKING:  $subdir\n", 0);
 
   for $package (@pack_list) {
-    if ($packexclude{$package} || pathcheck("$depot/$package/$subdir", *exclude)) {
+    if (pathcheck("$depot/$package/$subdir", *exclude)) {
       logprint("\n  *** EXCLUDING DIRECTORY: $depot/$package/$subdir\n\n", 0);
 
       next;
@@ -1182,7 +1161,7 @@ foreach $subdir (@subdirs) {
     logprint("LINKING:  man\n",0);
 
     foreach $package (@packages) {
-      if (!$packexclude{$package}) {
+      if (!defined $exclude{"$depot/$package"}) {
 	manlink($package);
       }
     }
