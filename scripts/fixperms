@@ -1,11 +1,4 @@
 #!/opt/bin/perl5
-
-
-
-
-
-
-
 #
 # This script is designed to take a directory name and
 # fix all permissions below that point as appropriate for
@@ -18,7 +11,7 @@
 #
 # Jonathan Abbey
 # 21 May 1996
-
+#
 # Erik Grostic
 # Modified 2 June 1997
 
@@ -44,9 +37,9 @@ $uid = (getpwnam($owner))[2];
 $gid = (getgrnam($group))[2];
 
 if ($#ARGV >= 0) {
-    $directory = $ARGV[0];
+  $directory = $ARGV[0];
 } else {
-    $directory = ".";
+  die "No directory specified";
 }
 
 &fixdir($directory, 1);
