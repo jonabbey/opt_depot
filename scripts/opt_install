@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.5 $
-# Last Mod Date: $Date: 2003/08/07 22:51:16 $
+# Version: $Revision: 1.6 $
+# Last Mod Date: $Date: 2003/08/08 00:09:01 $
 #
 #####################################################################
 
@@ -115,6 +115,7 @@ sub fix_perms {
   my $done = 0;
 
   while (!$done) {
+    print "\n";
     if (askyn("Do you wish to run the fixperms program to fix the file permissions " .
 	      "of the opt_depot 3.0 package directory?")) {
       # yay! we get to run it! AWRIGHT.
@@ -122,6 +123,7 @@ sub fix_perms {
       $owner = askstring("Please enter the name of the owner", "root");
       $group = askstring("Please enter the group name", "other");
 
+      print "\n";
       if (askyn("Set ownership to $owner:$group?")) {
 	system("$targetdir/bin/fixperms", "-o$owner", "-g$group", "$targetdir");
 	$done = 1;
@@ -132,7 +134,8 @@ sub fix_perms {
       $done = 1;
     }
   }
-} # fix_perms
+}
+
 #########################################################################
 #
 #                                                            display_list
@@ -222,7 +225,7 @@ sub delete_list {
 #
 ##########################################################################
 
-sub edit_sites {
+sub edit_list {
   my ($descriptor, @list) = @_;
 
   my $done = 0;
@@ -335,8 +338,9 @@ sub add_archive {
 
   print"Directory: $path\n";
   print"Priority:  $priority\n";
-  print"Label:     $label\n\n";
+  print"Label:     $label\n";
 
+  print "\n";
   unless (askyn("Is this information correct?")) {
     print"Package Archive not added to sites file\n";
     next;
@@ -345,6 +349,7 @@ sub add_archive {
   if (defined $sites[$priority]) {
     print"\n** Site $sites[$priority] already exists with that priority\n";
 
+    print "\n";
     unless (askyn("** Do you still wish $path to have priority $priority?")) {
       print "Package Archive not added to sites file\n";
       next;
@@ -407,6 +412,7 @@ sub delete_archive {
     print"Error: No archive currently exists with priority $remove_me\n";
     return;
   } else {
+    print "\n";
     unless (askyn("\nDelete archive $sites[$remove_me]?")) {
       print"Package Archive not deleted from sites file\n";
       next;
@@ -476,6 +482,7 @@ sub create_config {
 
   #################### find dest ##################
 
+  print "\n";
   $dest = askstring("What directory is to contain the link target directories (bin, include, etc.)?",
 		    "/opt");
 
@@ -516,6 +523,7 @@ sub create_config {
       $defaultlog = "$defaultlogdir/opt_depot.log";
     }
 
+    print "\n";
     $log = askstring("Where do you want the log file?", $defaultlog);
 
     removelastslash($log);
@@ -529,7 +537,10 @@ sub create_config {
   @subdirs = ('bin', 'include', 'info', 'lib', 'man');
   edit_list("link directory", @subdirs);
 
+  print "\n";
+
   if (askyn("Do you want the opt_depot scripts to perform recursive directory unification?")) {
+
     print "\n";
 
     if (askyn("Do you want to specify a restricted list of subdirectories for recursive directory unification?")) {
@@ -572,6 +583,7 @@ sub create_config {
     print "Recursively handled subdirectoryes: $tempstring\n";
   }
 
+  print "\n";
   unless (askyn("\nIs this information correct?(y/n)")) {
     die "Installation process aborted\n";
   }
@@ -631,8 +643,9 @@ print"\n## opt_install version: $version ##\n\n";
 print "## Installing opt_depot ##\n\n";
 
 printwrap("Note: the opt_depot scripts will be installed in a package style format, so the",
-	  "lowest directory should be $depotname or something similar");
+	  "lowest directory should be $depotname or something similar.");
 
+print "\n";
 $targetdir = askstring("Please enter the directory where you want the opt_depot package installed",
 		       "/opt/depot/$depotname");
 $targetdir = make_absolute(removelastslash($targetdir));
@@ -668,8 +681,8 @@ foreach $manual (@mans) {
 # We've done the initial install.. now let's build the config and
 # sites files
 
-$config = "$targetdir/etc/opt.config"
-$sites_file = "$targetdir/etc/sites";;
+$config = "$targetdir/etc/opt.config";
+$sites_file = "$targetdir/etc/sites";
 
 print "\nCreating config file $config\n";
 
