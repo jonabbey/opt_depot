@@ -51,10 +51,12 @@
 # Jonathan Abbey 31 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.13 $
-# Last Mod Date: $Date: 2003/08/14 01:58:18 $
+# Version: $Revision: 1.14 $
+# Last Mod Date: $Date: 2003/09/16 23:29:27 $
 #
 ##########################################################################
+
+$| = 1;
 
 use English;
 use FindBin qw($RealBin);
@@ -68,7 +70,7 @@ $version = "3.0";
 
 # configuration file containing $dest, $depot and $logdir vars
 
-$config_file = resolve($RealBin, "../etc/opt.config");
+$local_config_file = resolve($RealBin, "../etc/opt.config");
 
 ################################################################################
 #                                                                              #
@@ -81,7 +83,8 @@ Usage:  opt_setup [-vqgmnrR] [-f\"config file\"] [-d\"depot dir\"]
                   [-l\"log dir\"] [-b \"software base directory\"]
 ENDUSAGE
 
-read_prefs($usage_string, $config_file, "gvqmnrR", @ARGV);
+read_prefs($usage_string, $local_config_file, "gvqmnrR", @ARGV);
+
 init_log("opt_setup", $version);
 
 $localpath = "$RealBin";
