@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.31 $
-# Last Mod Date: $Date: 2003/10/06 23:00:42 $
+# Version: $Revision: 1.32 $
+# Last Mod Date: $Date: 2003/10/06 23:02:09 $
 #
 #####################################################################
 
@@ -814,7 +814,11 @@ sub subpathcheck ($\%) {
   removelastslash($path);
 
   # if we have the directory name itself in the %assoc, start things
-  # off with its priority
+  # off with its priority.. we'll check for it both with a trailing
+  # slash and without.  Here we prime the pump by looking for it
+  # without the trailing slash.. the next thing we'll do will be to
+  # loop over all keys in the hash and see if any of them start with
+  # $path/.
 
   $low_pri = 9999;
 
@@ -826,8 +830,6 @@ sub subpathcheck ($\%) {
       exit(1);
     }
   }
-
-  $path = "$path/";
 
   # we want to find the best (lowest numerical value) priority
   # that pertains to $file.. all the values in %assoc should
