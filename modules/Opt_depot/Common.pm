@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.27 $
-# Last Mod Date: $Date: 2003/09/16 23:47:09 $
+# Version: $Revision: 1.28 $
+# Last Mod Date: $Date: 2003/09/20 07:50:01 $
 #
 #####################################################################
 
@@ -487,6 +487,8 @@ sub clear_lock {
 sub create_dir {
   my ($file) = @_;
   my ($temp, @components);
+
+  $file =~ s/\/\//\/g;		# get rid of any slash bounces
 
   @components = split(/\//, $file);
 
