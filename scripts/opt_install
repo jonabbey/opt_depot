@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.24 $
-# Last Mod Date: $Date: 2003/09/16 23:29:26 $
+# Version: $Revision: 1.25 $
+# Last Mod Date: $Date: 2003/09/17 06:28:11 $
 #
 #####################################################################
 
@@ -567,7 +567,7 @@ sub create_config {
 
   print "\n";
 
-  if (askyn("Do you want the opt_depot scripts to perform recursive directory unification?")) {
+  if (askyn("Do you want the opt_depot scripts to perform recursive directory unification?", "Yes")) {
 
     print "\n";
 
