@@ -30,8 +30,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.2 $
-# Last Mod Date: $Date: 2003/09/11 00:02:25 $
+# Version: $Revision: 1.3 $
+# Last Mod Date: $Date: 2003/09/11 00:21:08 $
 #
 #####################################################################
 
@@ -51,7 +51,7 @@ $test_etc = "/tmp/opt_suite/etc";
 
 #####################################################################
 
-$testconf1 << "ENDTESTCONF1";
+$testconfA << "ENDTESTCONF1";
 Base: $test_dir
 Depot: $test_dir/depot
 Log: $test_logdir/opt_depot.log
@@ -59,27 +59,42 @@ SiteFile: $test_etc/sites
 Subdirs: bin,include,info,lib,man
 AlwaysRecurse: No
 Recurse: include,lib,info
-EOCONF
+ENDTESTCONF1
 
-$testsites1 << "ENDSITES1";
+$testsitesA << "ENDSITES1";
 ENDSITES1
 
+%test0 = (label => 'Simple single-package link test',
+	  root  => $test_dir,
+	  start => ['depot/packA/bin/hi',
+		    'depot/packA/lib/perl5/spam/x.pl',
+		    'depot/packA/include/test.h',
+		    'depot/packA/man/manl/test.l'],
+	  end   => ['bin/', 'lib/', 'man/', 'include/', 'man/manl/',
+		    'bin/hi->depot/packA/bin/hi',
+		    'lib/perl5->depot/packA/lib/perl5/',
+		    'include/test.h->depot/packA/include/test.h',
+		    'man/manl/test.l->depot/packA/man/manl/test.l'],
+	  conf   => $testconfA,
+	  sites  => $testsitesA);
+
 %test1 = (label => 'Elementary recursion test',
+	  root  => $test_dir,
 	  start => ['depot/packA/bin/hi',
 		    'depot/packA/lib/perl5/spam/x.pl',
 		    'depot/packA/include/test.h',
 		    'depot/packB/bin/hi',
 		    'depot/packB/lib/perl5/spam/y.pl',
 		    'depot/packB/include/test.h'],
-	  end =>   ['bin/', 'lib/', 'man/', 'include/',
+	  end   => ['bin/', 'lib/', 'man/', 'include/',
 		    'bin/hi->depot/packA/bin/hi',
 		    'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
 		    'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
 		    'include/test.h->depot/packB/include/test.h'],
-	 conf =>   $testconf1,
-	 sites =>  $testsites1);
+	  conf   => $testconfA,
+	  sites  => $testsitesA);
 
-@tests = (\%test1);	  
+@tests = (\%test0, \%test1);
 
 #####################################################################
 #
