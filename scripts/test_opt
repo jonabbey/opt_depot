@@ -30,8 +30,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.8 $
-# Last Mod Date: $Date: 2003/09/15 21:26:04 $
+# Version: $Revision: 1.9 $
+# Last Mod Date: $Date: 2003/09/15 21:38:43 $
 #
 #####################################################################
 
@@ -80,7 +80,8 @@ ENDSITES1
 	  endex  => ['depot/'],
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
-	  action => 'opt_depot');
+	  action => 'opt_depot',
+	  desired => 1);
 
 %test1 = (label  => 'Elementary recursion test',
 	  root   => $test_dir,
@@ -98,7 +99,8 @@ ENDSITES1
 	  endex  => ['depot/'],
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
-	  action => 'opt_depot');
+	  action => 'opt_depot',
+	  desired => 0);
 
 @tests = (\%test0, \%test1);
 
@@ -199,6 +201,11 @@ sub setup_test {
 sub recurse_check {
   my ($path, $test_href, $end_href, $exclusion_href) = @_;
 
+  local(*DIR);
+  my($local_path, @elements, $element, $target, $failed, $desired_target);
+
+  $failed = 0;
+
   chdir($test_href->{'root'});	# make sure we're operating out of the test root
 
   $local_path = $path;
@@ -228,9 +235,15 @@ sub recurse_check {
     if (-l $element) {
       $target = resolve(make_absolute($local_path), readlink($element));
 
-      if ($target ne $test_href->{'root'} . "/" . $end_href->{$element}) {
+      $desired_target = $test_href->{'root'} . "/" . $end_href->{$element};
+
+      if ($desired_target =~ /\/$/ && $target !~ /\/$/) {
+	$target .= "/";
+      }
+
+      if ($target ne $desired_target) {
 	print "Error, symlink target error in test " . $test_href->{'label'} . "\n";
-	print "symlink $element should point to " . $end_href->{$element} . ", but instead points to\n";
+	print "symlink $element should point to $desired_target, but instead points to\n";
 	print "$target.\n";
 	$failed = 1;
 	next;
@@ -276,7 +289,7 @@ sub recurse_check {
 sub run_test {
   my ($href) = @_;
 
-  my ($command);
+  my ($command, @end_ary, $item, $before, $after, %end_hash, @exclusion_ary, %exclusion_hash);
 
   $command = $href->{'action'};
 
@@ -304,10 +317,20 @@ sub run_test {
     $exclusion_hash{$item} = "";
   }
 
-  if (!recurse_check("", $href, \%end_hash, \%exclusion_hash)) {
-    print "Test " . $href->{'label'} . " failed.\n";
+  $result = recurse_check("", $href, \%end_hash, \%exclusion_hash);
+
+  if ($result != $href->{'desired'}) {
+    if ($result) {
+      print "Test " . $href->{'label'} . " improperly succeeded.\n";
+    } else {
+      print "Test " . $href->{'label'} . " improperly failed.\n";
+    }
   } else {
-    print "Test " . $href->{'label'} . " succeeded.\n";
+    if ($result) {
+      print "Test " . $href->{'label'} . " properly succeeded.\n";
+    } else {
+      print "Test " . $href->{'label'} . " properly failed.\n";
+    }
   }
 }
 
@@ -322,6 +345,8 @@ sub run_test {
 #####################################################################
 
 foreach $test (@tests) {
+  print "\n------------------------------------------------------------\n";
+  print "Running test " . $test->{'label'} . "\n\n";
   setup_test($test);
   run_test($test);
 }
