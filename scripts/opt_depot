@@ -1,7 +1,7 @@
 # opt_depot v2.01 -*- Perl -*-
 #
-# This script will go through the $depot directory and find files in 
-# specific subdirectories of various packages and make links in the 
+# This script will go through the $depot directory and find files in
+# specific subdirectories of various packages and make links in the
 # corresponding $dest direcories (i.e. it will take the "lib", "man",
 # "bin", "info", "include", etc. directories under any subdirectory
 # of $depot and link all the files together under $dest/lib, $dest/man,
@@ -46,10 +46,12 @@
 # Erik Grostic 10 July 1997
 #
 # Release: $Name:  $
-# Version: $Revision: 1.3 $
-# Last Mod Date: $Date: 2003/06/23 20:22:20 $
+# Version: $Revision: 1.4 $
+# Last Mod Date: $Date: 2003/06/25 21:08:01 $
 #
 #####################################################################
+
+use English;
 
 $version = "2.01";
 
@@ -96,7 +98,7 @@ $opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
 #           to be excluded
 #
 # %priority - Contains files and package names
-#             that have priority lines associated with them.  
+#             that have priority lines associated with them.
 #
 #             All files and packages listed in the .priority file are
 #             assigned a priority number, starting at 1 for the first
@@ -123,7 +125,7 @@ $opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
 # uses: @subdirs array
 #
 # output: global variable man_is_there is set to true if 'man' is
-#         one of the sub-directories listed under the softwware base 
+#         one of the sub-directories listed under the softwware base
 #
 #####################################################################
 sub is_man_there {
@@ -140,8 +142,8 @@ sub is_man_there {
 
 ##########################################################################
 #
-#                                                           get_vars
-# input: none 
+#                                                                 get_vars
+# input: none
 #
 # output: uses the opt_config.serv file to gain the values of the
 #         $dest and $depot variables
@@ -179,9 +181,9 @@ sub get_vars {
 
   close(CONFIG);
 
-# The following lines are there in case a client has a local copy of the 
-# configuration file. This file should be placed into the $dest directory,
-# and will override the file on the server.
+  # The following lines are there in case a client has a local copy of the
+  # configuration file. This file should be placed into the $dest directory,
+  # and will override the file on the server.
 
   if (-e "$dest/opt.config") {
     open(CONFIG,"$dest/opt.config") || die "Could Not open $dest/opt.config";
@@ -210,7 +212,9 @@ sub get_vars {
 	$rdirs =~ tr/\s//;
 	@path_list = split /,/, $rdirs;
       }
-    } close(CONFIG);
+    }
+
+    close(CONFIG);
   }
 }
 
@@ -292,9 +296,9 @@ sub read_exfile {
 	$exclude{"$depot/$1"}=1;
       } elsif (/^\s*([^\/\s]+)/) {
 	# No leading slash and no imbedded slashes
-	# take this as a package name and version num 
+	# take this as a package name and version num
 	# if any is included.
-	# $1 is the complete package name 
+	# $1 is the complete package name
 
 	if ($switches{'z'}) {
 	  # Why can't the secret debug switch ever know rest?
@@ -319,7 +323,7 @@ sub read_exfile {
 #       %exclude
 #
 # output: if a package is currently linked in $depot, and that package
-#         has its own .exclude file, then the exclusions listed in that 
+#         has its own .exclude file, then the exclusions listed in that
 #         file are added to the main exclusion hash.
 #
 #########################################################################
@@ -365,7 +369,7 @@ sub read_pack_ex {
 	  }
 	} elsif (/^\s*([^\/\s]+)/) {
 	  # No leading slash and no imbedded slashes
-	  # take this as a package name and version num 
+	  # take this as a package name and version num
 	  # if any is included.
 	  # Don't worry about these in per-package exclusions
 	  next;
@@ -390,7 +394,7 @@ sub read_pack_ex {
 #
 # see the definition of %priority at the top of this file
 #
-######################################################################### 
+#########################################################################
 sub read_prifile {
   my($prifile) = @_;
 
@@ -421,7 +425,7 @@ sub read_prifile {
   }
 }
 
-######################################################################### 
+#########################################################################
 #
 #                                                                 makedir
 #
@@ -447,7 +451,7 @@ sub makedir {
 #                                                                 resolve
 #
 # input: $dir - absolute pathname of current directory
-#        $link - string containing the readlink() results for a 
+#        $link - string containing the readlink() results for a
 #                symbolic link in $dir to be processed
 #
 # returns: absolute pathname of the target of the symbolic link
@@ -473,7 +477,7 @@ sub resolve {
 
   # @alinkp is an array that we will build to contain the absolute link
   # target pathname.  If the link does not begin with a /, it is a relative link,
-  # and we need to place our current directory into the @alinkp array.  
+  # and we need to place our current directory into the @alinkp array.
 
   if ($link !~ /^\//) {
     @alinkp=@dirp;
@@ -497,9 +501,11 @@ sub resolve {
     $d=shift(@linkp);
   }
 
-  $save = $";
+  $save = $LIST_SEPARATOR;
 
-  $" ='/'; $alinkp = "/@alinkp"; $" = $save;
+  $LIST_SEPARATOR ='/';
+  $alinkp = "/@alinkp";
+  $LIST_SEPARATOR = $save;
 
   return $alinkp;
 }
@@ -1074,7 +1080,7 @@ sub procargs {
 	  $switches{$switch}=1;
 	}
       } else {
-	print "\"$word\" is an invalid command entry!\n"; 
+	print "\"$word\" is an invalid command entry!\n";
 	print "Usage:  opt_depot [-vnqmr] [-d\"depot dir\"]\n";
 	print "                  [-l\"log dir\"] [-b\"software based dir\"]\n";
 	exit 0;
@@ -1130,9 +1136,10 @@ sub handleinit {
 
   @dest= split (/\//, $dest);           # naming log file
   shift(@dest);
-  $"=':';
+
+  $LIST_SEPARATOR=':';
   $log= "$logdir/@dest";
-  $"=' ';
+  $LIST_SEPARATOR=' ';
 
   # open log file and time stamp entry
 
@@ -1225,7 +1232,7 @@ sub create_dir {
 #
 # output: depth_first takes two packages that have directory conflicts and
 #         determines whether or not to merge these directories by utilizing
-#         a depth_first recursive search and comparing the individual files 
+#         a depth_first recursive search and comparing the individual files
 #         of the directory and sub-directories.
 #
 #
@@ -1301,8 +1308,8 @@ sub depth_first {
 	$merge_list{$merge_dir} = 0;
 	
 	# the preceeding code segment allows the appropriate directory
-	# info to be included in the associative array entry. This 
-	# entry will then be used to make sure all the necessary 
+	# info to be included in the associative array entry. This
+	# entry will then be used to make sure all the necessary
 	# common directories are created.
       }
     } elsif ((&pathcheck ($new_file, *priority)) < (&pathcheck ($old_file, *priority))) {
@@ -1446,7 +1453,7 @@ sub link_me {
 	$temp = $common_dir;
 	$temp =~ s/(\W)/\\$1/g;	# quote meta-chars
 	$element =~ s/\/$temp//; # removes the common directory
-	# name from the package 
+	# name from the package
 	#print"\tElement: $element\n";
       }
 
@@ -1536,7 +1543,7 @@ if ($man_is_there){
 # list uncreated links
 #
 
-$"='';
+$LIST_SEPARATOR='';
 
 if (@conflicts[0]) {
   if (!($switches{'q'})) {
