@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.18 $
-# Last Mod Date: $Date: 2003/08/08 01:37:26 $
+# Version: $Revision: 1.19 $
+# Last Mod Date: $Date: 2003/08/08 19:52:39 $
 #
 #####################################################################
 
@@ -602,7 +602,7 @@ sub create_config {
     print "AlwaysRecurse: Yes\n";
   } else {
     $tempstring = join(',', @recurse);
-    print "Recursively handled subdirectoryes: $tempstring\n";
+    print "Recursively handled subdirectories: $tempstring\n";
   }
 
   print "\n";
