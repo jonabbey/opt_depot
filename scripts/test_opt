@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.26 $
-# Last Mod Date: $Date: 2003/09/20 01:19:33 $
+# Version: $Revision: 1.27 $
+# Last Mod Date: $Date: 2003/09/20 07:57:05 $
 #
 #####################################################################
 
@@ -71,6 +71,58 @@ ENDTESTCONF1
 
 $testsitesA =<< "ENDSITES1";
 ENDSITES1
+
+%siteA = (label => 'local',
+	  path => "$test_dir/sites/local",
+	  contents => [
+		       {name     => 'packA-1.0',
+			files    => ['bin/hi',
+				     'lib/test.so'],
+			excludes => ['packB-1.0']},
+		       {name     => 'packB-1.0',
+			files    => ['bin/hi',
+				     'lib/test.so',
+				     'lib/test2.so']},
+		       {name     => 'packC-1.0',
+			files    => ['bin/hiC',
+				     'man/manl/hiC.l',
+				     'include/hiC.h',
+				     'lib/testC.so'],
+			excludes => ['packC-0.5']},
+		       {name     => 'packC-0.5',
+			files    => ['bin/hiC',
+				     'man/manl/hiC.l',
+				     'include/hiC.h',
+				     'lib/testC.so']},
+		       {name     => 'packX-1.2',
+			files    => ['bin/asteroids',
+				     'README.asteroids',
+				     'man/man1/asteroids.1']}
+		      ]);
+
+%siteB = (label => 'localB',
+	  path => "$test_dir/sites/localB",
+	  contents => [
+		       {name     => 'packA-2.0',
+			files    => ['bin/hi',
+				     'lib/test.so'],
+			excludes => ['packA-1.0']},
+		       {name     => 'packB-2.0',
+			files    => ['bin/hi',
+				     'lib/test.so',
+				     'lib/test2.so'],
+			excludes => ['packB-1.0']},
+		       {name     => 'packC-2.0',
+			files    => ['bin/hiC',
+				     'man/manl/hiC.l',
+				     'include/hiC.h',
+				     'lib/testC.so'],
+			excludes => ['packC-1.0']},
+		       {name     => 'packY-4.51',
+			files    => ['ARLUT_README',
+				     'bin/space invaders',
+				     'man/man5/space.5']}
+		      ]);
 
 %test0 = (label  => 'Simple single-package link test',
 	  root   => $test_dir,
@@ -306,59 +358,103 @@ ENDSITES1
 	  priority => 'packB',
 	  error_count => 0);
 
-%siteA = ([
-	   {name     => 'packA-1.0',
-	    files    => ['bin/hi',
-			 'lib/test.so'],
-	    excludes => ['packB-1.0']},
-	   {name     => 'packB-1.0',
-	    files    => ['bin/hi',
-			 'lib/test.so',
-			 'lib/test2.so']},
-	   {name     => 'packC-1.0',
-	    files    => ['bin/hiC',
-			 'man/manl/hiC.l',
-			 'include/hiC.h',
-			 'lib/testC.so'],
-	    excludes => ['packC-0.5']},
-	   {name     => 'packC-0.5',
-	    files    => ['bin/hiC',
-			 'man/manl/hiC.l',
-			 'include/hiC.h',
-			 'lib/testC.so']},
-	   {name     => 'packX-1.2',
-	    files    => ['bin/asteroids',
-			 'README.asteroids',
-			 'man/man1/asteroids.1']}
-	  ]);
 
-%siteB = ([
-	   {name     => 'packA-2.0',
-	    files    => ['bin/hi',
-			 'lib/test.so'],
-	    excludes => ['packA-1.0']},
-	   {name     => 'packB-2.0',
-	    files    => ['bin/hi',
-			 'lib/test.so',
-			 'lib/test2.so'],
-	    excludes => ['packB-1.0']},
-	   {name     => 'packC-2.0',
-	    files    => ['bin/hiC',
-			 'man/manl/hiC.l',
-			 'include/hiC.h',
-			 'lib/testC.so'],
-	    excludes => ['packC-1.0']},
-	   {name     => 'packY-4.51',
-	    files    => ['ARLUT_README',
-			 'bin/space invaders',
-			 'man/man5/space.5']}
-	  ]);
+%test9 = (label  => 'Clean and link test',
+	  root   => $test_dir,
+	  start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+                     'depot/packA/bin/hi',
+		     'depot/packA/lib/perl5/spam/x.pl',
+		     'depot/packA/include/test.h',
+		     'depot/packB/bin/hi',
+		     'depot/packB/lib/perl5/spam/y.pl',
+		     'depot/packB/include/test.h',
+		     'depot/packC/lib/packC.so',
+                     'bin/hi->depot/packA/bin/hi',
+		     'bin/not_really->depot/packC/bin/not_really',
+                     'lib/perl5/', 'lib/perl5/.made_by_opt_depot',
+                     'lib/perl5/spam/', 'lib/perl5/spam/.made_by_opt_depot',
+                     'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
+                     'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
+                     'include/test.h->depot/packA/include/test.h'],
+	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		     'bin/hi->depot/packB/bin/hi',
+		     'lib/packC.so->depot/packC/lib/packC.so',
+		     'lib/perl5->depot/packB/lib/perl5/',
+		     'include/test.h->depot/packB/include/test.h'],
+	  endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+	  conf   => $testconfA,
+	  sites  => $testsitesA,
+          sitedefs => [\%siteA, \%siteB],
+	  action => 'opt_setup',
+	  exclude => 'packA',
+	  priority => 'packB',
+	  error_count => 0);
 
 @tests = (\%test0, \%test1, \%test2, \%test3,
 	  \%test4, \%test5, \%test6, \%test7,
 	  \%test8, \%test9);
 
 #####################################################################
+
+
+#########################################################################
+#
+#                                                               init_site
+#
+# input: a reference to a site volume definition
+#
+# init_site reads the definition for a site volume and creates it..
+# this includes the site volume's directory, its package contents, and
+# any per-package .exclude files.
+#
+# returns 1 on success, 0 on failure
+#
+#########################################################################
+
+sub init_site {
+  my ($site_href) = @_;
+
+  my (@site_ary, $pack, @package_files, $file, @excl_ary, $exclusion);
+  local (*OUT);
+
+  if (!create_dir($site_href->{'path'})) {
+    return 0;
+  }
+
+  @site_ary = @$site_href->{'contents'};
+
+  foreach $pack (@site_ary) {
+    $path_root = $site_href->{'path'} . '/' . $pack->{'none'};
+    create_dir($path_root);
+
+    @package_files = @$pack->{'files'};
+
+    foreach $file (@package_files) {
+      if ($file =~ /\/$/) {
+	create_dir($path_root . '/' . $file);
+      } else {
+	touch($path_root . '/' . $file);
+      }
+    }
+
+    if (defined $pack->{'excludes'}) {
+      @excl_ary = @$pack->{'excludes'};
+
+      if (!open(OUT, "$path_root/.exclude")) {
+	print "Error, could not create .exclude file in $path_root\n";
+	return 0;
+      }
+
+      foreach $exclusion (@excl_ary) {
+	print OUT "$exclusion\n";
+      }
+
+      close(OUT);
+    }
+  }
+
+  return 1;
+}
 
 #########################################################################
 #
@@ -383,6 +479,14 @@ sub setup_test {
   killdir($rootdir);
   create_dir($rootdir);
   chdir($rootdir);
+
+  if (defined $href->{'sitedefs'}) {
+    @site_ary = @$href->{'sitedefs'};
+
+    foreach $site (@site_ary) {
+      init_sit($site);
+    }
+  }
 
   foreach $element (@$startary) {
 
