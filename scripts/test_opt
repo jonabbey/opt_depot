@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.23 $
-# Last Mod Date: $Date: 2003/09/18 18:59:22 $
+# Version: $Revision: 1.24 $
+# Last Mod Date: $Date: 2003/09/18 19:35:44 $
 #
 #####################################################################
 
@@ -691,7 +691,8 @@ sub run_test {
     return 0;
   };
 
-  # start the unexpected_check from our base directory
+  # check to make sure we don't have anything in the test tree that we
+  # don't expect to be there
 
   @end_ary = @{$href->{'end'}};
 
@@ -705,6 +706,10 @@ sub run_test {
   }
 
   $error_count = unexpected_check("", $href, \%end_hash);
+
+  # now check to make sure that we affirmatively do have everything in
+  # the test tree that we expect
+
   $error_count = $error_count + expected_check($href);
 
   if ($error_count != $href->{'error_count'}) {
