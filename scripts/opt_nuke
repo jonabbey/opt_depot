@@ -50,8 +50,8 @@
 # Jonathan Abbey 31 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.7 $
-# Last Mod Date: $Date: 2003/08/02 03:48:29 $
+# Version: $Revision: 1.8 $
+# Last Mod Date: $Date: 2003/08/12 07:04:35 $
 #
 #####################################################################
 
@@ -163,7 +163,7 @@ sub nukedirs {
   closedir(DIR);
 
   @links = grep (-l "$dir/$_", @contents);
-  @dirs = grep (!/^\.\.?/ && !(-l "$dir/$_") && (-d _), @contents);
+  @dirs = grep (!/^\.\.?$/ && !(-l "$dir/$_") && (-d _), @contents);
 
   # note that we do -d _ above as an optimization, so that perl doesn't
   # go and stat $dir/$_ a second time when it already has the

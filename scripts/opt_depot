@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.25 $
-# Last Mod Date: $Date: 2003/08/12 07:04:29 $
+# Version: $Revision: 1.26 $
+# Last Mod Date: $Date: 2003/08/12 07:05:23 $
 #
 #####################################################################
 
@@ -1248,7 +1248,7 @@ prepdirs();			# get our dirs set up
 chdir $depot || die "Could not cd to $depot";
 
 opendir (DEPOT, $depot) || die "Could not open $depot";
-@packages=grep(-d && !/^\./, readdir(DEPOT));
+@packages=grep(-d && !/^\.\.?$/, readdir(DEPOT));
 closedir(DEPOT);
 
 foreach $subdir (@subdirs) {
