@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.6 $
-# Last Mod Date: $Date: 2003/08/08 00:09:01 $
+# Version: $Revision: 1.7 $
+# Last Mod Date: $Date: 2003/08/08 00:14:40 $
 #
 #####################################################################
 
@@ -150,9 +150,8 @@ sub display_list {
   my ($descriptor, @list) = @_;
   my ($i,$numsites);
 
-  print "## Current $descriptor list ##\n\n";
-
-  print "-> " . join(',', @list);
+  print "## Current $descriptor list ##\n";
+  print "-> " . join(',', @list) . "\n";
 }
 
 ##########################################################################
