@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.20 $
-# Last Mod Date: $Date: 2003/08/14 01:49:30 $
+# Version: $Revision: 1.21 $
+# Last Mod Date: $Date: 2003/08/14 01:57:30 $
 #
 #####################################################################
 
@@ -62,7 +62,7 @@ require 5.000;
 
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw($dest $depot $logdir $sitefile $alwaysrecurse %switches @subdirs @unify_list
+@EXPORT = qw($dest $depot $logdir $logfile $sitefile $alwaysrecurse %switches @subdirs @unify_list
 	     *LOG
 	     &askyn &askstring &printwrap
 	     &parsequoted &safifystring
@@ -79,7 +79,6 @@ use Exporter;
 
 our $usage_string;
 our $log_init;
-our $logfile = "";
 our $lockset = 0;
 our $debug = 1;
 our $logdebug = 1;
