@@ -42,8 +42,8 @@
 # University of Texas at Austin  opt-depot@arlut.utexas.edu
 #
 # Release: $Name:  $
-# Version: $Revision: 1.9 $
-# Last Mod Date: $Date: 2003/08/07 03:59:35 $
+# Version: $Revision: 1.10 $
+# Last Mod Date: $Date: 2003/08/08 19:43:44 $
 #
 ###############################################################################
 
@@ -138,9 +138,13 @@ while [ "$perlok" = "n" ]; do
   if [ "$perl_loc" = "" ]; then
     echo "Please enter the name of the Perl 5 version you want to use"
     echo "and its location" 
-    prompt "----> "
-    read perl_loc
+    prompt "[$perl_loc]> "
+    read perl_ans
     echo
+
+    if [ "$perl_ans" != "" ]; then
+	$perl_loc = $perl_ans
+    fi
 
     if [ ! -r "$perl_loc" ]; then
       if [ "$perl_loc" != "" ]; then
