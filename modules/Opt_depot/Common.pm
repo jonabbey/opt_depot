@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.29 $
-# Last Mod Date: $Date: 2003/09/21 06:49:54 $
+# Version: $Revision: 1.30 $
+# Last Mod Date: $Date: 2003/09/22 05:44:59 $
 #
 #####################################################################
 
@@ -886,6 +886,7 @@ sub read_prefs ($$$\@) {
   $logdir = undef;
   $alwaysrecurse = undef;
   $sitefile = undef;
+  $get_most_recent = undef;
 
   read_config($config_file);
 
@@ -940,6 +941,13 @@ sub read_prefs ($$$\@) {
     $switches{'R'} = '-R';
   } elsif ($#unify_list >= 0) {
     $switches{'r'} = '-r';
+  }
+
+  # If GetMostRecent was set in our config file, assert the -g switch
+  # for opt_link's sake
+
+  if (defined $get_most_recent && $get_most_recent =~ /^y/i) {
+    $switches{'g'} = '-g';
   }
 
   check_args($switchlist, @$ARGV_ref);
@@ -1077,6 +1085,24 @@ sub read_config {
 	next;
       } else {
 	$alwaysrecurse = $temp;
+      }
+    }
+
+    if (/^GetMostRecent:\s*(.*)/i) {
+      $temp = $1;
+
+      if (($temp =~ /^\s*\"/) ||
+	  ($temp =~ /^\s*\'/)) {
+	$temp = parsequoted($temp, 1);
+      } else {
+	$temp =~ s/#.*$//;	# cut off comments
+	$temp =~ s/\s+.*$//;	# use whitespace as the delimiter
+      }
+
+      if ($temp eq "") {
+	next;
+      } else {
+	$get_most_recent = $temp;
       }
     }
 
