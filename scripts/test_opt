@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.36 $
-# Last Mod Date: $Date: 2003/10/06 22:07:32 $
+# Version: $Revision: 1.37 $
+# Last Mod Date: $Date: 2003/10/11 03:14:41 $
 #
 #####################################################################
 
@@ -406,6 +406,43 @@ ENDSITES3
 	   priority => "packA\npackB/bin/hello\npackB",
 	   error_count => 0);
 
+# This test exposes an interesting edge case in the recursive
+# unification logic.  The first thing opt_depot sees is the
+# depot/packA/lib/perl5 text file, which we link with no priority.
+# Then we see the depot/packB/lib/perl5 directory, which doesn't have
+# any priority to allow us to override the depot/packA/lib/perl5
+# link.  Then we get to depot/packC/lib/perl5, which contains
+# a prioritized file, depot/packC/lib/perl5/z.pm.  Because of that,
+# we should replace the packA/lib/perl5 symlink with one for packC's
+# lib/perl5, but then we need to realize that it is now possible
+# to merge in packB, which we've already passed by.
+#
+# To properly handle this case, the opt_depot link_me algorithm needs
+# to loop over all packages when something has been changed to catch
+# the opportunity under the previously processed package
+
+%test4e = (label  => 'Out-of-order prioritized recursion test',
+	   root   => $test_dir,
+	   start  => ['depot/packA/lib/perl5',
+		      'depot/packB/lib/perl5/x.pm',
+		      'depot/packB/lib/perl5/y.pm',
+		      'depot/packB/lib/perl5/a.pm',
+		      'depot/packC/lib/perl5/x.pm',
+		      'depot/packC/lib/perl5/z.pm'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'lib/perl5/',
+		      'lib/perl5/.made_by_opt_depot',
+		      'lib/perl5/x.pm->depot/packC/lib/perl5/x.pm',
+		      'lib/perl5/y.pm->depot/packB/lib/perl5/y.pm',
+		      'lib/perl5/a.pm->depot/packB/lib/perl5/a.pm',
+		      'lib/perl5/z.pm->depot/packC/lib/perl5/z.pm'],
+	   endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+	   conf   => $testconfA,
+	   sites  => $testsitesA,
+	   action => 'opt_depot',
+	   priority => "packC/lib/perl5/z.pm",
+	   error_count => 0);
+
 %test5 = (label  => 'Exclude link replacement test',
 	  root   => $test_dir,
 	  start  => ['bin/hi->depot/packA/bin/hi',
@@ -679,7 +716,7 @@ ENDSITES3
 	   error_count => 0);
 
 @tests = (\%test0, \%test1, \%test2, \%test3,
-	  \%test4, \%test4b, \%test4c, \%test4d,
+	  \%test4, \%test4b, \%test4c, \%test4d, \%test4e,
 	  \%test5, \%test6, \%test7,
 	  \%test8, \%test9, \%test10, \%test11,
 	  \%test12, \%test13, \%test14, \%test15);
