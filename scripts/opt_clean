@@ -54,8 +54,8 @@
 # Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.19 $
-# Last Mod Date: $Date: 2003/08/12 18:06:46 $
+# Version: $Revision: 1.20 $
+# Last Mod Date: $Date: 2003/08/12 19:18:28 $
 #
 #########################################################################
 
@@ -353,7 +353,7 @@ sub cleandir {
   # file indicating this directory was created by opt_depot under the
   # recursive unification rules, we're done.
 
-  if ((!defined $switches{'r'} && !defined $switches{'R'}) || 
+  if ((!defined $switches{'r'} && !defined $switches{'R'}) ||
       !-e "$dir/$opt_file") {
     return;
   }
@@ -367,7 +367,7 @@ sub cleandir {
 
   # were there any non-symlinks left that we needed to worry about?
 
-  @nonlinks = grep (!-l "$dir/$_" && !/^\.\.?$/ && ($_ != $opt_file), @contents);
+  @nonlinks = grep ((!-l "$dir/$_") && (!/^\.\.?$/) && ($_ ne $opt_file), @contents);
 
   if (defined @nonlinks && $#nonlinks >= 0) {
     # we've got something which is not a link or opt_depot-created
@@ -397,7 +397,7 @@ sub cleandir {
 
     foreach $link (@links) {
       $second = extractdir(readlink("$dir/$link"));
-      
+
       if ($first ne $second) {
 	# links do not all point to same directory, so we're not
 	# going to collapse.. done.
