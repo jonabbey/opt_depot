@@ -46,8 +46,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.12 $
-# Last Mod Date: $Date: 2003/08/11 21:48:14 $
+# Version: $Revision: 1.13 $
+# Last Mod Date: $Date: 2003/08/12 06:41:54 $
 #
 #########################################################################
 
@@ -263,99 +263,57 @@ sub read_pack_ex {
 
 #########################################################################
 #
-#                                                                  rmdirs
+#                                                                cleandir
 #
 # input: the pathname of a directory to scan through
 #
-# rmdirs() recursively scans through the supplied directory, removing
+# cleandir() recursively scans through the supplied directory, removing
 # any symbolic links that point to non-existent files in the $depot
 # directory tree.
 #
-# rmdirs() will also remove links pointing to a package's tree if that
+# cleandir() will also remove links pointing to a package's tree if that
 # package has been placed in the .exclude file in the $dest directory.
 #
 #########################################################################
-sub rmdirs{
+sub cleandir {
   my ($dir) = @_;
 
-  my (@dirs, $dirs, $reslink, $where, $link, @links, @contents);
-  my (@real_files,$result,$all_same,$first,$second);
+  my (@dirs, $dir_x, $reslink, $link, @links, @contents);
+  my ($first, $second, @nonlinks);
+
+  if ($dir eq $depot) {
+    logprint("opt_clean: Configuration error, I refuse to try to clean $depot\n", 1);
+    return;
+  }
 
   opendir(DIR, "$dir") || die "Could not open $dir";
   @contents = readdir(DIR);
-  @real_files = grep (!/^\./, @contents);
   closedir(DIR);
 
-  if ($#real_files<0) {
-    # directory contains no visible files -- annihilate it
+  @dirs = grep (!/^\.\.?$/ && !(-l "$dir/$_") && (-d _), @contents);
 
-    # but only if the -r option is not in effect and the dir
-    # contains an $opt_file
+  # check for subordinate directories recursively..
 
-    if (($switches{'r'} || $switches{'R'}) && (-e "$dir/$opt_file")) {
-      logprint("Removing empty directory: $dir\n", 1);
-
-      if (!killdir("$dir")) {
-	logprint("Error: Could not remove $dir\n", 1);
-      }
-
-      return "** empty **"; # let's blow this popsicle stand...
-    }
+  foreach $dir_x (@dirs) {
+    cleandir("$dir/$dir_x");
   }
 
-  # get all links
+  # the recursive cleandir calls may have changed the contents of this
+  # directory..  re-scan $dir and let's start processing symlinks
+
+  opendir(DIR, "$dir") || die "Could not reopen $dir";
+  @contents = readdir(DIR);
+  closedir(DIR);
 
   @links = grep (-l "$dir/$_", @contents);
 
-  # get all non-symlink non-{.|..} subdirs
-
-  @dirs = grep ((!/^\.\.?$/) && !(-l "$dir/$_") && (-d _), @contents);
-
-  # note that we do -d _ above as an optimization, so that perl doesn't
-  # go and stat $dir/$_ a second time when it already has the
-  # stat info from the -l check that it had to do immediately before..
-
-  # remove bad links
-
-  # 2.0 - and test to see if all the links point to a single package.
-
-  if ($#dirs>=0) {
-    $all_same = 0;
-  } elsif (defined @links) {
-    $all_same = 1;		# all_same is true if all the links point to the
-				# same package. Assume true until proven otherwise.
-
-    # get location of first package as a comparison value.
-
-    $first = extractdir(readlink("$dir/@links[0]"));
-    removelastslash($first);
-
-    foreach $link (@links) {
-      $second = extractdir(readlink("$dir/$link"));
-      removelastslash($second);
-
-      if ($first ne $second) {
-	$all_same = 0; # links do not all point to same place...
-	last;
-      }
-    }
-  }
-
-  if ($all_same) {
-    return $first;		# this returns the value of the common link.
-				# that way we can collapse the directory.
-  }
-
-  for $link (@links) {
-
-    $where = readlink("$dir/$link");
-    $reslink = resolve($dir, $where);
+  foreach $link (@links) {
+    $reslink = resolve($dir, readlink("$dir/$link"));
 
     # $reslink is a string containing the filename of
     # the resolved absolute target of the symlink $dir/$link
 
-    if ($reslink =~ /^$depot\//) {
-
+    if ("$reslink/" =~ /^$depot\//) {
       # yay!  the link points into the $depot tree.. we can
       # maybe blow it away if it is old
 
@@ -382,37 +340,74 @@ sub rmdirs{
     }
   }
 
-  # check the directories in this directory
-  # recursively..
-  #
-  # we don't want to scan down into /opt/depot
+  # if we're not operating recursively or if we don't have a marker
+  # file indicating this directory was created by opt_depot under the
+  # recursive unification rules, we're done.
 
-  for $dirs (@dirs) {
-    if ("$dir/$dirs" ne $depot) {
-      $result = rmdirs("$dir/$dirs");
-
-      # here's where we evaluate the return values from the recursion
-
-      if (($result ne "** good **") && ($result ne "** empty **") &&
-	  ($result ne "")) {
-
-	# we should collapse this directory, but only if the $opt_file
-	# exists, and if the -r option is employed
-
-	if (($switches{'r'} || $switches{'R'}) && (-e "$dir/$dirs/$opt_file")) {
-	  logprint("Collapsing Directory: $dir/$dirs\n",1);
-
-	  if (killdir("$dir/$dirs")) {
-	    symlink ("$result", "$dir/$dirs");
-	  } else {
-	    logprint("Couldn't successfully remove $dir/$dirs!\n", 1);
-	  }
-	}
-      }
-    }
+  if ((!defined $switches{'r'} && !defined $switches{'R'}) || 
+      !-e "$dir/$opt_file") {
+    return;
   }
 
-  return "** good **"; # everything's beautiful in our little world.
+  # were there any non-symlinks left that we needed to worry about?
+
+  @nonlinks = grep (!-l "$dir/$_" && !/^\.\.?$/ && ($_ != $opt_file), @contents);
+
+  if (defined @nonlinks && $#nonlinks >= 0) {
+    # we've got something which is not a link or opt_depot-created
+    # file..  no need to worry about collapsing or removing the
+    # directory, we're done.
+
+    return;
+  }
+
+  # we're recursive and opt_depot made this directory, and we know
+  # there's nothing but symlinks in $dir.  If all the symlinks
+  # point to files in the same directory, we'll collapse this directory
+  # and replace it with a symlink
+
+  @links = grep (-l "$dir/$_", @contents);
+
+  if (defined @links && $#links >= 0) {
+    # get location of first package as a comparison value.
+
+    $first = extractdir(readlink("$dir/@links[0]"));
+
+    if ("$first/" !~ /^$depot\//) {
+      # we've got a symlink pointing out of our $depot tree..
+      # don't touch it, we're done
+      return;
+    }
+
+    foreach $link (@links) {
+      $second = extractdir(readlink("$dir/$link"));
+      
+      if ($first ne $second) {
+	# links do not all point to same directory, so we're not
+	# going to collapse.. done.
+	return;
+      }
+    }
+
+    logprint("Collapsing Directory: $dir\n",1);
+
+    if (killdir("$dir")) {
+      symlink ("$first", "$dir");
+      return;
+    } else {
+      logprint("Couldn't successfully collapse $dir!\n", 1);
+    }
+  } else {
+    # directory is empty -- annihilate it
+
+    logprint("Removing empty directory: $dir\n", 1);
+
+    if (killdir("$dir")) {
+      return;
+    } else {
+      logprint("Error: Could not remove $dir\n", 1);
+    }
+  }
 }
 
 ################################################################################
@@ -444,7 +439,7 @@ read_pack_ex();
 
 chdir $dest || die "could not change to $dest";
 foreach $subdir (@subdirs) {
-  rmdirs("$dest/$subdir");
+  cleandir("$dest/$subdir");
 }
 
 clear_lock();
