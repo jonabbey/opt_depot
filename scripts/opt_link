@@ -52,8 +52,8 @@
 # Jonathan Abbey 29 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.16 $
-# Last Mod Date: $Date: 2003/09/17 19:42:41 $
+# Version: $Revision: 1.17 $
+# Last Mod Date: $Date: 2003/09/21 06:50:22 $
 #
 #####################################################################
 
@@ -68,11 +68,6 @@ $version = "3.0";
 $activity = 0;
 
 ##defaults#############################################################
-
-# ordered priority listing of various package site labels and their
-# corresopnding directories
-
-$sites_file = resolve($RealBin, "../etc/sites");
 
 # configuration file containing $dest, $depot and $logdir vars
 
@@ -659,7 +654,7 @@ sub print_info {
 sub print_header {
   if ($verbose) {
     print"\n## Opt_Link Version:$version ##\n";
-    print"Reading from Sites File: $sites_file\n";
+    print"Reading from Sites File: $sitefile\n";
     print"Reading From Primary Exclude File: $exclude_file\n";
 
     if ($get_most_recent) {
@@ -703,11 +698,11 @@ $exclude_file = "$dest/.exclude";
 # directory of the package (which is presumably on the server...)
 
 if (-e "$dest/sites") {
-  $sites_file = "$dest/sites";
+  $sitefile = "$dest/sites";
 }
 
 print_header();
-read_site_file($sites_file);
+read_site_file($sitefile);
 read_exfile($exclude_file);
 scan_depot($depot);
 process_sites();
