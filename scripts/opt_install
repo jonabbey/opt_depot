@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.15 $
-# Last Mod Date: $Date: 2003/08/08 01:16:50 $
+# Version: $Revision: 1.16 $
+# Last Mod Date: $Date: 2003/08/08 01:22:31 $
 #
 #####################################################################
 
@@ -674,11 +674,10 @@ $targetdir = askstring("Please enter the directory where you want the opt_depot 
 $targetdir = make_absolute(removelastslash($targetdir));
 testmakedir($targetdir, "Yes");
 
-mkdir "$targetdir/bin", 0777;
-mkdir "$targetdir/man", 0777;
-mkdir "$targetdir/etc", 0777;
-mkdir "$targetdir/man", 0777;
-mkdir "$targetdir/man/manl", 0777;
+create_dir("$targetdir/bin");
+create_dir("$targetdir/etc");
+create_dir("$targetdir/man/manl");
+create_dir("$targetdir/modules/Opt_depot");
 
 foreach $script (@opt_scripts) {
   if (-e "scripts/$script") {
@@ -700,6 +699,8 @@ foreach $manual (@mans) {
     printwrap "\tERROR: Could not locate $manual for copying\n";
   }
 }
+
+copy("$RealBin/../modules/Opt_depot/Common.pm", "$targetdir/modules/Opt_depot");
 
 # We've done the initial install.. now let's build the config and
 # sites files
