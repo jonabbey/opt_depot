@@ -54,8 +54,8 @@
 # Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.22 $
-# Last Mod Date: $Date: 2003/09/16 23:29:26 $
+# Version: $Revision: 1.23 $
+# Last Mod Date: $Date: 2003/09/18 18:55:38 $
 #
 #########################################################################
 
@@ -405,7 +405,7 @@ sub cleandir {
       }
     }
 
-    logprint("Collapsing Directory: $dir\n",1);
+    logprint("Collapsing Directory: $dir\n", 0);
 
     if (killdir("$dir")) {
       symlink("$first", "$dir");
@@ -416,7 +416,7 @@ sub cleandir {
   } else {
     # directory is empty -- annihilate it
 
-    logprint("Removing empty directory: $dir\n", 1);
+    logprint("Removing empty directory: $dir\n", 0);
 
     if (killdir("$dir")) {
       return;
