@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.22 $
-# Last Mod Date: $Date: 2003/08/13 23:02:48 $
+# Version: $Revision: 1.23 $
+# Last Mod Date: $Date: 2003/08/13 23:03:26 $
 #
 #####################################################################
 
@@ -216,6 +216,10 @@ sub delete_list  ($\@) {
   print "> ";
   $remove = <STDIN>;
   chop $remove;
+
+  if ($remove eq "") {
+    return;
+  }
 
   $i = 0;
   $ok = 0;
