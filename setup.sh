@@ -6,8 +6,8 @@
 # Get enough information from the user to be able to find Perl 5
 #
 # Release: $Name:  $
-# Version: $Revision: 1.2 $
-# Last Mod Date: $Date: 2003/07/07 21:22:26 $
+# Version: $Revision: 1.3 $
+# Last Mod Date: $Date: 2003/07/07 21:25:25 $
 #
 ###############################################################################
 
@@ -33,11 +33,11 @@ echo
 
 # Find perl (GPERL)
 
-perl_loc=`which perl5`
+perl_loc=`which perl5` 2> /dev/null
 perl_name="perl5"
 
 if test ! -r "$perl_loc"; then
-  perl_loc=`which perl`
+  perl_loc=`which perl` 2> /dev/null
   perl_name="perl"
 fi
 
@@ -54,7 +54,7 @@ if [ $perl_loc = "no" ]; then
   echo "Note - The version of perl must be 5.000 or greater to use opt_depot" 
   echo
   echo "Do you wish to use this copy of Perl? [Y/N]"
-  $echo "----> {$nnl}"
+  $echo "----> ${nnl}"
   read answer
   echo
 else
@@ -70,7 +70,7 @@ fi
 if [ $answer != Y ]; then
   echo "Please enter the name of the Perl 5 version you are using"
   echo "and its location (ie /usr/local/bin/perl) " 
-  $echo "----> {$nnl}"
+  $echo "----> ${nnl}"
   read perl_loc
 	
   if [ -f "$perl_loc" ]; then 
