@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.9 $
-# Last Mod Date: $Date: 2003/08/08 00:18:30 $
+# Version: $Revision: 1.10 $
+# Last Mod Date: $Date: 2003/08/08 00:24:06 $
 #
 #####################################################################
 
@@ -146,12 +146,12 @@ sub fix_perms {
 #
 #########################################################################
 
-sub display_list {
-  my ($descriptor, @list) = @_;
+sub display_list ($\@) {
+  my ($descriptor, $list) = @_;
   my ($i,$numsites);
 
   print "## Current $descriptor list ##\n";
-  print "-> " . join(',', @list) . "\n";
+  print "-> " . join(',', @$list) . "\n";
 }
 
 ##########################################################################
@@ -164,8 +164,8 @@ sub display_list {
 #
 ##########################################################################
 
-sub add_list {
-  my ($descriptor, @list) = @_;
+sub add_list ($\@) {
+  my ($descriptor, $list) = @_;
 
   my $add;
 
@@ -174,7 +174,7 @@ sub add_list {
   $add = <STDIN>;
   chop $add;
 
-  push @list, $add;
+  push @$list, $add;
 }
 
 ##########################################################################
@@ -187,8 +187,8 @@ sub add_list {
 #
 ##########################################################################
 
-sub delete_list {
-  my ($descriptor, @list) = @_;
+sub delete_list  ($\@) {
+  my ($descriptor, $list) = @_;
 
   my ($remove, $i, $ok);
 
@@ -199,9 +199,9 @@ sub delete_list {
 
   $i = 0;
   $ok = 0;
-  while ($i <= $#list) {
-    if ($list[$i] eq $remove) {
-      delete $list[$i];
+  while ($i <= $#(@$list)) {
+    if ($list->[$i] eq $remove) {
+      delete $list->[$i];
       $ok = 1;
     }
 
@@ -224,13 +224,13 @@ sub delete_list {
 #
 ##########################################################################
 
-sub edit_list {
-  my ($descriptor, @list) = @_;
+sub edit_list ($\@) {
+  my ($descriptor, $list) = @_;
 
   my $done = 0;
 
   while (!$done) {
-    display_list($descriptor, @list);
+    display_list($descriptor, @$list);
 
     print"\nPlease choose an option:\n";
     print"\t[A]dd a $descriptor to the list\n";
@@ -240,9 +240,9 @@ sub edit_list {
     $choice = <STDIN>;
 
     if ($choice =~ /^a/i) {
-      add_list($descriptor,@list);
+      add_list($descriptor, @$list);
     } elsif ($choice =~ /^d/i) {
-      delete_list($descriptor,@list);
+      delete_list($descriptor, @$list);
     } elsif ($choice =~ /^q/i) {
       $done = 1;
     } else {
