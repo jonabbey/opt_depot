@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.22 $
-# Last Mod Date: $Date: 2003/09/18 18:56:46 $
+# Version: $Revision: 1.23 $
+# Last Mod Date: $Date: 2003/09/18 18:59:22 $
 #
 #####################################################################
 
@@ -267,8 +267,7 @@ ENDSITES1
                      'include/test.h->depot/packA/include/test.h'],
 	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
 		     'bin/hi->depot/packB/bin/hi',
-		     'lib/perl5->depot/packB/lib/perl5/',
-		     'include/test.h->depot/packB/include/test.h'],
+		     'lib/perl5->depot/packB/lib/perl5/'],
 	  endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
