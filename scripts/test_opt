@@ -30,15 +30,19 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.6 $
-# Last Mod Date: $Date: 2003/09/15 19:19:33 $
+# Version: $Revision: 1.7 $
+# Last Mod Date: $Date: 2003/09/15 21:23:40 $
 #
 #####################################################################
 
 use English;
 use FindBin qw($RealBin $RealScript);
 
-use lib "$RealBin/../modules";
+print "realBin is $RealBin\n";
+
+use lib "/home/broccol/opt_depot/work/opt_depot/modules";
+
+#use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
 $version = "3.0";
@@ -70,7 +74,7 @@ ENDSITES1
 		     'depot/packA/lib/perl5/spam/x.pl',
 		     'depot/packA/include/test.h',
 		     'depot/packA/man/manl/test.l'],
-	  end    => ['bin/', 'lib/', 'man/', 'include/', 'man/manl/',
+	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/', 'man/manl/',
 		     'bin/hi->depot/packA/bin/hi',
 		     'lib/perl5->depot/packA/lib/perl5/',
 		     'include/test.h->depot/packA/include/test.h',
@@ -88,7 +92,7 @@ ENDSITES1
 		     'depot/packB/bin/hi',
 		     'depot/packB/lib/perl5/spam/y.pl',
 		     'depot/packB/include/test.h'],
-	  end    => ['bin/', 'lib/', 'man/', 'include/',
+	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
 		     'bin/hi->depot/packA/bin/hi',
 		     'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
 		     'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
@@ -197,6 +201,8 @@ sub setup_test {
 sub recurse_check {
   my ($path, $test_href, $end_href, $exclusion_href) = @_;
 
+  chdir($test_href->{'root'});	# make sure we're operating out of the test root
+
   $local_path = $path;
   if ($local_path eq "") {
     $local_path = ".";
@@ -209,7 +215,7 @@ sub recurse_check {
   # make sure we have base-qualified paths
 
   if ($path ne "") {
-    @elements = map { $path . "/" . $_ } @elements;
+    @elements = map { $path . $_ } @elements;
   }
   
   foreach $element (@elements) {
@@ -221,22 +227,20 @@ sub recurse_check {
       next;
     }
 
-    if (!defined $end_href->{$element}) {
-      print "Error, found unexpected item $element in test " . $test->{'label'} . "\n";
-      $failed = 1;
-      next;
-    }
-
     if (-l $element) {
       $target = resolve(make_absolute($local_path), readlink($element));
-      
-      if ($target ne $end_href->{$element}) {
-	print "Error, symlink target error in test " . $test->{'label'} . "\n";
+
+      if ($target ne $test_href->{'root'} . "/" . $end_href->{$element}) {
+	print "Error, symlink target error in test " . $test_href->{'label'} . "\n";
 	print "symlink $element should point to " . $end_href->{$element} . ", but instead points to\n";
 	print "$target.\n";
 	$failed = 1;
 	next;
       }
+    } elsif (!defined $end_href->{$element}) {
+      print "Error, found unexpected item $element in test " . $test_href->{'label'} . "\n";
+      $failed = 1;
+      next;
     }
   }
 
@@ -244,8 +248,6 @@ sub recurse_check {
 
   foreach $element (@elements) {
     if (-d $element && !-l $element) {
-      $element = $element . "/";
-
       if (!defined $exclusion_href->{$element}) {
 	if (!recurse_check($element, $test_href, $end_href, $exclusion_href)) {
 	  $failed = 1;
@@ -279,35 +281,35 @@ sub run_test {
   my ($command);
 
   $command = $href->{'action'};
-  system('perl', $command) == 0 or {
+
+  if (system('/opt/bin/perl', $command, "-f$test_etc/opt.config")) {
     print "Could not execute $command with perl.\n";
     return 0;
   };
 
   # start the recurse_check from our base directory
 
-  @end_ary = @$href->{'end'};
+  @end_ary = @{$href->{'end'}};
   
   foreach $item (@end_ary) {
     if ($item =~ /->/) {
       ($before, $after) = split /->/, $item;
-      $end_hash{$item} = $after;
+      $end_hash{$before} = $after;
     } else {
       $end_hash{$item} = "";
     }
   }
 
-  @exclusion_ary = @$href->{'endex'};
+  @exclusion_ary = @{$href->{'endex'}};
 
   foreach $item (@exclusion_ary) {
     $exclusion_hash{$item} = "";
   }
 
-  chdir($test_dir);
   if (!recurse_check("", $href, \%end_hash, \%exclusion_hash)) {
-    print "Test " . $href->{'label'} . " failed.";
+    print "Test " . $href->{'label'} . " failed.\n";
   } else {
-    print "Test " . $href->{'label'} . " succeeded.";
+    print "Test " . $href->{'label'} . " succeeded.\n";
   }
 }
 
