@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.32 $
-# Last Mod Date: $Date: 2003/09/18 01:09:00 $
+# Version: $Revision: 1.33 $
+# Last Mod Date: $Date: 2003/09/23 03:54:11 $
 #
 #####################################################################
 
@@ -89,6 +89,32 @@ sub mod_copy {
 
   open (IN,"$input") || die "could not open file $input";
   while (<IN>) {
+    print OUT; # copies the lines of old depot script to new one
+  }
+  close (IN);
+
+  close (OUT);
+}
+
+#########################################################################
+#
+#                                                                man_copy
+# input: the input man page file
+#        the filename to copy the man page file to
+#
+# man_copy copies man pages into place, replacing standard tokens
+# for the location of the install directory and the location of the
+# managed base directory with the appropriate directories.
+#
+#########################################################################
+sub man_copy {
+  my ($infile, $newfile) = @_;
+
+  open (OUT, ">$newfile") || die "could not open file $newfile";
+  open (IN,"$infile") || die "could not open file $infile";
+  while (<IN>) {
+    s/__INSTALLDIR__/$targetdir/g;
+    s/__BASEDIR__/$dest/g;
     print OUT; # copies the lines of old depot script to new one
   }
   close (IN);
@@ -728,7 +754,7 @@ foreach $script (@opt_scripts) {
 
 foreach $manual (@mans) {
   if (-e $manual) {
-    copy($manual, "$targetdir/man/manl/");
+    man_copy($manual, "$targetdir/$manual"); # $manual includes man/manl/
   } else {
     printwrap "\tERROR: Could not locate $manual for copying\n";
   }
