@@ -35,8 +35,8 @@
 .\" University of Texas at Austin  opt-depot@arlut.utexas.edu
 .\"
 .\" Release: $Name:  $
-.\" Version: $Revision: 1.5 $
-.\" Last Mod Date: $Date: 2003/10/21 00:25:16 $
+.\" Version: $Revision: 1.6 $
+.\" Last Mod Date: $Date: 2003/10/22 02:42:31 $
 .TH OPT_LINK l "15 October 2003" "ARL:UT/CSD"
 .SH NAME
 opt_link 3.0 \- creates and manages links from a system depot directory to packages located in one or more central package archive directories.
@@ -132,9 +132,15 @@ In addition, the \fI__BASEDIR__/.exclude\fR file may be used to
 exclude packages from a particular site volume, by prepending the
 package name with the site volume label (as specified in the
 \fIsites\fR file) followed by a colon.
-
-
-
+.sp
+For example:
+.RS
+# __BASEDIR__/.exclude example
+.br
+emacs-19.27
+.br
+CSDSITE:"
+.RE
 \fBopt_link\fR can also handle the removal of old and outdated symbolic links
 from the depot directory.
 In this way, \fBopt_link\fR is capable of working with the maintainer of a
