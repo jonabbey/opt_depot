@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.24 $
-# Last Mod Date: $Date: 2003/08/08 01:55:12 $
+# Version: $Revision: 1.25 $
+# Last Mod Date: $Date: 2003/08/12 07:04:29 $
 #
 #####################################################################
 
@@ -291,7 +291,7 @@ sub read_pack_ex {
   @contents = readdir(IN);
   closedir (IN);
 
-  @allfiles = grep ((-e "$depot/$_") && ("$depot/$_" !~/^\./), @contents);
+  @allfiles = grep (-d "$depot/$_" && !/^\.\.?$/, @contents);
 
   foreach $file (@allfiles) {
     if (-e "$depot/$file/.exclude") {
@@ -764,7 +764,7 @@ sub manlink {
   # extract all files and directories that don't begin with .
 
   opendir (MAN, "$depot/$package/man") || print "Could not open $depot/$package/man.";
-  @files=grep (!/^\./, readdir(MAN));
+  @files=grep (!/^\.\.?$/, readdir(MAN));
   closedir(MAN);
 
   for $file (@files) {
@@ -802,7 +802,7 @@ sub manlink {
       if (-d "$depot/$package/man/$file") {
 			
 	opendir (MDIR, "$depot/$package/man/$file") || print "Could not open $depot/$package/man/$file";
-	@mfiles=grep (!/^\./, readdir(MDIR));
+	@mfiles=grep (!/^\.\.?$/, readdir(MDIR));
 	closedir (MDIR);
 			
 	# link all man pages in this man directory into the
@@ -1094,7 +1094,7 @@ sub link_me {
       # extract all files and directories in
       # $package/$subdir that don't begin with .
 
-      @files= grep (!/^\./, readdir(SUBDIR));
+      @files= grep (!/^\.\.?$/, readdir(SUBDIR));
 
       closedir(SUBDIR);
 
