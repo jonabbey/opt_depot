@@ -1,0 +1,307 @@
+# opt_setup v2.01
+#
+# this will run all the scripts necessary to set up
+# the opt directory (opt_link, clean_it, and opt_depot).
+# For more details, see individual scripts.
+#
+#***********************************************************************
+#
+# Copyright (C) 1997  The University of Texas at Austin.
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#    Written by: Computer Science Division, Applied Research Laboratories,
+#    University of Texas at Austin  opt-depot@arlut.utexas.edu
+#
+#***********************************************************************
+# Written by Jeremy Thibeaux, Jonathan Abbey, Amy Shook
+# October 8, 1993 - June 1, 1997
+#
+# v2.0
+# Added a line to ignore labeled exclusions in the read_exfile procedure,
+# and to get directory paths from the common configuration file
+# Erik Grostic 15 May 1997
+#
+# v2.01 
+# Fixed a bug in procargs that had to do with the regex matching for
+# re-defining the destination directory by using command line parameters.
+# A -b option must now be given with the destination (or base) directory
+# Erik Grostic 10 July 1997
+#
+##########################################################################
+
+$version = "2.01";
+
+## defaults #########################################################
+
+# none of these directories should have trailing slashes
+
+$config_file = "<<INSTALL-DIR>>/etc/opt.config";
+                                        # configuration file containing
+                                        # $dest, $depot and $logdir vars
+                                        # The string /opt/depot/opt_depot-2.0 is 
+                                        # replaced with the installation 
+                                        # directory during the copy process
+
+##########################################################################
+#
+#                                                           get_vars
+# input: none 
+#
+# output: uses the opt_config.serv file to gain the values of the
+#         $dest and $depot variables
+#
+##########################################################################
+
+sub get_vars {
+    open(CONFIG,"$config_file") || die "Could not open $config_file\n";
+    while (<CONFIG>){
+	if (/^Base:\s*(.*)/){
+	    $dest = $1;
+	}
+	if (/^Depot:\s*(.*)/){
+	    $depot = $1;
+	}
+	if (/^Log:\s*(.*)/){
+	    $logdir = $1;
+	}
+	if (/^Subdirs:\s*(.*)/){
+	    $dirs = $1;
+	    $dirs =~ tr/\s//;
+	    @subdirs = split /,/, $dirs;
+	}	
+	
+    } close(CONFIG);
+
+
+# The following lines are there in case a client has a local copy of the 
+# configuration file. This file should be placed into the $dest directory,
+# and will override the file on the server.
+
+    if (-e "$dest/opt.config"){
+	open(CONFIG,"$dest/opt.config") || die "Could Not open $dest/opt.config";
+	while (<CONFIG>){
+	    if (/^Base:\s*(.*)/){
+		$dest = $1;
+	    }
+	    if (/^Depot:\s*(.*)/){
+		$depot = $1;
+	    }
+	    if (/^Log:\s*(.*)/){
+		$logdir = $1;
+	}
+	    if (/^Subdirs:\s*(.*)/){
+		$dirs = $1;
+		$dirs =~ tr/\s//;
+		@subdirs = split /,/, $dirs;
+	    }	
+	    
+	} close(CONFIG);
+    }
+}
+                                      
+######################################################################### 
+#
+#                                                         removelastslash
+#
+# input: a pathname to test
+#
+# this function will remove a trailing slash from the directory name 
+# input
+#
+######################################################################### 
+sub removelastslash{
+    
+    if ($_[0] =~ /\/$/) {
+	chop $_[0];
+    }
+}
+
+######################################################################### 
+#
+#                                                                dircheck
+#
+# input: a pathname to test
+#
+# this function will trigger an exit if the parameter is not
+# a directory.
+#
+#########################################################################
+sub dircheck{
+    local($dir)= @_;
+
+    if (!(-d $dir)){		
+	print "$dir is not a directory";
+	exit(0);
+    }           
+}
+#########################################################################
+#
+#                                                                procargs
+#
+# input: none
+#
+# uses:  @ARGV - global command line arguments array
+#
+# output: sets variables that can be changed on the command line
+#
+# NOTE: procargs for opt_setup loads %switches differently from
+#       the rest of the opt_depot scripts
+#
+#########################################################################
+sub procargs{
+
+    local($word, $localword);
+
+    while (@ARGV[0] =~ /-(.*)$/){
+	$word=$1;
+
+	if ($word =~ /^b/)
+	{
+	    # redefine destination directory
+
+	    if (length($word)==1) {
+		shift(@ARGV);  
+		$localword = @ARGV[0];
+	    } else {
+		$word =~ /^b(.*)$/;	
+		$localword = $1;
+	    }
+	    &dircheck($localword);
+	    $dest=$localword;    
+	}
+	elsif ($word =~ /^d/) 
+	{
+	    # redefine depot directory
+
+	    if (length($word)==1) {
+		shift(@ARGV);  
+		$localword = @ARGV[0];
+	    } else {
+		$word =~ /^d(.*)$/;
+		$localword = $1;
+	    }
+	    &dircheck($localword);
+	    $depot=$localword;
+	}
+	elsif ($word =~ /^l/) 
+	{
+	    # redefine log directory
+
+	    if (length($word)==1) {
+		shift(@ARGV);  
+		$localword = @ARGV[0];
+	    } else {
+		$word =~ /^l(.*)$/;
+		$localword = $1;
+	    }
+	    &dircheck($localword);
+	    $logdir=$localword;
+	}	
+	else {	
+	    
+	    # set switches
+	    
+	    if ($word =~ /(^[gvqmrz]+)$/){
+		@switches= split (//, $1);
+		for $switch (@switches){
+		    $switches{$switch}= "-$switch";
+		}
+	    }
+	    else{
+		print "\"-$word\" is an invalid command entry!\n"; 
+		print "Usage:  opt_setup [-vqgmr] [-d\"depot dir\"]\n";
+		print "        [-l\"log dir\"] [-b \"software base directory\"]\n";
+		exit (0);
+	    }
+	}	
+	shift(@ARGV);  
+    }
+    
+    if ($#ARGV>0){
+        # too many arguments
+
+	print "Too many arguments!\n";
+	print "Usage:  opt_setup [-vqgmr] [-d\"depot dir\"]\n";
+		print "        [-l\"log dir\"] [-b \"software base directory\"]\n";
+	exit (0); 
+    }
+    elsif (@ARGV[0]){
+        # redefine destination directory
+
+	&dircheck(@ARGV[0]);
+	if (@ARGV[0] =~ /^\/\S*/){	   
+	    $dest=@ARGV[0];
+	}
+	else{
+	    print "Absolute path name required!\n";
+	    exit(0);
+	}
+    }
+}
+
+################################################################################
+#                                                                              #
+#                                     MAIN                                     #
+#                                                                              #
+################################################################################
+
+# Get path to this script so that we don't have to depend on PATH
+# to find the component opt_depot scripts which we will call
+
+#$0 =~ /^(\S*)\//;
+#$localpath = $1."/";
+
+$localpath = "<<INSTALL-DIR>>/bin/";
+
+# READ CONFIGURATION FILE
+
+&get_vars;
+
+# READ COMMAND LINE
+
+&procargs();
+
+print "opt_setup $version\n\n" if ($switches{'v'});
+
+# LOCK CHECK
+
+&removelastslash($dest);
+
+$lock= "$dest/lock.optdepot";
+if (-e $lock) {
+    open (LOCK, $lock);
+    read (LOCK, $buf, 1024); 
+    print ("\"$buf\" may still be using depot.\n");
+    $mins_ago= (-M $lock) * 24 * 60;
+    printf ("The lock was created %3.1f minutes ago.\n", $mins_ago);
+    print ("Would you like to override?");
+    $cont=getc;
+    if (($cont ne "Y") && ($cont ne "y")){
+	exit(1);
+    }
+    unlink($lock);
+}    
+
+# MAIN PROCESS
+
+&removelastslash($depot);
+&removelastslash($site);
+&removelastslash($logdir);
+
+!system ("${localpath}opt_link $switches{'g'} $switches{'v'} $switches{'q'} -d$depot -l$logdir -b$dest ") || die "opt_link failed";
+!system ("${localpath}opt_clean $switches{'v'} $switches{'q'} $switches{'r'} $switches{'z'} -d$depot -l$logdir -b$dest") || die "opt_clean failed";
+!system ("${localpath}opt_depot $switches{'m'} $switches{'v'} $switches{'q'} $switches{'r'} $switches{'z'} -d$depot -l$logdir -b$dest") 
+        || die "opt_depot failed";

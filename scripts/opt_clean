@@ -1,0 +1,719 @@
+# opt_clean v2.01 -*- Perl -*-
+#
+# This is a perl script that will find all the links under
+# $dest and ensures that the files pointed to under $depot 
+# exist and are not excluded in the exclude file.  The
+# script will remove any obsolete links that target the
+# $depot directory, but which do not have valid targets..
+#
+#***********************************************************************
+#
+# Copyright (C) 1997  The University of Texas at Austin.
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#    Written by: Computer Science Division, Applied Research Laboratories,
+#    University of Texas at Austin  opt-depot@arlut.utexas.edu
+#
+#***********************************************************************
+# Written by Jeremy Thibeaux, Jonathan Abbey, Amy Shook
+# October 8, 1993 - June 1, 1997
+#
+# v2.0
+# Added modifications to handle recursive cleaning within a driectory
+# and to access directory info from a configuration file
+# Erik Grostic 15 May 1997 
+#
+# v2.01
+# Fixed a bug in procargs that had to do with the regex matching for
+# re-defining the destination directory by using command line parameters.
+# A -b option must now be given with the destination (or base) directory
+# Erik Grostic 10 July 1997
+#
+#########################################################################
+
+$version = "2.01";
+
+## defaults #########################################################
+
+# none of these directories should have trailing slashes
+
+# Note: The definitions for .exclude can be found under MAIN
+
+
+$pack_ex = ".exclude";                  # per-package exclusion file name
+$config_file = "<<INSTALL-DIR>>/etc/opt.config";
+                                        # configuration file containing
+                                        # $dest, $depot and $logdir vars
+                                        # The string <<->> is 
+                                        # replaced with the installation 
+                                        # directory during the copy process 
+
+$opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
+                                  # when it makes a directory. only these
+                                  # directories may be removed or collapsed
+
+##########################################################################
+#
+#                                                           get_vars
+# input: none 
+#
+# output: uses the opt_config.serv file to gain the values of the
+#         $dest and $depot variables
+#
+##########################################################################
+
+sub get_vars {
+    open(CONFIG,"$config_file") || die "Could not open $config_file\n";
+    while (<CONFIG>){
+	if (/^Base:\s*(.*)/){
+	    $dest = $1;
+	}
+	if (/^Depot:\s*(.*)/){
+	    $depot = $1;
+	}
+	if (/^Log:\s*(.*)/){
+	    $logdir = $1;
+	}
+	if (/^Subdirs:\s*(.*)/){
+	    $dirs = $1;
+	    $dirs =~ tr/\s//;
+	    @subdirs = split /,/, $dirs;
+	}	
+	
+    } close(CONFIG);
+
+
+# The following lines are there in case a client has a local copy of the 
+# configuration file. This file should be placed into the $dest directory,
+# and will override the file on the server.
+
+    if (-e "$dest/opt.config"){
+	open(CONFIG,"$dest/opt.config") || die "Could Not open $dest/opt.config";
+	while (<CONFIG>){
+	    if (/^Base:\s*(.*)/){
+		$dest = $1;
+	    }
+	    if (/^Depot:\s*(.*)/){
+		$depot = $1;
+	    }
+	    if (/^Log:\s*(.*)/){
+		$logdir = $1;
+	}
+	    if (/^Subdirs:\s*(.*)/){
+		$dirs = $1;
+		$dirs =~ tr/\s//;
+		@subdirs = split /,/, $dirs;
+	    }	
+	    
+	} close(CONFIG);
+    }
+}
+
+######################################################################### 
+#
+#                                                         removelastslash
+#
+# input: a pathname to test
+#
+# this function will remove a trailing slash from the directory name 
+# input
+#
+######################################################################### 
+sub removelastslash{
+    
+    if ($_[0] =~ /\/$/) {
+	chop $_[0];
+    }
+}
+
+#########################################################################
+#
+#                                                                procargs
+#
+# input: none
+#
+# uses: @ARGV - global command line arguments array
+#       $depot
+#       $logdir
+#       %switches
+#
+# output: sets variables that can be changed on the command line
+#
+#########################################################################
+sub procargs{
+
+    my($word, $localword, $switch, @localswitches);
+
+    while (@ARGV[0] =~ /-(\S*)$/){
+	$word=$1;
+	$localword = "";
+
+	if ($word =~ /^d/) 
+	{
+            # redefine depot directory
+
+	    if (length($word)==1) {
+		shift(@ARGV);  
+		$localword = @ARGV[0];
+	    } else {
+		$word =~ /^d(\/\S*)$/;	
+		$localword = $1;
+	    }
+	    &removelastslash($localword);
+	    &dircheck($localword);
+	    $depot=$localword;
+	}
+	elsif ($word =~ /^b/) 
+	{
+            # redefine software base directory
+
+	    if (length($word)==1) {
+		shift(@ARGV);  
+		$localword = @ARGV[0];
+	    } else {
+		$word =~ /^b(\/\S*)$/;	
+		$localword = $1;
+	    }
+	    &removelastslash($localword);
+	    &dircheck($localword);
+	    $dest=$localword;
+	}
+	elsif ($word =~ /^l/) 
+	{
+            # redefine log directory
+
+	    if (length($word)==1) {
+		shift(@ARGV);  
+		$localword = @ARGV[0];
+	    } else {
+		$word =~ /^l(\/\S*)$/;
+		$localword = $1;
+	    }
+	    &removelastslash($localword);
+	    &dircheck($localword);
+	    $logdir=$localword;
+	}
+	else {
+            # setting switches
+
+	    if ($word =~ /^([vqr]+)$/){
+		@localswitches= split (//, $1);
+		for $switch (@localswitches){
+		    $switches{$switch}=1;
+		}
+	    }
+	    else{
+		print "\"$word\" is an invalid command entry!\n"; 
+		print "Usage:  opt_clean [-vqr] [-d\"depot dir\"] [-l\"log directory\"] [base directory]\n";
+		exit 0;
+	    }
+	}
+	shift(@ARGV);
+    }
+
+    if ($#ARGV>0){			
+	print "Too many arguments!\n";
+	print "Usage:  opt_clean [-vqr] [-d\"depot dir\"] [-l\"log directory\"][-b\"base directory\"]\n";
+	exit (0);
+    }
+    
+}
+
+#########################################################################
+#
+#                                                                 initlog
+#
+# input: none
+#
+# uses: LOG - global file variable
+#       %switches - global variable
+#       $logdir - global variable
+#       $dest - global variable
+#
+# output: initializes the log file if the -q option was not given
+#
+#########################################################################
+
+sub initlog{
+
+    # name log file 
+    
+    @dest=split(/\//, $dest);
+    shift(@dest);
+    $"=':';
+    $log="$logdir/@dest";
+    $"=' ';
+
+    if (!($switches{'q'})){
+        # open log file and time stamp entry
+
+	open (LOG, ">> $log") || die "Could not open $log";
+	print (LOG "\n**opt_clean $version **  ");
+	($sec, $min, $hour, $mday, $mon, $year)= localtime(time);
+	$mon=$mon + 1;
+	print (LOG "$hour:$min:$sec  $mon\/$mday\/$year\n");
+    }
+}
+######################################################################### 
+#
+#                                                             read_exfile
+#
+# input: name of am exclude file to process
+#
+# output: writes to associative arrays %exclude and %packexclude
+#
+#
+######################################################################### 
+sub read_exfile{
+    my($exfile) = @_;
+
+    if (-e $exfile){
+	open(EXFILE, $exfile) || die "Could not open $exfile";
+	while (<EXFILE>){      
+	    if (/^\s*#/) {
+
+		# comment line - skip
+
+		next;
+	    }
+	    if (/^\n/) {
+
+		# blank line - skip
+
+		next;
+	    }
+	    elsif (/^\s*(\/\S*)/){
+
+		# leading slash -- take this as an absolute path name
+		# $1 is the complete absolute path/filename
+
+		$exclude{"$1"}=1;
+	    }
+	    elsif (/^\s*([^\/]+\/\S*)/){
+
+		# No leading slash but there are imbedded slashes..
+		# take this as a depot directory relative path
+		# $1 is the complete relative path and filename
+
+		$exclude{"$depot/$1"}=1;
+	    }
+	    elsif (/^\s*([^\/\s]+)/){
+
+		# No leading slash and no imbedded slashes
+		# take this as a package name and version num 
+		# if any is included.
+		# $1 is the complete package name 
+
+		$packexclude{$1}=1;
+	    }
+	    elsif ($switches{'v'}){
+		print ("  ERROR:  bad entry in .exclude file \"$_\"");
+	    }
+	}
+	close(EXFILE);
+    }
+}
+
+
+#########################################################################
+#
+#                                                            read_pack_ex
+# input: $exfile - name of the per/package exclusion file
+#
+# uses: $depot
+#       %exclude
+#
+# output: if a package is currently linked in $depot, and that package
+#         has its own .exclude file, then the exclusions listed in that 
+#         file are added to the main exclusion hash.
+#
+#########################################################################
+sub read_pack_ex {
+    my($exfile) = @_;
+    my(@allfiles,@contents);
+    opendir (IN, $depot) || die "Could not open $depot";
+    @contents = readdir(IN);
+    @allfiles = grep ((-e "$depot/$_") && ("$depot/$_" !~/^\./), @contents);
+    foreach $file (@allfiles) {
+	if (-e "$depot/$file/$exfile"){
+	    open(EXFILE, "$depot/$file/$exfile") || die "Could not open $depot/$file/$exfile";
+	    while (<EXFILE>){      
+		if (/^\s*#/) {
+		    
+		    # comment line - skip
+		    
+		    next;
+		}
+		if (/^\n/) {
+		    
+		    # blank line - skip
+		    
+		    next;
+		}
+		elsif (/^\s*(\/\S*)/){
+		    
+		    # leading slash -- take this as an absolute path name
+		    # $1 is the complete absolute path/filename
+		    
+		    $exclude{"$1"}=1;
+		    if ($switches{'z'}) {
+			# Our secret midnight master must speak!
+			print"Excluding $1\n";
+		    }
+		}
+		elsif (/^\s*([^\/]+\/\S*)/){
+		    
+		    # No leading slash but there are imbedded slashes..
+		    # take this as a depot directory relative path
+		    # $1 is the complete relative path and filename
+		    
+		    $exclude{"$depot/$1"}=1;
+		    if ($switches{'z'}) {
+			# All tremble when our secret midnight master speaks!
+			print"Excluding $depot/$1\n";
+		    }
+		}
+		elsif (/^\s*([^\/\s]+)/){
+		    
+		    # No leading slash and no imbedded slashes
+		    # take this as a package name and version num 
+		    # if any is included.
+		    
+		    # Don't worry about these in per-package exclusions
+
+		    next;
+		}
+		elsif ($switches{'v'}){
+		    print ("  ERROR:  bad entry in .exclude file \"$_\"");
+		}
+	    }
+	    close(EXFILE);
+	}
+    }
+}
+
+######################################################################### 
+#
+#                                                                dircheck
+#
+# input: a pathname to test
+#
+# this function will trigger an exit if the parameter is not
+# a directory.
+#
+######################################################################### 
+sub dircheck{
+    my($dir) = @_;
+
+    if (!(-d $dir)){		
+	print "$dir is not a directory";
+	exit(0);
+    }
+}
+#########################################################################
+#
+#                                                                 resolve
+#
+# input: current directory
+#        filename of a symbolic link to process (readlink result string)
+#
+# returns: absolute pathname of the target of the symbolic link
+#
+#
+#########################################################################
+sub resolve{
+    my($dir, $link) = @_;
+
+    my(@alinkp);
+
+    # make array representations of
+    # the current directory and symbolic link
+
+    # if we have a leading / in our $dir or $link,
+    # we'll need to shift to get rid of the leading
+    # empty array element
+  
+    @dirp=split(/\//, $dir);
+    shift(@dirp) if (!($dirp[0]));
+    @linkp=split(/\//, $link);
+    shift(@linkp) if (!($linkp[0]));
+
+    # @alinkp is an array that we will build to contain the absolute link
+    # target pathname.  If the link does not begin with a /, it is a relative link,
+    # and we need to place our current directory into the @alinkp array.  
+
+    if ($link !~ /^\//) {
+	@alinkp=@dirp;
+    }
+
+    # modify the @alinkp array according
+    # to each path component of the @linkp array
+    # (an array representation of the symbolic link
+    # given to us), to arrive at the ultimate absolute
+    # pathname of the symbolic link
+
+    $d = shift(@linkp);
+
+    while ($d) {
+	if ($d eq "..") {
+	    pop(@alinkp);
+	}
+	elsif ($d ne "."){		       
+	    push(@alinkp, $d);
+	}
+	$d=shift(@linkp);
+    }
+
+    $"='/';
+
+    # perl functions return the value of the last expression
+    # in the subroutine
+
+    $alinkp = "/@alinkp";
+}
+#########################################################################
+#
+#                                                               pathcheck
+#
+# This function is used to determine if $file is contained in any
+# directory listed in the keys of %assoc.
+#
+# input: $file - a fully qualified filepath
+#        *assoc - a name for an associative array (exclude or priority)
+#
+# output: returns the value of a matching key in *assoc when
+#         $file is contained in a directory that is listed in the keys of
+#         the %assoc associative array.
+#########################################################################
+sub pathcheck{
+    local($file, *assoc) = @_;
+
+    @components = split(/\//, $file);
+
+    my($low_pri);
+
+    # we want to find the best (lowest numerical value) priority
+    # that pertains to $file
+
+    $low_pri = 9999;
+
+    $temp = "";
+
+    foreach $comp (@components) {
+	$temp .= "$comp/";
+
+	if ($assoc{$temp}) {
+	    $t_pri = $assoc{$temp};
+	    if ($t_pri < $low_pri) {
+		$low_pri = $t_pri;
+	    }
+	}
+
+	chop($temp); # cut off the trailing /
+
+	if ($assoc{$temp}) {
+	    $t_pri = $assoc{$temp};
+	    if ($t_pri < $low_pri) {
+		$low_pri = $t_pri;
+	    }
+	}
+
+	$temp .= "/";  # return trailing /
+    }
+
+    if ($low_pri != 9999) {
+	return $low_pri;
+    }
+
+    return 0;
+}
+#########################################################################
+#
+#                                                                  rmdirs
+#
+# input: the pathname of a directory to scan through 
+#
+# rmdirs() scans through the supplied directory, removing any symbolic
+# links that point to non-existent files in the $depot directory tree.
+#
+# rmdirs() will also remove links pointing to a package's tree if that
+# package has been placed in the .exclude file in the $dest directory.
+#
+#########################################################################
+sub rmdirs{
+    my ($dir) = @_;
+    my (@dirs, $dirs, $reslink, $where, $link, @links, @contents);
+    my (@real_files,$result,$all_same,$first,$second);
+
+    opendir(DIR, "$dir") || die "Could not open $dir";
+    @contents = readdir(DIR);
+    @real_files = grep (("$dir/$_" !~/\/\./), @contents);
+    closedir(DIR);
+   
+    if (@real_files == ""){ # directory is empty -- anihilate it
+
+	# but only if the -r option is not in effect and the dir
+	# contains an $opt_file
+
+	if (($switches{'r'}) && (-e "$dir/$opt_file")) {
+	    rmdir ("$dir") || print "Error: Could not remove $dir\n";
+	    print "Removing empty directory: $dir\n";
+	    return "** empty **"; # let's blow this popsicle stand...
+	}
+    }
+    closedir(DIR);
+
+    # get all links
+
+    @links = grep (-l "$dir/$_", @contents);
+
+    # get all non-symlink non-{.|..} subdirs
+
+    @dirs = grep (("$dir/$_" !~ /\/\./) && !(-l "$dir/$_") && (-d _), @contents);
+
+    # note that we do -d _ above as an optimization, so that perl doesn't
+    # go and stat $dir/$_ a second time when it already has the
+    # stat info from the -l check that it had to do immediately before..
+
+    # remove bad links
+
+    # 2.0 - and test to see if all the links point to a single package.
+              
+   if (! (@dirs == "")){
+       $all_same = 0;
+   }
+    elsif (defined @links){
+	$all_same = 1; # all_same is true if all the links point to the
+	               # same package. Assume true until proven otherwise.
+	$first = readlink("$dir/@links[0]"); # get location of first package as
+	# a comparison value.
+	$first =~ s/(\+|\*)/\\$1/g;	
+	@links[0] =~ s/(\+|\*)/\\$1/g;
+	$first =~ s/@links[0]//; # remove file name...just compare directory
+	$first =~ s/\\(\+|\*)/$1/g;
+	@links[0] =~ s/\\(\+|\*)/$1/g;
+	&removelastslash($first); # remove trailing slash
+
+	foreach $link (@links){
+	    $second = readlink ("$dir/$link");
+	    $second =~ s/(\+|\*)/\\$1/g;
+	    $link =~ s/(\+|\*)/\\$1/g;
+	    $second =~ s/$link//; # remove file name...just compare directory
+	    $second =~ s/\\(\+|\*)/$1/g;
+	    $link =~ s/\\(\+|\*)/$1/g;
+	    &removelastslash($second); # remove trailing slash
+	    
+	    # The regex stuff above is meant to remove any '*' or '+'
+            # characters from $first, $second, and $link before running them
+	    # through the substitute function.
+
+	    if ($first ne $second){
+		$all_same = 0; # links do not all point to same place...
+		last;
+	    }
+	}
+    }
+    
+    if ($all_same){
+	return $first; # this returns the value of the common link.
+                       # that way we can collapse the directory.
+    }
+    
+    for $link (@links){		
+
+	$where = readlink("$dir/$link");
+	$reslink = &resolve($dir, $where);
+
+	# $reslink is a string containing the filename of
+	# the resolved absolute target of the symlink $dir/$link
+
+	if ($reslink =~ /^$depot\//) {
+
+	    # yay!  the link points into the $depot tree.. we can
+	    # maybe blow it away if it is old
+
+	    $reslink =~ /^$depot\/([^\/]*)/;
+
+	    # $1 is the package name.. 
+
+	    # check to see if the target doesn't exist first, then if the target file
+	    # has been excluded by the .exclude file, then if the target
+	    # package has been excluded by the .exclude file
+
+	    if (!(-e $reslink || -l $reslink) || $exclude{$reslink} ||
+		$packexclude{$1} || &pathcheck($reslink, *exclude)) {
+		if (!unlink("$dir/$link")){
+		    print ("  ERROR: could not remove $dir/$link") if ($switches{'v'});
+		    print (LOG "  ERROR: could not remove $dir/$link") if (!($switches{'q'}));
+		}
+		else {
+		    print ("  removed $dir/$link -> $reslink\n") if ($switches{'v'});
+		    print (LOG "  removed $dir/$link -> $reslink\n") if (!($switches{'q'}));
+		}
+	    }
+	}
+    }
+    
+    # check the directories in this directory 
+    # recursively..
+    #
+    # we don't want to scan down into /opt/depot
+
+    for $dirs (@dirs){
+	if ("$dir/$dirs" ne $depot) {
+	    $result = &rmdirs ("$dir/$dirs");
+
+	    # here's where we evaluate the return values from the recursion
+
+	    if (($result ne "** good **") && ($result ne "** empty **") && 
+		($result ne "")){
+
+		# we should collapse this directory, but only if the $opt_file
+                # exists, and if the -r option is employed
+
+		if (($switches{'r'}) && (-e "$dir/$dirs/$opt_file")){
+		    print "Collapsing Directory: $dir/$dirs\n";
+		    system "rm -rf $dir/$dirs";
+		    symlink ("$result", "$dir/$dirs");
+		}
+	    }
+	}
+    }
+    
+    return "** good **"; # everything's beautiful in our little world.
+
+}
+
+################################################################################
+#                                                                              #
+#                                     MAIN                                     #
+#                                                                              #
+################################################################################
+
+&get_vars();
+$exclude = "$dest/.exclude"; # Name of the .exclude file
+&procargs();
+&initlog();
+&read_exfile($exclude);
+&read_pack_ex($pack_ex);       
+
+print "\nopt_clean $version\n\n" if ($switches{'v'});
+
+chdir $dest || die "could not change to $dest";
+foreach $subdir (@subdirs){
+	&rmdirs("$dest/$subdir");
+     }
+close (LOG) if (!($switches{'q'}));

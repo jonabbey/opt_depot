@@ -1,0 +1,131 @@
+#!/opt/bin/perl5
+
+
+
+
+
+
+
+#
+# This script is designed to take a directory name and
+# fix all permissions below that point as appropriate for
+# publicly installed software.
+#
+# I.e., 
+#
+# if a file is readable by owner, it should be readable by all
+# if a file is executable by owner, it should be readable and executable by all
+#
+# Jonathan Abbey
+# 21 May 1996
+
+# Erik Grostic
+# Modified 2 June 1997
+
+use Getopt::Std; # Used to get command line arguments
+
+getopt('og'); # the -o option changes the ownership variable, whereas
+              # -g changes the name used fo the group.
+
+
+if (!defined $opt_o){
+    $owner = "root";
+} else {
+    $owner = $opt_o;
+}
+
+if (!defined $opt_g){
+    $group = "other";
+} else {
+    $group = $opt_g;
+}
+
+$uid = (getpwnam($owner))[2];
+$gid = (getgrnam($group))[2];
+
+if ($#ARGV >= 0) {
+    $directory = $ARGV[0];
+} else {
+    $directory = ".";
+}
+
+&fixdir($directory, 1);
+exit;
+
+#########################################################################
+#
+#                                                                  fixdir
+# input: directory name, toplevel flag
+#
+# output: makes sure that the directory and all subordinate directories
+#         have permissions set appropriately
+#
+#########################################################################
+sub fixdir {
+    local($dir, $toplevel) = @_;
+
+    local(@allfiles, $mode);
+
+    # print "entering $dir\n";
+
+    opendir(THISDIR, $dir);
+
+    @allfiles = readdir(THISDIR);
+
+    closedir(THISDIR);
+
+    for (@allfiles) {
+
+	# print "testing $dir/$_\n";
+
+	if (($_ eq "..") || (($toplevel == 0) && ($_ eq ".")) || (-l "$dir/$_")) {
+	     # print "skipping $_\n";
+	    next;
+	}
+
+	$filename = "$dir/$_";
+	$mode = (stat($filename))[2];
+
+	# _ is a special character, referring to the last stat target..
+	# this makes things go faster
+
+	if (-f _ && ((-u _) ||(-g _))) {
+	    # um, got a setuid program.
+	    # watch it.
+
+	    print "*** Warning: $filename is a setuid and/or setgid program. Not changing perms.\n"; 
+	    next;
+	}
+
+	if ($mode & 0100) {
+	    chmod ($mode | 0055,$filename);
+	    print "$filename\n";
+	} elsif ($mode & 0400) {
+	    chmod ($mode | 0044, $filename);
+	    print "$filename\n";
+	}
+
+	if (($> == 0) || ($< == 0)) {
+	    # we're root, chown to the proper ownership
+	    chown $uid, $gid, $filename;
+	}
+    }
+
+    for (@allfiles) {
+
+	if (($_ eq ".") || ($_ eq "..") || (-l "$dir/$_")) {
+	    # print "skipping $_\n";
+	    next;
+	}
+	
+	$filename = "$dir/$_";
+	
+	if (-d $filename) {
+	    # print "recursing on $filename\n";
+	    &fixdir($filename, 0);
+	}
+    }
+
+    # print "returning from $dir\n";
+}
+

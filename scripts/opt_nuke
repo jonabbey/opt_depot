@@ -1,0 +1,415 @@
+# opt_nuke v2.01
+#
+# This is a perl script that will find all the links under
+# $dest and removes them if they point to a file under
+# $depot regardless of whether or not that file exists or
+# not. It will not check under $depot for links, nor
+# remove the links in $depot pointing to the package archives.
+#
+#***********************************************************************
+#
+# Copyright (C) 1997  The University of Texas at Austin.
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#    Written by: Computer Science Division, Applied Research Laboratories,
+#    University of Texas at Austin  opt-depot@arlut.utexas.edu
+#
+#***********************************************************************
+# Written by Jeremy Thibeaux, Jonathan Abbey, Amy Shook
+# October 8, 1993 - June 1, 1997
+#
+# v2.0
+# Can now read from the opt,config file to get $dest, $depot and
+# $logdir paths
+# Erik Grostic 15 May 1997
+#
+# v2.01 
+# Fixed a bug in procargs that had to do with the regex matching for
+# re-defining the destination directory by using command line parameters.
+# A -b option must now be given with the destination (or base) directory
+# Erik Grostic 10 July 1997
+#
+#####################################################################
+
+$version = "2.01";
+
+## defaults #########################################################
+
+# none of these should have trailing slashes
+
+$config_file = "<<INSTALL-DIR>>/etc/opt.config"; 
+                                     # configuration file containing
+                                     # $dest, $depot and $logdir vars
+	                             # The string /opt/depot/opt_depot-2.0 is 
+                                     # replaced with the installation 
+                                     # directory during the copy process
+
+
+##########################################################################
+#
+#                                                           get_vars
+# input: none 
+#
+# output: uses the opt_config.serv file to gain the values of the
+#         $dest and $depot variables
+#
+##########################################################################
+
+sub get_vars {
+    open(CONFIG,"$config_file") || die "Could not open $config_file\n";
+    while (<CONFIG>){
+	if (/^Base:\s*(.*)/){
+	    $dest = $1;
+	}
+	if (/^Depot:\s*(.*)/){
+	    $depot = $1;
+	}
+	if (/^Log:\s*(.*)/){
+	    $logdir = $1;
+	}
+	if (/^Subdirs:\s*(.*)/){
+	    $dirs = $1;
+	    $dirs =~ tr/\s//;
+	    @subdirs = split /,/, $dirs;
+	}	
+	
+    } close(CONFIG);
+
+
+# The following lines are there in case a client has a local copy of the 
+# configuration file. This file should be placed into the $dest directory,
+# and will override the file on the server.
+
+    if (-e "$dest/opt.config"){
+	open(CONFIG,"$dest/opt.config") || die "Could Not open $dest/opt.config";
+	while (<CONFIG>){
+	    if (/^Base:\s*(.*)/){
+		$dest = $1;
+	    }
+	    if (/^Depot:\s*(.*)/){
+		$depot = $1;
+	    }
+	    if (/^Log:\s*(.*)/){
+		$logdir = $1;
+	}
+	    if (/^Subdirs:\s*(.*)/){
+		$dirs = $1;
+		$dirs =~ tr/\s//;
+		@subdirs = split /,/, $dirs;
+	    }	
+	    
+	} close(CONFIG);
+    }
+}
+
+######################################################################### 
+#
+#                                                         removelastslash
+#
+# input: a pathname to test
+#
+# this function will remove a trailing slash from the directory name 
+# input
+#
+######################################################################### 
+sub removelastslash{
+    
+    if ($_[0] =~ /\/$/) {
+	chop $_[0];
+    }
+}
+
+######################################################################### 
+#
+#                                                                dircheck
+#
+# input: a pathname to test
+#
+# this function will trigger an exit if the parameter is not
+# a directory.
+#
+######################################################################### 
+sub dircheck{
+    local($dir)= @_;
+
+    if (!(-d $dir)){		
+	print "$dir is not a directory";
+	exit(0);
+    }
+}
+#########################################################################
+#
+#                                                                procargs
+#
+# input: none
+#
+# uses: @ARGV - global command line arguments array
+#
+# output: sets variables that can be changed on the command line
+#
+#########################################################################
+sub procargs {
+
+    local($word, $localword);
+    
+    while (@ARGV[0] =~ /-(.*)$/) {
+	$word=$1;
+
+	if ($word =~ /^d/) 
+	{
+	    # redefine depot directory
+
+	    if (length($word)==1) {
+		shift(@ARGV);  
+		$localword = @ARGV[0];
+	    } else {
+		$word =~ /^d(.*)/;
+		$localword = $1;
+	    }
+	    &removelastslash($localword);
+	    &dircheck($localword);
+	    $depot=$localword;
+	}
+	elsif ($word =~ /^b/) 
+	{
+	    # redefine software base directory
+
+	    if (length($word)==1) {
+		shift(@ARGV);  
+		$localword = @ARGV[0];
+	    } else {
+		$word =~ /^b(.*)/;
+		$localword = $1;
+	    }
+	    &removelastslash($localword);
+	    &dircheck($localword);
+	    $dest=$localword;
+	}
+	elsif ($word =~ /^l/) 
+	{
+	    # redefine log directory
+
+	    if (length($word)==1) {
+		shift(@ARGV);  
+		$localword = @ARGV[0];
+	    } else {
+		$word =~ /^l(.*)/;
+		$localword = $1;
+	    }
+	    &removelastslash($localword);
+	    &dircheck($localword);
+	    $logdir=$localword;
+	}
+	else {
+	    # setting switches
+
+	    if ($word =~ /(^[vq]+)$/){
+		@switches= split (//, $1);
+		for $switch (@switches){
+		    $switches{$switch}=1;
+		}
+	    }
+	    else{
+		print "\"$word\" is an invalid command entry!\n"; 
+		print "Usage:  opt_nuke [-vq] [-d\"depot dir\"] [-l\"log directory\"] [base directory]\n";
+		exit 0;
+	    }
+	}
+
+	shift(@ARGV);
+    }
+    
+    if ($#ARGV>0){
+        # too many arguments
+
+	print "Too many arguments!\n";
+	print "Usage:  opt_nuke [-vq] [-d\"depot dir\"] [-l\"log directory\"] [base directory]\n";
+	exit (0);
+    }   
+}
+
+#########################################################################
+#
+#                                                                 initlog
+#
+# input: none
+#
+# uses: LOG - global file variable
+#       %switches - global variable
+#       $logdir - global variable
+#       $dest - global variable
+#
+# output: initializes the log file if the -q option was not given
+#
+#########################################################################
+sub initlog{
+
+    local($temp, @dest, $log);
+
+    # we create a log file name based on the location of $dest
+
+    @dest=split(/\//, $dest);
+    shift(@dest);
+    $temp = $";
+    $"=':';
+    $log="$logdir/@dest";
+    $"=$temp;
+
+    # open log file and time stamp entry
+
+    if (!($switches{'q'})){
+	open (LOG, ">> $log") || die "Could not open $log";
+	print (LOG "\n**opt_nuke $version **  ");
+	local($sec, $min, $hour, $mday, $mon, $year)= localtime(time);
+	$mon=$mon + 1;
+	print (LOG "$hour:$min:$sec  $mon/$mday/$year\n");
+    }
+}
+######################################################################### 
+#
+#                                                                is_under
+#
+# input: $dir - absolute directory where the link to be tested is
+#        $link - readlink result string for a symlink in $dir
+#        $test_dir - absolute directory that $dir/$link's target might
+#                    or might not be contained under
+#
+# output: 1 if the target of the symbolic link $link in absolute
+#         directory $dir is under the absolute directory $test_dir
+#
+######################################################################### 
+sub is_under{
+    local($dir, $link, $test_dir)= @_;
+
+    local(@alinkp,@dirp,@linkp,$d);
+
+    # make array representations of
+    # the current directory and symbolic link
+
+    # if we have a leading / in our $dir or $link,
+    # we'll need to shift to get rid of the leading
+    # empty array element
+    
+    @dirp=split(/\//, $dir);
+    shift(@dirp) if (!($dirp[0]));
+    @linkp=split(/\//, $link);
+    shift(@linkp) if (!($linkp[0]));
+
+    # @alinkp is an array that we will build to contain the absolute link
+    # target pathname.  If the link does not begin with a /, it is a relative link,
+    # and we need to place our current directory into the @alinkp array.  
+
+    if ($link !~ /^\//) {
+	@alinkp=@dirp;
+    }
+
+    # modify the @alinkp array according
+    # to each path component of the @linkp array
+    # (an array representation of the symbolic link
+    # given to us), to arrive at the ultimate absolute
+    # pathname of the symbolic link
+
+    $d=shift(@linkp);
+
+    while ($d) {
+	if ($d eq "..") {
+	    pop(@alinkp);
+	}
+	elsif ($d ne "."){		       
+	    push(@alinkp, $d);
+	}
+	$d=shift(@linkp);
+    }
+
+    $"='/';
+    $alinkp="/@alinkp";
+
+    # returns true if under $test_dir
+    if ($alinkp =~ /^$test_dir\//) {
+	return 1;
+    }
+    else{
+	return 0;
+    }
+}
+######################################################################### 
+#
+#                                                                  rmdirs
+#
+# input: $dir - directory to scan
+#
+# uses: $depot - global variable
+#
+# output: removes all symbolic links from under $dir that point
+#         to a location under $depot
+#
+# NOTE: rmdirs() is recursive
+#
+######################################################################### 
+sub rmdirs{
+    local($dir)= @_;
+
+    local(@dirs, $dirs, @links, $link, $where, @contents);
+
+    opendir(DIR, "$dir") || die "Could not open $dir";
+    @contents = readdir(DIR);
+    closedir(DIR);
+
+    @links = grep (-l "$dir/$_", @contents);
+    @dirs = grep (("$dir/$_" !~ /\/\./) && !(-l "$dir/$_") && (-d _), @contents);
+
+    # note that we do -d _ above as an optimization, so that perl doesn't
+    # go and stat $dir/$_ a second time when it already has the
+    # stat info from the -l check that it had to do immediately before..
+
+    # remove links
+    for $link (@links){		
+	$where=readlink("$dir/$link");
+
+	# &is_under() checks to see if the
+	# target of $dir/$link points to a location under $depot
+
+	if (&is_under($dir, $where, $depot)){
+	    unlink("$dir/$link");
+	    print ("  removed $dir/$link -> $where\n") if ($switches{'v'});
+	    print (LOG "  removed $dir/$link -> $where\n") if (!($switches{'q'}));
+	}
+    }
+    
+    # check the directories in this directory 
+    #
+    # we don't want to scan down into /opt/depot
+
+    for $dirs (@dirs){
+	if ("$dir/$dirs" ne $depot) {
+	   &rmdirs("$dir/$dirs");
+	}
+    }
+}
+################################################################################
+#                                                                              #
+#                                     MAIN                                     #
+#                                                                              #
+################################################################################
+
+&get_vars();
+&procargs();
+&initlog();
+
+print "\nopt_nuke $version\n\n" if ($switches{'v'});
+&rmdirs($dest); # go to base directory and remove the links
+
+close (LOG) if (!($switches{'q'}));

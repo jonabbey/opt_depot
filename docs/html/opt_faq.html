@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+   <TITLE> Opt_depot FAQ
+  </TITLE>
+   <META NAME="GENERATOR" CONTENT="Mozilla/3.01Gold (X11; I; SunOS 5.5.1 sun4d) [Netscape]">
+</HEAD>
+<BODY TEXT="#000000" BGCOLOR="#C0C0C0" LINK="#B22222" VLINK="#000080" ALINK="#FF0000" BACKGROUND="images/chalk.gif">
+
+<CENTER><TABLE BORDER=15 CELLSPACING=0 CELLPADDING=0 HEIGHT="15%" >
+<TR>
+<TD><FONT SIZE=+4>&nbsp;Opt_depot FAQ </FONT></TD>
+</TR>
+</TABLE></CENTER>
+
+<H5>
+<HR WIDTH="100%"><A HREF="#heck">What the heck is an opt_depot?</A></H5>
+
+<H5><A HREF="#pack">What is a software package?</A></H5>
+
+<H5><A HREF="#need">What does opt_depot need to run?</A></H5>
+
+<H5><A HREF="#access">How do I access earlier versions of an installed
+software package?</A></H5>
+
+<H5><A HREF="#customize">How can I customize my client?</A></H5>
+
+<H5><A HREF="#op_sys">How do I organize packages by operating system?</A></H5>
+
+<H5><A HREF="#-r">What does the -r option for opt_depot and opt_clean do?</A></H5>
+
+<P>
+<HR WIDTH="100%"></P>
+
+<H3><A NAME="heck"></A>What the heck is an opt_depot?</H3>
+
+<P>Opt_depot is a suite of perl scripts that several folks here at Applied
+Research Laboratroies have spent many grueling yet loving hours working
+on. The result is a tool that makes systems administration tasks involving
+software installation, de-installation, testing and maintence substantially
+easier to perform. Once the general workings of opt_depot are understood,
+the program is simple to run and it creates an enviornment that makes it's
+own workings invisable to the general user.</P>
+
+<P>The basic idea behind opt_depot has been implemented successfully in
+many other guises, most notably in <A HREF="http://andrew2.andrew.cmu.edu/ANDREWII/depot.html">Carnagie
+Mellon's Depot Software</A>. </P>
+
+<P>
+<HR WIDTH="100%"></P>
+
+<H3><A NAME="pack"></A>What is a software package?</H3>
+
+<P>Software is installed in the form of a <I>package</I>, meaning that
+the software's component files are placed into sub-directories based on
+their content -- executables are placed into the package's /bin sub-directory,
+library routines are placed in /lib, and man page information is placed
+in /man. There are also /include and /info sub-directories as well. So
+something like emacs-19.33 would consist of a main directory (e.g. emacs-19.33),
+under which its own /bin/lin/info/include/man sub-directories would be
+placed.</P>
+
+<P>To learn more about installing software for use with opt_depot, check
+out the <A HREF="installing_packages.html">software installation page</A>.</P>
+
+<P>
+<HR WIDTH="100%"></P>
+
+<H3><A NAME="need"></A>What does opt_depot need to run?</H3>
+
+<P>Make sure that you have a version of perl 5.0 or above installed on
+your system. Opt_depot 2.0 takes advantage of many perl 5 features, and
+it won't be able to run with earlier versions of perl.</P>
+
+<P>
+<HR WIDTH="100%"></P>
+
+<H3><A NAME="access"></A>How do I access an earlier version of an installed
+software package?</H3>
+
+<P>When installing new software, packages should be compiled so that they
+expect to find their files under the <A HREF="http://www.arlut.utexas.edu/~butcher/docs/2.0glossary.html#depot">depot</A>
+directory (ie &quot;/usr/local&quot;, &quot;/opt/depot&quot;, etc). That
+means that if a new version excludes an older one (by listing the old version
+in a <B><I>.exclude</I></B> file), then the old version will not be linked
+into the depot directory by <I>opt_link </I>and subsequently won't be able
+to run properly.</P>
+
+<P>So if somone using the network is really infatuated with emacs-19.30,
+and doesn't like the newer, fancier versions. There is a way to allow this
+early version to co-exist with other versions in the depot directory, without
+being designated as the default that is invoked when joe-average user types
+in &quot;<TT>emacs</TT>&quot;. </P>
+
+<P>The trick here is to allow the older vdersion to be linked into the
+depot directory, but to exclude all the links to /bin/lib/info/include/man
+that would normally be built. So if you wanted to have emacs-19.30 able
+to be accessed through depot, but didn't want it to be the version that
+everyone uses by default, add the following lines to the <B><I>.exclude
+</I></B>file:</P>
+
+<PRE>
+emacs-19.30/bin
+emacs-19.30/lib
+emacs-19.30/man
+emacs-19.30/info
+emacs-19.30/include
+
+</PRE>
+
+<P>That way, a program like emacs-19.30 can be run by the user who doesn't
+want to change with the times.</P>
+
+<H3>
+<HR WIDTH="100%"></H3>
+
+<H3><A NAME="customize"></A>How can I customize my client?</H3>
+
+<P>If opt_depot is installed on the network server, then opt_depot's default
+behavior is to use the 'sites' and configuration files located in the etc/
+directory of the opt_depot package itself (i.e. files located on the server).
+But if a certain client wishes to adopt different variables for the directory
+names, or add local package archives to the sites file, then copies of
+the sites and configuration files must be made <I>to the Software Base
+directory that is listed in the servrer's configuration file </I>These
+local copies will override the server's copies.</P>
+
+<P>As an example, suppose that the Software Base directory was listed as
+<I>/opt</I> in the <I>server's </I>configuration file. When the opt_depot
+scripts are run on the client, they will check to see if a file called
+<I>/opt/opt.config </I>exists (additionally, opt_link will look for <I>/opt/sites</I>).
+If<I> /opt/opt.config </I>was there, then variables specified in this local
+copy would be the ones that the opt_depot scripts use at runtime.</P>
+
+<P>
+<HR WIDTH="100%"></P>
+
+<H3><A NAME="op_sys"></A>How do I organize packages by operating system?</H3>
+
+<P>A good way to organize software is by creating sub-directories under
+/bin, /lib et al. for each operating system. For example, there might be
+<I>/bin/winNT_bin </I>and /<I>bin/SunOS5.5_bin </I>under the /bin directory
+of the software base. The advantage to doing this is that you insure every
+package that is found under a given operating system sub-directory is compiled
+to run on that particular operating system, and all the different flavors
+of a pakcges (for each seperate operating system) are still located under
+a single package heading.</P>
+
+<P>
+<HR WIDTH="100%"></P>
+
+<H3><A NAME="-r"></A>What does the -r option for opt_depot and opt_clean
+do?</H3>
+
+<P>The -r command line option that is used with opt_depot and opt_clean
+enables a feature known as recursive directory unification. If file conflicts
+occur during the linking process, opt_depot will check to see if it is
+worthwhile to make sub-directories under the software base directory, so
+that instead of having a single link to one package this subdirectory can
+contain links to files in both packages.</P>
+
+<P>Opt_clean has also been modified so that when -r is used, it will remove
+empty subdirectories under the software base that have been created by
+opt_depot and are now empty, and will remove those directories that contain
+links to a single package and replace it with a single symbolic link to
+that package.</P>
+
+<P>The main reason we included this feature was to unify the 'include'
+directories of packages like X11R5 and X11R6. But during testing we found
+that some directories were created that we really didn't want, and some
+directories were removed by opt_clean that needed to remain in place (even
+though they were empty at the time).</P>
+
+<P><I>To deal with these problems, two steps were taken</I>:</P>
+
+<P>First, opt_depot explicitly states which directories are candidates
+for unification through the use of an array called path_list. If the list
+contained only &quot;include/&quot;, then only subdirectories of &quot;include/&quot;
+will be able to be unified. The path_list variable is listed under the
+&quot;defaults&quot; section of the opt_depot source code.</P>
+
+<P>Second, any time opt_depot creates a unifying subdirectory, it leaves
+a file behind to indicate that the directory was created by opt_depot and
+not by some other party. Opt_clean will only remove directories that contain
+this file, and will leave any other directories in place even if they contain
+no files.</P>
+
+<P>
+<HR WIDTH="100%"><BR>
+Back to the <A HREF="opt_index.html">opt_depot 2.0 </A>page</P>
+
+</BODY>
+</HTML>
