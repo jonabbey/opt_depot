@@ -45,8 +45,8 @@
 # Jonathan Abbey 17 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.5 $
-# Last Mod Date: $Date: 2003/09/17 06:35:31 $
+# Version: $Revision: 1.6 $
+# Last Mod Date: $Date: 2003/09/17 21:47:29 $
 #
 ###############################################################################
 
@@ -170,4 +170,5 @@ done
 PERLLOC="$perl_loc"
 export PERLLOC
 
-$perl_loc scripts/test_opt
+base_loc=`dirname $0`
+$perl_loc "$base_loc/scripts/test_opt"
