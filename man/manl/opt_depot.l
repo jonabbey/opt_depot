@@ -35,13 +35,13 @@
 .\" University of Texas at Austin  opt-depot@arlut.utexas.edu
 .\"
 .\" Release: $Name:  $
-.\" Version: $Revision: 1.2 $
-.\" Last Mod Date: $Date: 2003/08/07 23:34:54 $
+.\" Version: $Revision: 1.3 $
+.\" Last Mod Date: $Date: 2003/08/09 01:16:22 $
 .TH OPT_DEPOT l "7 August 2003" "ARL:UT/CSD"
 .SH NAME
 opt_depot 3.0 \- creates a directory structure with links to packages under a "depot" directory
 .SH SYNOPSIS
-\fBopt_depot\fR [\fB-svnqmrR\fR] [\fB-f\f(BI config file\fR] [\fB-d\f(BI directory\fR] [\fB-l\f(BI directory\fR] [\fB-b\f(BI directory\fR]
+\fBopt_depot\fR [\fB-svnqmR\fR] [\fB-f\f(BI config file\fR] [\fB-d\f(BI directory\fR] [\fB-l\f(BI path\fR] [\fB-b\f(BI directory\fR]
 .SH DESCRIPTION
 \fBopt_depot\fR manages the creation of a symbolic link farm under a
 targeted base directory.  The base directory (\fI/opt\fR in our
@@ -84,20 +84,17 @@ If any man page links are created, the catman program will be run to
 update the system's manpage index.  The command to run catman is
 defined inside the opt_depot script and may be changed there.
 .TP 
-\fB-r\fR enable recursion.
-When \fB-r\fR is set, subdirectories listed in the \fIopt.config\fR
-configuration file's \fIRecurse:\fR directive will be recursively
-unified by \fBopt_depot\fR in the event of common subdirectories.
-.TP
 \fB-R\fR enable full recursion.
 When \fB-R\fR is set, \fBopt_depot\fR will perform recursive
-unification of package subdirectories whenever possible.
+unification of package subdirectories whenever possible.  Otherwise, \fBopt_depot\fR will
+perform recursive unification of whatever subdirectories are specified in the \fIopt.config\fR
+configuration file.
 .TP
 \fB-f\f(BI config file\fR sets the location of the "\fIopt.config\fR" configuration file
 .TP
-\fB-d\f(BI directory\fR sets the "depot" directory (i.e. the directory to be searched)
+\fB-d\f(BI directory\fR sets the "depot" directory (i.e. the directory to be searched for packages)
 .TP
-\fB-l\f(BI directory\fR set the location of the log directory
+\fB-l\f(BI directory\fR set the location of the log directory/file
 .TP
 \fB-b\f(BI directory\fR sets the base directory for \fBopt_depot\fR
 .SH CONFIGURATION FILE
@@ -105,9 +102,8 @@ unification of package subdirectories whenever possible.
 certain configuration options that are not supported by
 \fBopt_depot\fR's command line arguments.  These include the list of
 package subdirectories (such as \fIbin\fR, \fIinclude\fR, and so on)
-to be linked by default, the list of subdirectories on which recursive
-directory unification should be performed if the \fB-r\fR parameter
-flag is used, and so on.
+to be linked by default, the list of subdirectories requiring recursive
+directory unification and so on.
 .P
 The \fIopt.config\fR file is looked for by the \fBopt_depot\fR script
 in \fIinstall-dir/etc/opt.config\fR.  Additional modifications to
@@ -116,7 +112,7 @@ file under the Base directory set with the \fB-b\fR flag.
 .P
 See the \fIopt.config\fR man page for more details.
 .SH LOCK FILE
-opt_depot employs a lock file (\fIlock.opt_depot\fR) to prevent
+\fBopt_depot\fR employs a lock file (\fIlock.opt_depot\fR) to prevent
 multiple runs on the same destination directory.  When a user runs
 \fBopt_depot\fR to link \fI/opt\fR to \fI/opt/depot\fR (when, \fI/opt\fR is
 the software base directory and \fI/opt/depot\fB is the depot directory) a
@@ -124,6 +120,10 @@ lock file is created in \fI/opt\fR and is removed when the run is completed.
 If the user cancels (hits control C) in the middle of the run or an
 error occurs during the run then the user should remember to remove
 the lock file from the software base directory.
+.P
+The \fB-s\fR command line flag inhibits locking by \fBopt_depot\fR, and is
+intended to allow \fBopt_setup\fR to handle locking across the several
+scripts that it runs.
 .P
 .SH \f(BI.priority\fR
 \fBopt_depot\fR uses two configuration files called \fI.priority\fR and
@@ -237,37 +237,29 @@ the logic above, \fI<dest>/include/perl\fR would point to one of the
 two \fIinclude/perl\fR subdirectories.  There would be no effective unification
 of the files contained under those two subdirectories.
 .P
-If the \fB-r\fR or \fB-R\fR command line flags are provided to \fBopt_depot\fR,
-\fBopt_depot\fR will perform a recursive directory unification process.  In
-our example, \fBopt_depot\fR would create a \fI<dest>/include/perl\fR directory,
-recurse down into it, and create symbolic links to lower level files or directories
-in the two source packages.  If a lower-level directory was also present in
-both packages' \fIinclude/perl\fR subdirectories, \fBopt_depot\fR would create
-yet another common subdirectory, and recurse down to link files from both
-subdirectory trees.
+If the \fB-R\fR command line flag is provided to \fBopt_depot\fR or if
+the \fIopt.config\fR file contains any directories specified by the
+\fIRecurse:\fR directive, \fBopt_depot\fR will perform a recursive
+directory unification process.  In our example, \fBopt_depot\fR would
+create a \fI<dest>/include/perl\fR directory, recurse down into it,
+and create symbolic links to lower level files or directories in the
+two source packages.  If a lower-level directory was also present in
+both packages' \fIinclude/perl\fR subdirectories, \fBopt_depot\fR
+would create yet another common subdirectory, and recurse down to link
+files from both subdirectory trees.
 .P
-The only difference between the \fB-r\fR and \fB-R\fR flags is that
-with the \fB-r\fR flag, \fBopt_depot\fR will only perform recursive
-unification on package directories listed in the \fIopt.config\fR
-file's \fIRecurse:\fR directive.  \fB-R\fR will cause \fBopt_depot\fR
-to always perform recursive unification whenever it sees an
-opportunity to do so.
-.P
-Regardless of \fB-r\fR versus \fB-R\fR, \fBopt_depot\fR will only ever
-attempt to perform recursive unification in cases where an existing
-link does not have priority over new files or directories to be
-linked.
+Note that \fBopt_depot\fR will only ever attempt to perform recursive
+unification in cases where an existing link does not have priority
+over new files or directories to be linked.
 .SH LOGGING
-By default, \fBopt_depot\fR will log the run in a file located in
-\fI/logs/opt_depot\fR, and, since the default destination is
-\fI/opt\fR, a file there called "opt" will contain most of the logs;
-however, for destination directories which have paths more than one
-level deep the corresponding log file name is derived from the
-absolute path name by replacing all but the first slash with a colon
-(e.g., \fI/tmp/test/opt\fR would be \fItmp:test:opt\fR).  Logging can
-be turned off using the \fB-q\fR (for quiet) switch.  The log
-directory can be changed using the \fB-l\fR "directory name" option.
+By default, \fBopt_depot\fR will log the run in the file specified in the
+\f(BILog:\fR directive specified in the \fIopt.config\fR file.  See
+the \fIopt.config\fR man page for more details on configuring the log
+file location.
+.P
+Logging can be turned off using the \fB-q\fR (for quiet) switch.  The log
+file location can be changed using the \fB-l\fR "path" option.
 .SH NOTE
 All directory names should be absolute path names
 .SH SEE ALSO
-opt_clean(l), opt_nuke(l), opt_setup(l), opt_link(l)
+opt_clean(l), opt_nuke(l), opt_setup(l), opt_link(l), opt.config(l)
