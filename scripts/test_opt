@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.28 $
-# Last Mod Date: $Date: 2003/09/20 08:04:56 $
+# Version: $Revision: 1.29 $
+# Last Mod Date: $Date: 2003/09/21 06:51:02 $
 #
 #####################################################################
 
@@ -73,12 +73,16 @@ $testsitesA =<< "ENDSITES1";
 ENDSITES1
 
 $testsitesB =<< "ENDSITES2";
-LOCAL $test_dir/sites/local
-LOCALB $test_dr/sites/localb
+LOCAL $test_root/sites/local
 ENDSITES2
 
+$testsitesC =<< "ENDSITES3";
+LOCAL $test_root/sites/local
+LOCALB $test_root/sites/localb
+ENDSITES3
+
 %siteA = (label => 'local',
-	  path => "$test_dir/sites/local",
+	  path => "$test_root/sites/local",
 	  contents => [
 		       {name     => 'packA-1.0',
 			files    => ['bin/hi',
@@ -106,7 +110,7 @@ ENDSITES2
 		      ]);
 
 %siteB = (label => 'localB',
-	  path => "$test_dir/sites/localB",
+	  path => "$test_root/sites/localB",
 	  contents => [
 		       {name     => 'packA-2.0',
 			files    => ['bin/hi',
@@ -367,37 +371,22 @@ ENDSITES2
 %test10 = (label  => 'Site volume test',
 	  root   => $test_dir,
 	  start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
-                     'depot/packA/bin/hi',
-		     'depot/packA/lib/perl5/spam/x.pl',
-		     'depot/packA/include/test.h',
-		     'depot/packB/bin/hi',
-		     'depot/packB/lib/perl5/spam/y.pl',
-		     'depot/packB/include/test.h',
-		     'depot/packC/lib/packC.so',
-                     'bin/hi->depot/packA/bin/hi',
-		     'bin/not_really->depot/packC/bin/not_really',
-                     'lib/perl5/', 'lib/perl5/.made_by_opt_depot',
-                     'lib/perl5/spam/', 'lib/perl5/spam/.made_by_opt_depot',
-                     'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
-                     'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
-                     'include/test.h->depot/packA/include/test.h'],
+		     'depot/'],
 	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
-		     'bin/hi->depot/packB/bin/hi',
-		     'lib/packC.so->depot/packC/lib/packC.so',
-		     'lib/perl5->depot/packB/lib/perl5/',
-		     'include/test.h->depot/packB/include/test.h'],
-	  endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+		     'depot/',
+		     "depot/packA-1.0->".$siteA->{'path'}."/packA-1.0",
+		     "depot/packC-1.0->".$siteA->{'path'}."/packC-1.0",
+		     "depot/packX-1.2->".$siteA->{'path'}."/packX-1.2"],
+	  endex  => ['^\.priority$', '^\.exclude$'],
 	  conf   => $testconfA,
-	  sites  => $testsitesA,
-          sitedefs => [\%siteA, \%siteB],
-	  action => 'opt_setup',
-	  exclude => 'packA',
-	  priority => 'packB',
+	  sites  => $testsitesB,
+          sitedefs => [\%siteA],
+	  action => 'opt_link',
 	  error_count => 0);
 
 @tests = (\%test0, \%test1, \%test2, \%test3,
 	  \%test4, \%test5, \%test6, \%test7,
-	  \%test8, \%test9);
+	  \%test8, \%test9, \%test10);
 
 #####################################################################
 
@@ -426,26 +415,30 @@ sub init_site {
     return 0;
   }
 
-  @site_ary = @$site_href->{'contents'};
+  @site_ary = @{$site_href->{'contents'}};
 
   foreach $pack (@site_ary) {
-    $path_root = $site_href->{'path'} . '/' . $pack->{'none'};
+    $path_root = $site_href->{'path'} . '/' . $pack->{'name'};
     create_dir($path_root);
 
-    @package_files = @$pack->{'files'};
+    @package_files = @{$pack->{'files'}};
 
     foreach $file (@package_files) {
       if ($file =~ /\/$/) {
 	create_dir($path_root . '/' . $file);
       } else {
-	touch($path_root . '/' . $file);
+	if (!create_dir(extractdir("$path_root/$file"))) {
+	  return 0;
+	}
+
+	touch("$path_root/$file");
       }
     }
 
     if (defined $pack->{'excludes'}) {
-      @excl_ary = @$pack->{'excludes'};
+      @excl_ary = @{$pack->{'excludes'}};
 
-      if (!open(OUT, "$path_root/.exclude")) {
+      if (!open(OUT, ">$path_root/.exclude")) {
 	print "Error, could not create .exclude file in $path_root\n";
 	return 0;
       }
@@ -486,10 +479,10 @@ sub setup_test {
   chdir($rootdir);
 
   if (defined $href->{'sitedefs'}) {
-    @site_ary = @$href->{'sitedefs'};
+    @site_ary = @{$href->{'sitedefs'}};
 
     foreach $site (@site_ary) {
-      init_sit($site);
+      init_site($site);
     }
   }
 
@@ -668,7 +661,6 @@ sub unexpected_check {
     }
 
     if (-l $element) {
-      $target = resolve(make_absolute($local_path), readlink($element));
       $target = resolve($test_href->{'root'} . "/" . $local_path, readlink($element));
 
       if (!defined $end_href->{$element}) {
