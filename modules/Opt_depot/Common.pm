@@ -32,14 +32,24 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.4 $
-# Last Mod Date: $Date: 2003/08/05 03:05:36 $
+# Version: $Revision: 1.5 $
+# Last Mod Date: $Date: 2003/08/07 02:28:25 $
 #
 #####################################################################
 
 package Opt_depot::Common;
 
+# pull in a couple of packages we'll use.. first a CSV parsing module
+
 use Text::ParseWords qw(quotewords);
+
+# and now a word wrapping module.  Let's set our word wrap limit at 70
+# characters per line while we're at it.
+
+use Text::Wrap qw($columns, &wrap);
+$columns = 70;
+
+# and get everything set up for export
 
 use vars qw($VERSION @ISA @EXPORT $PERL_SINGLE_QUOTE);
 $VERSION="3.0";
@@ -48,13 +58,15 @@ require 5.000;
 
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw($dest $depot $logdir %switches @subdirs @unify_list
+@EXPORT = qw($dest $depot $logdir $sitefile $alwaysrecurse %switches @subdirs @unify_list
 	     *LOG
-	     parsequoted
-	     init_log close_log logprint
-	     check_lock clear_lock
-	     dircheck extractdir killdir removelastslash resolve pathcheck
-	     read_prefs
+	     &askyn &askstring &printwrap
+	     &parsequoted
+	     &init_log &close_log &logprint
+	     &check_lock &clear_lock
+	     &create_dir &testmakedir &dircheck &extractdir &killdir
+	     &removelastslash &resolve &make_absolute &pathcheck
+	     &read_prefs
 	    );
 @EXPORT_OK = qw();
 
@@ -63,8 +75,78 @@ use Exporter;
 our $usage_string;
 our *CONFIG;
 our $log_init;
+our $logfile = "";
 our $lockset = 0;
 
+#########################################################################
+#
+#                                                                   askyn
+# input: $question - question to print to the user
+#        $default - optional, if "y" or "n", that value will
+#                   be provided if the user hits return to the question
+#
+# output: returns 1 on true, 0 on false
+#
+#
+#########################################################################
+sub askyn {
+  my($question, $default) = @_;
+  my($answer);
+
+  if ($default eq "") {
+    $default = "No";
+  }
+
+  $answer = askstring($question, $default);
+
+  if ($answer =~ /^y/i) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+#########################################################################
+#
+#                                                               askstring
+# input: $question - question to print to the user
+#        $default - optional, if not equal to "", that value will
+#                   be provided if the user hits return to the question
+#
+# output: returns 1 on true, 0 on false
+#
+#
+#########################################################################
+sub askstring {
+  my($question, $default) = @_;
+  my($answer);
+
+  chomp($question);
+  print wrap("","",("$question",));
+  print "\n[$default]> ";
+
+  $answer = <STDIN>;
+  chomp $answer;
+
+  if ($answer =~ /^$/) {
+    $answer = $default;
+  }
+
+  return $answer;
+}
+
+
+#########################################################################
+#
+#                                                               printwrap
+#
+# This subroutine prints any and all input strings in the argument
+# array in a word-wrapped form, followed by a newline.
+#
+#########################################################################
+sub printwrap {
+  print wrap("","",@_) . "\n";
+}
 
 ##########################################################################
 #
@@ -121,9 +203,13 @@ sub init_log {
 
   # name log file, with colons separating the path of the log target
 
-  @dest= split (/\//, $dest);
-  shift(@dest);
-  $log = "$logdir/" . join(':',@dest);
+  if ($logfile eq "") {
+    @dest= split (/\//, $dest);
+    shift(@dest);
+    $log = "$logdir/" . join(':',@dest);
+  } else {
+    $log = $logfile;
+  }
 
   # open log file and time stamp entry
 
@@ -140,6 +226,8 @@ sub init_log {
     ($sec, $min, $hour, $mday, $mon, $year)= localtime(time);
     $mon=$mon + 1;
     print (LOG "$hour:$min:$sec  $mon\/$mday\/$year\n");
+
+    $log_init = 1;
   }
 }
 
@@ -153,7 +241,10 @@ sub init_log {
 #
 #########################################################################
 sub close_log {
-  close (LOG) if (!($switches{'q'}));
+  if ($log_init) {
+    close(LOG);
+    $log_init = 0;
+  }
 }
 
 ##########################################################################
@@ -173,7 +264,7 @@ sub logprint {
     print $str;
   }
 
-  if (!($switches{'q'})) {
+  if ($log_init) {
     print LOG $str;
   }
 }
@@ -267,6 +358,60 @@ sub clear_lock {
 
 #########################################################################
 #
+#                                                              create_dir
+# input: a pathname
+#
+# output: makes sure the specified directory exists. If it doesn't
+#         then check_dirs makes it (along with any super-directories)
+#
+#
+#########################################################################
+sub create_dir {
+  my ($file) = @_;
+  my ($temp, @components);
+
+  @components = split(/\//, $file);
+
+  foreach $comp (@components) {
+    $temp .= "$comp";
+
+    if (! -d $temp && ($temp ne "")) {
+      mkdir($temp, 0777) || print "Could not make dir $temp\n";
+    }
+
+    $temp .= "/";  # add trailing /
+  }
+}
+
+#########################################################################
+#
+#                                                              testmakedir
+#
+# input: a pathname to test
+#
+# this directory will insure that the given path exists as a directory,
+# or it will die.  If the path doesn't already exist, the user will
+# be asked as to whether they want to create it.. if not, we die.
+#
+#########################################################################
+sub testmakedir {
+  my($dir)= @_;
+  my($ans);
+
+  if (-f $dir) {
+    die "Couldn't create a directory $dir.. a file by that name exists.";
+  }
+
+  if (!(-d $dir)) {
+    unless (askyn("$dir does not exist. Do you wish to create it? (y/n)")) {
+      die "Installation process aborted\n";
+    }
+    create_dir($dir);
+  }
+}
+
+#########################################################################
+#
 #                                                                dircheck
 #
 # input: a pathname to test
@@ -349,6 +494,8 @@ sub removelastslash {
   if ($_[0] =~ /\/$/) {
     chop $_[0];
   }
+
+  $_[0];
 }
 
 
@@ -490,6 +637,23 @@ sub resolve {
   return $alinkp;
 }
 
+
+#########################################################################
+#
+#                                                           make_absolute
+#
+# input: a pathname
+#
+# output: if the pathname does not begin with a leading slash, then
+#         the current working directory is pre-pended to the input dir
+#
+########################################################################
+sub make_absolute {
+  my($dir) = @_;
+
+  return resolve($ENV{'PWD'}, $dir);
+}
+
 ##########################################################################
 #
 #                                                               read_prefs
@@ -538,6 +702,8 @@ sub read_prefs ($$$\@) {
   # read the config file
 
   $logdir = undef;
+  $alwaysrecurse = undef;
+  $sitefile = undef;
 
   read_config($config_file);
 
@@ -567,6 +733,12 @@ sub read_prefs ($$$\@) {
 
   if ($cmd_logdir ne "") {
     $logdir = $cmd_logdir;
+
+    if (-d $logdir) {
+      $logfile = "";
+    } else {
+      $logfile = $temp;
+    }
   }
 
   read_switches($switchlist, @$ARGV_ref);
@@ -574,8 +746,18 @@ sub read_prefs ($$$\@) {
   # if we didn't find a Log: directive in the configuration file or
   # the command line, assert -q to turn off logging
 
-  if (!defined $logdir) {
-    $switches{'q'} = 1;
+  if (!defined $logdir || $logdir eq "") {
+    $switches{'q'} = '-q';
+  }
+
+  # If the Alwaysrecurse directive was set in the config file, mark
+  # total Recursion on with the -R flag.  Else, if we had a non-empty
+  # recursion list in our config file, set the -r flag on.
+
+  if (defined $alwaysrecurse && $alwaysrecurse =~ /^y/i) {
+    $switches{'R'} = '-R';
+  } elsif ($#unify_list >= 0) {
+    $switches{'r'} = '-r';
   }
 
   check_args($switchlist, @$ARGV_ref);
@@ -584,6 +766,10 @@ sub read_prefs ($$$\@) {
   dircheck($depot, "The specified depot directory");
 
   if (defined $logdir && $logdir ne "") {
+    if ($logfile ne "") {
+      $logdir = extractdir($logfile);
+    }
+
     removelastslash($logdir);
     dircheck($logdir, "The specified log directory");
   }
@@ -607,48 +793,128 @@ sub read_prefs ($$$\@) {
 sub read_config {
   my ($file, $switchlist) = @_;
 
+  my ($temp);
+
   open(CONFIG, "$config_file") || die "Could not open $config_file\n";
 
   while (<CONFIG>){
-    if (/^Base:\s*(.*)/) {
-      $dest = $1;
+    if (/^Base:\s*(.*)/i) {
+      $temp = $1;
 
-      if (($dest =~ /^\s*\"/) ||
-	  ($dest =~ /^\s*\'/)) {
-	$dest = parsequoted($dest, 1);
+      if (($temp =~ /^\s*\"/) ||
+	  ($temp =~ /^\s*\'/)) {
+	$temp = parsequoted($temp, 1);
+      } else {
+	$temp =~ s/#.*^//;	# cut off comments
+	$temp =~ s/\s+.*^//;	# use whitespace as the delimiter
+      }
+
+      if ($temp eq "") {
+	next;
+      } else {
+	$dest = $temp;
       }
     }
 
-    if (/^Depot:\s*(.*)/) {
-      $depot = $1;
+    if (/^Depot:\s*(.*)/i) {
+      $temp = $1;
 
-      if (($depot =~ /^\s*\"/) ||
-	  ($depot =~ /^\s*\'/)) {
-	$depot = parsequoted($depot, 1);
+      if (($temp =~ /^\s*\"/) ||
+	  ($temp =~ /^\s*\'/)) {
+	$temp = parsequoted($temp, 1);
+      } else {
+	$temp =~ s/#.*^//;	# cut off comments
+	$temp =~ s/\s+.*^//;	# use whitespace as the delimiter
+      }
+
+      if ($temp eq "") {
+	next;
+      } else {
+	$depot = $temp;
       }
     }
 
-    if (/^Log:\s*(.*)/) {
-      $logdir = $1;
+    if (/^Log:\s*(.*)/i) {
+      $temp = $1;
 
-      if (($logdir =~ /^\s*\"/) ||
-	  ($logdir =~ /^\s*\'/)) {
-	$logdir = parsequoted($logdir, 1);
+      if (($temp =~ /^\s*\"/) ||
+	  ($temp =~ /^\s*\'/)) {
+	$temp = parsequoted($temp, 1);
+      } else {
+	$temp =~ s/#.*^//;	# cut off comments
+	$temp =~ s/\s+.*^//;	# use whitespace as the delimiter
+      }
+
+      if ($temp eq "") {
+	next;
+      } else {
+	$logdir = $temp;
+
+	# if our logdir is a directory, clear logfile, else assume
+	# that we're actually being given a log file name
+
+	if (-d $logdir) {
+	  $logfile = "";
+	} else {
+	  $logfile = $temp;
+	}
       }
     }
 
-    if (/^Subdirs:\s*(.*)/) {
+    if (/^SiteFile:\s*(.*)/i) {
+      $temp = $1;
+
+      if (($temp =~ /^\s*\"/) ||
+	  ($temp =~ /^\s*\'/)) {
+	$temp = parsequoted($temp, 1);
+      } else {
+	$temp =~ s/#.*^//;	# cut off comments
+	$temp =~ s/\s+.*^//;	# use whitespace as the delimiter
+      }
+
+      if ($temp eq "") {
+	next;
+      } else {
+	$sitefile = $temp;
+      }
+    }
+
+    if (/^AlwaysRecurse:\s*(.*)/i) {
+      $temp = $1;
+
+      if (($temp =~ /^\s*\"/) ||
+	  ($temp =~ /^\s*\'/)) {
+	$temp = parsequoted($temp, 1);
+      } else {
+	$temp =~ s/#.*^//;	# cut off comments
+	$temp =~ s/\s+.*^//;	# use whitespace as the delimiter
+      }
+
+      if ($temp eq "") {
+	next;
+      } else {
+	$alwaysrecurse = $temp;
+      }
+    }
+
+    if (/^Subdirs:\s*(.*)/i) {
       $dirs = $1;
       $dirs =~ s/^\s+//;
       $dirs =~ s/\s+$//;
-      @subdirs = quotewords('\s+|,',0,$dirs); # from Text::ParseWords
+
+      if ($dirs ne "") {
+	@subdirs = quotewords('\s+|,',0,$dirs); # from Text::ParseWords
+      }
     }
 
-    if (/^Recurse:\s*(.*)/) {
+    if (/^Recurse:\s*(.*)/i) {
       $rdirs = $1;
       $rdirs =~ s/^\s+//;
       $rdirs =~ s/\s+$//;
-      @unify_list = quotewords('\s+|,',0,$rdirs); # from Text::ParseWords
+
+      if ($rdirs ne "") {
+	@unify_list = quotewords('\s+|,',0,$rdirs); # from Text::ParseWords
+      }
     }
   }
 
