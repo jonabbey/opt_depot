@@ -52,8 +52,8 @@
 # Jonathan Abbey 29 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.20 $
-# Last Mod Date: $Date: 2003/09/22 06:59:58 $
+# Version: $Revision: 1.21 $
+# Last Mod Date: $Date: 2003/10/13 08:33:57 $
 #
 #####################################################################
 
@@ -199,7 +199,7 @@ sub read_site_file {
 	$tmpstr = parsequoted($tmpstr,1); # process escapes
       }
 
-      removelastslash($tmpstr);
+      $tmpstr=removelastslash($tmpstr);
       push(@sites,$tmpstr);	# we add these in descending priority
       $sitedirs{$tmpstr} = $label;
       $priority{$label} = $i;

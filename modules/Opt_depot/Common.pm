@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.38 $
-# Last Mod Date: $Date: 2003/10/11 02:13:18 $
+# Version: $Revision: 1.39 $
+# Last Mod Date: $Date: 2003/10/13 08:32:45 $
 #
 #####################################################################
 
@@ -670,16 +670,18 @@ sub first_path_element {
 #
 # input: a pathname to test
 #
-# this function will remove trailing slashes from the directory name
+# This function will remove trailing slashes from the directory name
 # input, with the exception that if the pathname is '/', the single
 # slash will not be removed.
 #
-# The string passed in will be directly modified as well as returned.
+# This function no longer modifies its input parameter.. you need to
+# use the result returned by this function if you want the modified string
 #
 #########################################################################
 sub removelastslash {
-  $_[0] =~ s/([^\/])\/+$/$1/;
-  return $_[0];
+  my ($param) = @_;
+  $param =~ s/([^\/])\/+$/$1/;
+  return $param;
 }
 
 #########################################################################
@@ -816,7 +818,7 @@ sub subpathcheck ($\%) {
   # otherwise there's no point trying to imagine subcomponent
   # priorities
 
-  removelastslash($path);
+  $path = removelastslash($path);
 
   if (!-d $path) {
     logprint("Subpathcheck ASSERT ERROR: non-directory item $path submitted\n", 1);
@@ -904,7 +906,7 @@ sub totalpriority ($\%) {
 
   $pri1 = pathcheck($path, %{$assoc_ref});
 
-  removelastslash($path);
+  $path = removelastslash($path);
 
   if (!-d $path) {
     return $pri1;
@@ -1145,7 +1147,7 @@ sub read_prefs ($$$\@) {
 
   check_args($switchlist, @$ARGV_ref);
 
-  removelastslash($depot);
+  $depot = removelastslash($depot);
   dircheck($depot, "The specified depot directory");
 
   if (defined $logdir && $logdir ne "") {
@@ -1153,11 +1155,11 @@ sub read_prefs ($$$\@) {
       $logdir = extractdir($logfile);
     }
 
-    removelastslash($logdir);
+    $logdir = removelastslash($logdir);
     dircheck($logdir, "The specified log directory");
   }
 
-  removelastslash($dest);
+  $dest = removelastslash($dest);
   dircheck($dest, "The specified link target directory");
 }
 

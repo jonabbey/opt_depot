@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.35 $
-# Last Mod Date: $Date: 2003/09/30 01:48:56 $
+# Version: $Revision: 1.36 $
+# Last Mod Date: $Date: 2003/10/13 08:33:38 $
 #
 #####################################################################
 
@@ -394,7 +394,7 @@ sub add_archive {
   print"----> ";
   $path = <STDIN>;
   chop($path);
-  removelastslash($path);
+  $path=removelastslash($path);
 
   print"Please enter the LABEL which is to be associated with this archive\n";
   print"----> ";
@@ -558,7 +558,7 @@ sub create_config {
   $dest = askstring("What directory is to contain the link target directories (bin, include, etc.)?",
 		    "/opt");
 
-  removelastslash($dest);
+  $dest=removelastslash($dest);
   $dest = make_absolute($dest);
   testmakedir($dest, "Yes");
 
@@ -568,7 +568,7 @@ sub create_config {
   $depot = askstring("Where do you want the depot directory?",
 		     "$dest/depot");
 
-  removelastslash($depot);
+  $depot=removelastslash($depot);
   $depot = make_absolute($depot);
   testmakedir($depot, "Yes");
 
@@ -598,7 +598,7 @@ sub create_config {
     print "\n";
     $log = askstring("Where do you want the log file?", $defaultlog);
 
-    removelastslash($log);
+    $log=removelastslash($log);
     $log = make_absolute($log);
   } else {
     $log = undef;
