@@ -53,8 +53,8 @@
 # Jonathan Abbey 29 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.10 $
-# Last Mod Date: $Date: 2003/08/02 03:47:02 $
+# Version: $Revision: 1.11 $
+# Last Mod Date: $Date: 2003/08/02 04:26:09 $
 #
 #####################################################################
 
@@ -164,6 +164,12 @@ sub read_exfile {
 sub read_site_file {
   my ($sitefile) = @_;
   my ($label, $tmpstr);
+
+  # no site file?  okay, skip it
+
+  if (!-e $sitefile) {
+    return 0;
+  }
 
   # we're going to loop over the site file, reading label/path pairs.
   # we'll store this information in the %sitedirs and %priority
