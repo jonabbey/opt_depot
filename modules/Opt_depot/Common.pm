@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.5 $
-# Last Mod Date: $Date: 2003/08/07 02:28:25 $
+# Version: $Revision: 1.6 $
+# Last Mod Date: $Date: 2003/08/07 22:50:34 $
 #
 #####################################################################
 
@@ -61,7 +61,7 @@ use Exporter;
 @EXPORT = qw($dest $depot $logdir $sitefile $alwaysrecurse %switches @subdirs @unify_list
 	     *LOG
 	     &askyn &askstring &printwrap
-	     &parsequoted
+	     &parsequoted &safifystring
 	     &init_log &close_log &logprint
 	     &check_lock &clear_lock
 	     &create_dir &testmakedir &dircheck &extractdir &killdir
@@ -121,15 +121,22 @@ sub askstring {
   my($question, $default) = @_;
   my($answer);
 
-  chomp($question);
+  $question =~ s/\s+$//;	# cut off trailing whitespace
+
   print wrap("","",("$question",));
-  print "\n[$default]> ";
+  if (defined $default) {
+    print "\n[$default]> ";
+  } else {
+    print "\n> ";
+  }
 
   $answer = <STDIN>;
   chomp $answer;
 
   if ($answer =~ /^$/) {
-    $answer = $default;
+    if (defined $default) {
+      $answer = $default;
+    }
   }
 
   return $answer;
@@ -179,6 +186,43 @@ sub parsequoted {
   }
 
   return $quoted;
+}
+
+#########################################################################
+#
+#                                                            safifystring
+#
+# Safe-ify-String
+#
+# This subroutine takes an string input string, and if it contains any
+# white space, quotation marks, or backslashes, we generate a double-quote
+# delimited, escaped string suitable for parsing with parsequoted
+#
+# If the string appears not to need quoting and escaping, the original
+# form of the input string is returned.
+#
+#########################################################################
+sub safifystring {
+  my ($input) = @_;
+
+  my $output;
+
+  if ($input !~ /\s/ &&
+      $input !~ /\"/ &&
+      $input !~ /\\/ &&
+      $input !~ /\'/) {
+    return $input;
+  } else {
+    # need to generate a quoted string
+
+    $output = $input;
+    $output =~ s/\\/\\\\/g;
+    $output =~ s/\"/\\\"/g;
+    $output =~ s/\'/\\\'/g;
+    $output = "\"$output\"";
+
+    return $output;
+  }
 }
 
 #########################################################################
@@ -805,8 +849,8 @@ sub read_config {
 	  ($temp =~ /^\s*\'/)) {
 	$temp = parsequoted($temp, 1);
       } else {
-	$temp =~ s/#.*^//;	# cut off comments
-	$temp =~ s/\s+.*^//;	# use whitespace as the delimiter
+	$temp =~ s/#.*$//;	# cut off comments
+	$temp =~ s/\s+.*$//;	# use whitespace as the delimiter
       }
 
       if ($temp eq "") {
@@ -823,8 +867,8 @@ sub read_config {
 	  ($temp =~ /^\s*\'/)) {
 	$temp = parsequoted($temp, 1);
       } else {
-	$temp =~ s/#.*^//;	# cut off comments
-	$temp =~ s/\s+.*^//;	# use whitespace as the delimiter
+	$temp =~ s/#.*$//;	# cut off comments
+	$temp =~ s/\s+.*$//;	# use whitespace as the delimiter
       }
 
       if ($temp eq "") {
@@ -841,8 +885,8 @@ sub read_config {
 	  ($temp =~ /^\s*\'/)) {
 	$temp = parsequoted($temp, 1);
       } else {
-	$temp =~ s/#.*^//;	# cut off comments
-	$temp =~ s/\s+.*^//;	# use whitespace as the delimiter
+	$temp =~ s/#.*$//;	# cut off comments
+	$temp =~ s/\s+.*$//;	# use whitespace as the delimiter
       }
 
       if ($temp eq "") {
@@ -868,8 +912,8 @@ sub read_config {
 	  ($temp =~ /^\s*\'/)) {
 	$temp = parsequoted($temp, 1);
       } else {
-	$temp =~ s/#.*^//;	# cut off comments
-	$temp =~ s/\s+.*^//;	# use whitespace as the delimiter
+	$temp =~ s/#.*$//;	# cut off comments
+	$temp =~ s/\s+.*$//;	# use whitespace as the delimiter
       }
 
       if ($temp eq "") {
@@ -886,8 +930,8 @@ sub read_config {
 	  ($temp =~ /^\s*\'/)) {
 	$temp = parsequoted($temp, 1);
       } else {
-	$temp =~ s/#.*^//;	# cut off comments
-	$temp =~ s/\s+.*^//;	# use whitespace as the delimiter
+	$temp =~ s/#.*$//;	# cut off comments
+	$temp =~ s/\s+.*$//;	# use whitespace as the delimiter
       }
 
       if ($temp eq "") {
