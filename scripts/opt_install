@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.27 $
-# Last Mod Date: $Date: 2003/09/18 00:56:52 $
+# Version: $Revision: 1.28 $
+# Last Mod Date: $Date: 2003/09/18 00:58:35 $
 #
 #####################################################################
 
@@ -581,8 +581,12 @@ sub create_config {
 
   @subdirs = ('bin', 'include', 'info', 'lib', 'man');
 
+  print "\n";
+
   printwrap("The default list of base subdirectories managed by the",
 	    "opt_depot scripts are bin, include, info, lib, man.");
+
+  print "\n";
 
   if (askyn("Do you want to change this list?")) {
     print "\n";
