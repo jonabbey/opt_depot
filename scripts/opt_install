@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.4 $
-# Last Mod Date: $Date: 2003/08/07 22:40:28 $
+# Version: $Revision: 1.5 $
+# Last Mod Date: $Date: 2003/08/07 22:51:16 $
 #
 #####################################################################
 
@@ -63,6 +63,8 @@ $where_perl_is = @ARGV[0];
 if (!-x $where_perl_is) {
   die "Can't find $where_perl_is";
 }
+
+$depotname = "opt_depot-$version";
 
 #########################################################################
 #
@@ -114,7 +116,7 @@ sub fix_perms {
 
   while (!$done) {
     if (askyn("Do you wish to run the fixperms program to fix the file permissions " .
-	      "of the opt_depot 2.0 package directory?")) {
+	      "of the opt_depot 3.0 package directory?")) {
       # yay! we get to run it! AWRIGHT.
 
       $owner = askstring("Please enter the name of the owner", "root");
@@ -629,11 +631,10 @@ print"\n## opt_install version: $version ##\n\n";
 print "## Installing opt_depot ##\n\n";
 
 printwrap("Note: the opt_depot scripts will be installed in a package style format, so the",
-	  "lowest directory should be opt_depot, opt_depot2.0, or something similar");
+	  "lowest directory should be $depotname or something similar");
 
-print "Example: /v/site/packages/opt_depot\n\n";
-
-$targetdir = askstring("Please enter the directory where you want the opt_depot package installed");
+$targetdir = askstring("Please enter the directory where you want the opt_depot package installed",
+		       "/opt/depot/$depotname");
 $targetdir = make_absolute(removelastslash($targetdir));
 testmakedir($targetdir);
 
