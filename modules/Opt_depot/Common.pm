@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.22 $
-# Last Mod Date: $Date: 2003/08/14 02:07:42 $
+# Version: $Revision: 1.23 $
+# Last Mod Date: $Date: 2003/08/14 02:10:36 $
 #
 #####################################################################
 
@@ -279,16 +279,15 @@ sub init_log {
 
   ($sec, $min, $hour, $mday, $mon, $year)= localtime(time);
   $mon=$mon + 1;
+  $year = $year + 1900;	# y2k ok!
 
-  if ($mon < 10) {
-    $mon = "0" . $mon;
+  if ($min < 10) {
+    $min = "0" . $min;
   }
 
   if ($sec < 10) {
     $sec = "0" . $sec;
   }
-
-  $year = $year + 1900;	# y2k ok!
 
   logprint("$hour:$min:$sec  $mon\/$mday\/$year\n\n", 0);
   printparams();
