@@ -55,8 +55,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.44 $
-# Last Mod Date: $Date: 2003/10/07 01:17:44 $
+# Version: $Revision: 1.45 $
+# Last Mod Date: $Date: 2003/10/07 21:26:25 $
 #
 #####################################################################
 
@@ -478,7 +478,7 @@ sub smartlink {
   # if there's nothing in the location of our link target, make the
   # link and get out
 
-  if (!-e $link && !-l _) {
+  if (!-e $link && !-l $link) {
     logprint("Smartlink: No $link found, proceeding\n", -1);
     return fablink($link, $target);
   }
@@ -486,7 +486,7 @@ sub smartlink {
   # if there's something other than a symlink (a physical file,
   # directory, socket, etc.) report and get out
 
-  if (!-l _) {
+  if (!-l $link) {
     logprint("  ERROR:  $link already exists and is not a link\n", 0);
     logprint("          Did not make link to link $target\n", 0);
 
@@ -775,14 +775,14 @@ sub prepdirs {
   for $subdir (@subdirs) {
     if (!-e "$dest/$subdir") {
       makedir("$dest/$subdir");
-    } elsif (!-d _) {
+    } elsif (!-d "$dest/$subdir") {
       die "ERROR: $dest/$subdir is not a directory";
     }
   }
 
   if (!-e "$dest/man") {
     makedir("$dest/man");
-  } elsif (!-d _) {
+  } elsif (!-d "$dest/man") {
     die "ERROR: $dest/man is not a directory";
   }
 }

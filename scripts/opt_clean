@@ -54,8 +54,8 @@
 # Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.24 $
-# Last Mod Date: $Date: 2003/10/07 01:17:55 $
+# Version: $Revision: 1.25 $
+# Last Mod Date: $Date: 2003/10/07 21:26:10 $
 #
 #########################################################################
 
@@ -299,7 +299,7 @@ sub cleandir {
   @contents = readdir(DIR);
   closedir(DIR);
 
-  @dirs = grep (!/^\.\.?$/ && !(-l "$dir/$_") && (-d _), @contents);
+  @dirs = grep (!/^\.\.?$/ && !(-l "$dir/$_") && (-d "$dir/$_"), @contents);
 
   # check for subordinate directories recursively..
 
