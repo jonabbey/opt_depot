@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.37 $
-# Last Mod Date: $Date: 2003/10/11 02:10:49 $
+# Version: $Revision: 1.38 $
+# Last Mod Date: $Date: 2003/10/11 02:13:18 $
 #
 #####################################################################
 
@@ -711,27 +711,15 @@ sub removelastslash {
 #########################################################################
 sub pathcheck ($\%) {
   my ($file, $assoc_ref) = @_;
-  my ($localdebug);
 
   my %assoc = %{$assoc_ref};
 
-  if ($file eq "packB/lib/perl5/spam") {
-    $localdebug = 1;
-  }
-
-  if ($localdebug) {
-    logprint("AIAIAIAI Calling pathcheck on $file\n", -1);
-
-    foreach $key (keys %assoc) {
-      logprint("AIAIAIAI hash has key $key, value " . $assoc{$key} . "\n", -1);
-    }
+  if ($file !~ /^\//) {
+    logprint("Pathcheck ASSERT ERROR: $file must be an absolute path\n", 1);
+    exit(1);
   }
 
   @components = split(/\//, $file);
-
-  if ($localdebug) {
-    logprint("AIAIAIAI components = @components\n", -1);
-  }
 
   my ($t_pri, $temp, $hi_pri);
 
@@ -749,10 +737,6 @@ sub pathcheck ($\%) {
   foreach $comp (@components) {
     $temp .= "$comp";
 
-    if ($localdebug) {
-      logprint("AIAIAIAI Checking on assoc value for $temp\n", -1);
-    }
-
     if (defined $assoc{$temp}) {
       $t_pri = $assoc{$temp};
 
@@ -764,8 +748,6 @@ sub pathcheck ($\%) {
       if ($t_pri > $hi_pri) {
 	$hi_pri = $t_pri;
       }
-    } elsif($localdebug) {
-      logprint("AIAIAIAI $temp not found!\n", -1);
     }
 
     # add a trailing /, in case the trailing slash was present in the
