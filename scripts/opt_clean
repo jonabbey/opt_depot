@@ -46,8 +46,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.9 $
-# Last Mod Date: $Date: 2003/08/02 03:49:00 $
+# Version: $Revision: 1.10 $
+# Last Mod Date: $Date: 2003/08/02 03:51:15 $
 #
 #########################################################################
 
@@ -63,7 +63,7 @@ $version = "3.0";
 
 # configuration file containing $dest, $depot and $logdir vars
 
-$config_file = resolve($RealBin, "$../etc/opt.config");
+$config_file = resolve($RealBin, "../etc/opt.config");
 
 # this file is created by opt_depot when it makes a directory. only
 # directories containing this file may be removed or collapsed
