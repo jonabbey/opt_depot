@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.30 $
-# Last Mod Date: $Date: 2003/09/21 07:05:56 $
+# Version: $Revision: 1.31 $
+# Last Mod Date: $Date: 2003/09/21 07:18:18 $
 #
 #####################################################################
 
@@ -45,6 +45,14 @@ $version = "3.0";
 $| = 1;				# auto-flush
 
 ## defaults #########################################################
+
+# set $clean_up to 1 if you want to remove the test directory on
+# completion.. set to 0 if you want the test directory to remain as it
+# was configured for the last test run.. useful when developing new
+# tests, so long as you put your new test at the end of the test
+# sequence
+
+$clean_up = 0;
 
 $test_root = "/tmp/opt_suite-$version";
 $test_dir = "$test_root/base";
@@ -368,7 +376,7 @@ ENDSITES3
 	  error_count => 0);
 
 
-%test10 = (label  => 'Site volume test',
+%test10 = (label  => 'Simple site volume test',
 	  root   => $test_dir,
 	  start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
 		     'depot/'],
@@ -384,9 +392,29 @@ ENDSITES3
 	  action => 'opt_link',
 	  error_count => 0);
 
+# test11 is designed to verify that the root .exclude file is supposed
+# to 'knock-out' inter-package .exclude exclusions in opt_link
+
+%test11 = (label  => 'Site volume exclude test',
+	   root   => $test_dir,
+	   start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/',
+		      "depot/packB-1.0->".$siteA{'path'}."/packB-1.0",
+		      "depot/packC-1.0->".$siteA{'path'}."/packC-1.0",
+		      "depot/packX-1.2->".$siteA{'path'}."/packX-1.2"],
+	   endex  => ['^\.priority$', '^\.exclude$'],
+	   conf   => $testconfA,
+	   sites  => $testsitesB,
+	   sitedefs => [\%siteA],
+	   exclude => 'packA-1.0',
+	   action => 'opt_link',
+	   error_count => 0);
+
 @tests = (\%test0, \%test1, \%test2, \%test3,
 	  \%test4, \%test5, \%test6, \%test7,
-	  \%test8, \%test9, \%test10);
+	  \%test8, \%test9, \%test10, \%test11);
 
 #####################################################################
 
@@ -786,7 +814,12 @@ sub expected_check {
       ($before, $after) = split /->/, $item;
 
       $itempath = $test_href->{'root'} . "/" . $before;
-      $desired_target = $test_href->{'root'} . "/" . $after;
+
+      if ($after =~ /^\//) {
+	$desired_target = $after;
+      } else {
+	$desired_target = $test_href->{'root'} . "/" . $after;
+      }
 
 	if (!-e $itempath) {
 	  print "Error, symlink missing in test " . $test_href->{'label'} . "\n";
@@ -910,11 +943,13 @@ foreach $test (@tests) {
 print "\n------------------------------------------------------------\n";
 print "Tests Ran: $tests_run\tTests Succeeded: " . ($tests_run-$test_failures) . "\tTests Failed: " . $test_failures . "\n";
 
-if (!$test_failures) {
-  killdir($test_root);
-} else {
-  print "\n";
-  if (!askyn("There were failures encountered.. do you wish to retain the test tree in $test_root?")) {
+if ($clean_up) {
+  if (!$test_failures) {
     killdir($test_root);
+  } else {
+    print "\n";
+    if (!askyn("There were failures encountered.. do you wish to retain the test tree in $test_root?")) {
+      killdir($test_root);
+    }
   }
 }
