@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.39 $
-# Last Mod Date: $Date: 2003/10/13 06:52:31 $
+# Version: $Revision: 1.40 $
+# Last Mod Date: $Date: 2003/10/13 09:42:39 $
 #
 #####################################################################
 
@@ -234,7 +234,7 @@ ENDSITES3
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot',
-	  priority => 'packB',
+	  priority => "packB/bin/\npackB/include/",
 	  error_count => 0);
 
 
@@ -262,7 +262,7 @@ ENDSITES3
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot',
-	  priority => 'packB',
+	  priority => "packB/bin\npackB/include",
 	  error_count => 0);
 
 %test4 = (label  => 'Priority link replacement test',
@@ -292,7 +292,7 @@ ENDSITES3
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot',
-	  priority => 'packB',
+	  priority => "packB/bin\npackB/include",
 	  error_count => 0);
 
 # this test does a bit more with the .priority file.. in particular,
@@ -333,7 +333,7 @@ ENDSITES3
 	   conf   => $testconfA,
 	   sites  => $testsitesA,
 	   action => 'opt_depot',
-	   priority => "packA/bin\npackB/bin/hello\npackB",
+	   priority => "packA/bin\npackB/bin/hello\npackB/include",
 	   error_count => 0);
 
 # this one is to test the proposition, put forth in the opt_depot man
@@ -591,8 +591,8 @@ ENDSITES3
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_setup',
-	  exclude => 'packA',
-	  priority => 'packB',
+	  exclude => "packA",
+	  priority => "packB",
 	  error_count => 0);
 
 %test10 = (label  => 'Simple site volume test',
@@ -747,7 +747,7 @@ ENDSITES3
 	   sites  => $testsitesZ,
 	   sitedefs => [\%siteA, \%siteB, \%siteC, \%siteZ],
 	   exclude => "packA-1.0\nexternalPack\nsiteZPack",
-	   priority => 'packA-2.0',
+	   priority => "packA-2.0",
 	   action => 'opt_setup',
 	   error_count => 0);
 
