@@ -30,8 +30,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.11 $
-# Last Mod Date: $Date: 2003/09/16 02:57:57 $
+# Version: $Revision: 1.12 $
+# Last Mod Date: $Date: 2003/09/16 03:02:45 $
 #
 #####################################################################
 
@@ -93,7 +93,8 @@ ENDSITES1
 		     'depot/packB/include/test.h'],
 	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
 		     'bin/hi->depot/packA/bin/hi',
-		     'lib/perl5/', 'lib/perl5/spam/',
+		     'lib/perl5/', 'lib/perl5/.made_by_opt_depot',
+		     'lib/perl5/spam/', 'lib/perl5/spam/.made_by_opt_depot',
 		     'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
 		     'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
 		     'include/test.h->depot/packB/include/test.h'],
@@ -101,7 +102,7 @@ ENDSITES1
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot',
-	  error_count => 3);
+	  error_count => 1);
 
 @tests = (\%test0, \%test1);
 
