@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.11 $
-# Last Mod Date: $Date: 2003/08/08 01:32:47 $
+# Version: $Revision: 1.12 $
+# Last Mod Date: $Date: 2003/08/08 01:55:34 $
 #
 #####################################################################
 
@@ -65,6 +65,7 @@ use Exporter;
 	     &init_log &close_log &logprint
 	     &check_lock &clear_lock
 	     &create_dir &testmakedir &dircheck &extractdir &killdir
+	     &first_path_element
 	     &removelastslash &resolve &make_absolute &pathcheck
 	     &read_prefs
 	    );
@@ -527,6 +528,28 @@ sub killdir {
 
 #########################################################################
 #
+#                                                      first_path_element
+#
+# input: a pathname
+#
+# this function will return the first element of the path.. if the
+# pathname provided is absolute (begins with /), / will be returned.
+#
+#########################################################################
+sub first_path_element {
+  my ($pathname) = @_;
+
+  my @list = split /\//, $pathname;
+
+  if ($list[0] eq "") {
+    return "/";
+  } else {
+    return $list[0];
+  }
+}
+
+#########################################################################
+#
 #                                                         removelastslash
 #
 # input: a pathname to test
@@ -542,7 +565,6 @@ sub removelastslash {
 
   $_[0];
 }
-
 
 #########################################################################
 #
