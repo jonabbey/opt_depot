@@ -2,8 +2,8 @@ opt_depot README
 ----------------
 
 Jonathan Abbey <jonabbey@arlut.utexas.edu>
-Version: $Revision: 1.4 $
-Last Mod Date: $Date: 2003/09/17 06:37:07 $
+Version: $Revision: 1.5 $
+Last Mod Date: $Date: 2003/09/17 06:41:05 $
 
 What Is It
 ----------
@@ -50,6 +50,9 @@ The suite consists of the following scripts:
   opt_link  - manages links to NFS-mounted package archives
   opt_setup - runs the above three scripts in sequence
   opt_nuke  - removes all links created by opt_depot
+
+See the contents of the docs directory and the individual man pages
+for more details.
 
 What's The History? / What's New?
 ---------------------------------
