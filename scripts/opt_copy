@@ -218,7 +218,7 @@ foreach $script (@opt_scripts) {
     chmod 0755, "$dir/bin/$script";
     unlink "scripts/$script.new";
   } else {
-    print"\tERROR: Could not locate $script for copying\n";
+    print"\tERROR: Could not locate scripts/$script for copying\n";
   }
 }
 
