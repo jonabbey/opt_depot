@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.13 $
-# Last Mod Date: $Date: 2003/08/08 00:56:01 $
+# Version: $Revision: 1.14 $
+# Last Mod Date: $Date: 2003/08/08 01:11:10 $
 #
 #####################################################################
 
@@ -113,6 +113,23 @@ sub fix_perms {
   print "\n";
 
   my $done = 0;
+  my (@grouplist, $defgroup,$gid);
+
+  # find a reasonable default group
+
+  # this list is made for a Solaris system first, than a redhat-y
+  # linux, then we just start making stuff up.  Feel free to change
+  # this list, if you want.
+
+  @grouplist = ("other", "root", "bin", "sys", "users");
+
+  foreach $defgroup (@grouplist) {
+    $gid = (getgrnam($defgroup))[2];
+
+    if (defined $gid) {
+      last;
+    }
+  }
 
   while (!$done) {
     print "\n";
@@ -121,7 +138,7 @@ sub fix_perms {
       # yay! we get to run it! AWRIGHT.
 
       $owner = askstring("Please enter the name of the owner", "root");
-      $group = askstring("Please enter the group name", "other");
+      $group = askstring("Please enter the group name", "$defgroup");
 
       print "\n";
       if (askyn("Set ownership to $owner:$group?")) {

@@ -51,8 +51,8 @@
 # Jonathan Abbey 7 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.4 $
-# Last Mod Date: $Date: 2003/08/07 20:14:34 $
+# Version: $Revision: 1.5 $
+# Last Mod Date: $Date: 2003/08/08 01:11:18 $
 #
 #####################################################################
 
@@ -68,9 +68,24 @@ if (!defined $opt_o) {
 }
 
 if (!defined $opt_g) {
-    $group = "other";
+
+  # find a reasonable default group
+
+  # this list is made for a Solaris system first, than a redhat-y
+  # linux, then we just start making stuff up.  Feel free to change
+  # this list, if you want.
+
+  @grouplist = ("other", "root", "bin", "sys", "users");
+
+  foreach $group (@grouplist) {
+    $gid = (getgrnam($group))[2];
+
+    if (defined $gid) {
+      last;
+    }
+  }
 } else {
-    $group = $opt_g;
+  $group = $opt_g;
 }
 
 $uid = (getpwnam($owner))[2];
