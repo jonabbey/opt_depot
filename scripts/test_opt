@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.40 $
-# Last Mod Date: $Date: 2003/10/13 09:42:39 $
+# Version: $Revision: 1.41 $
+# Last Mod Date: $Date: 2003/10/13 23:22:05 $
 #
 #####################################################################
 
@@ -292,7 +292,7 @@ ENDSITES3
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot',
-	  priority => "packB/bin\npackB/include",
+	  priority => "packB",
 	  error_count => 0);
 
 # this test does a bit more with the .priority file.. in particular,
@@ -333,7 +333,7 @@ ENDSITES3
 	   conf   => $testconfA,
 	   sites  => $testsitesA,
 	   action => 'opt_depot',
-	   priority => "packA/bin\npackB/bin/hello\npackB/include",
+	   priority => "packA/bin\npackB/bin/hello\npackB",
 	   error_count => 0);
 
 # this one is to test the proposition, put forth in the opt_depot man
