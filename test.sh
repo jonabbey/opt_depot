@@ -47,8 +47,8 @@
 # Jonathan Abbey 17 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.3 $
-# Last Mod Date: $Date: 2003/09/17 05:18:15 $
+# Version: $Revision: 1.4 $
+# Last Mod Date: $Date: 2003/09/17 05:35:05 $
 #
 ###############################################################################
 
@@ -169,6 +169,7 @@ done
 # script (and opt_setup in turn) can run along on its own
 #
 
-export PERLLOC=$perl_loc
+PERLLOC="$perl_loc"
+export PERLLOC
 
 $perl_loc scripts/test_opt
