@@ -54,8 +54,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.9 $
-# Last Mod Date: $Date: 2003/07/03 04:33:45 $
+# Version: $Revision: 1.10 $
+# Last Mod Date: $Date: 2003/07/07 20:45:16 $
 #
 #####################################################################
 
@@ -119,7 +119,7 @@ $opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
 #
 #             If a file is involved with a conflict but there are no
 #             priority lines specified for that file, opt_depot will
-#             check to see if either of the packages to which the
+#             check to see if any containing directory to which the
 #             files belong have priority, and will maintain the link
 #             whose package priority has the higher priority.
 #
