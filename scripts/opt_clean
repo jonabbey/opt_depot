@@ -44,10 +44,19 @@
 # A -b option must now be given with the destination (or base) directory
 # Erik Grostic 10 July 1997
 #
+# v3.0
+# Totally reworked the recursive cleaning algorithm to properly handle
+# cascading collapse.  Fixed a bug which prevented opt_clean from
+# removing any symlinks in directories which contained only links
+# pointing to the same target directory.  Reworked tons to use
+# Opt_depot::Common, and modern Perl module function support.  Script
+# is now position independent.  No more attempts at Perl 4
+# compatibility for us, no sir.
+# Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.15 $
-# Last Mod Date: $Date: 2003/08/12 06:45:57 $
+# Version: $Revision: 1.16 $
+# Last Mod Date: $Date: 2003/08/12 06:51:57 $
 #
 #########################################################################
 
