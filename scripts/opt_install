@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.19 $
-# Last Mod Date: $Date: 2003/08/08 19:52:39 $
+# Version: $Revision: 1.20 $
+# Last Mod Date: $Date: 2003/08/08 19:54:33 $
 #
 #####################################################################
 
@@ -711,7 +711,13 @@ print "\nCreating config file $config\n";
 
 create_config();
 
-print "\nCreating sites file $sites_file\n";
+print "\nCreating sites file $sites_file\n\n";
+
+printwrap("If you intend to use one or more NFS package archives, you may specify them now",
+	  "by adding site volumes.  Each site volume needs a label and a logical path to the",
+	  "NFS-mounted directory volume.");
+
+print "\n";
 
 edit_sites();
 
