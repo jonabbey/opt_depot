@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.28 $
-# Last Mod Date: $Date: 2003/08/15 02:43:45 $
+# Version: $Revision: 1.29 $
+# Last Mod Date: $Date: 2003/08/15 02:46:47 $
 #
 #####################################################################
 
@@ -534,8 +534,7 @@ sub smartlink {
   $replace_it = 0;
   $reason = undef;
 
-  # if the old link points to a target, in an excluded directory
-  # tree, retarget the link
+  # if the old link is excluded, retarget the link
 
   if (pathcheck($oldtarget, *exclude)) {
     $replace_it = 1;
