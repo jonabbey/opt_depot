@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.27 $
-# Last Mod Date: $Date: 2003/09/20 07:57:05 $
+# Version: $Revision: 1.28 $
+# Last Mod Date: $Date: 2003/09/20 08:04:56 $
 #
 #####################################################################
 
@@ -71,6 +71,11 @@ ENDTESTCONF1
 
 $testsitesA =<< "ENDSITES1";
 ENDSITES1
+
+$testsitesB =<< "ENDSITES2";
+LOCAL $test_dir/sites/local
+LOCALB $test_dr/sites/localb
+ENDSITES2
 
 %siteA = (label => 'local',
 	  path => "$test_dir/sites/local",
@@ -359,7 +364,7 @@ ENDSITES1
 	  error_count => 0);
 
 
-%test9 = (label  => 'Clean and link test',
+%test10 = (label  => 'Site volume test',
 	  root   => $test_dir,
 	  start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
                      'depot/packA/bin/hi',
