@@ -30,8 +30,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.1 $
-# Last Mod Date: $Date: 2003/09/10 23:01:15 $
+# Version: $Revision: 1.2 $
+# Last Mod Date: $Date: 2003/09/11 00:02:25 $
 #
 #####################################################################
 
@@ -45,3 +45,52 @@ $version = "3.0";
 
 ## defaults #########################################################
 
+$test_dir = "/tmp/opt_suite/base";
+$test_logdir = "/tmp/opt_suite/log";
+$test_etc = "/tmp/opt_suite/etc";
+
+#####################################################################
+
+$testconf1 << "ENDTESTCONF1";
+Base: $test_dir
+Depot: $test_dir/depot
+Log: $test_logdir/opt_depot.log
+SiteFile: $test_etc/sites
+Subdirs: bin,include,info,lib,man
+AlwaysRecurse: No
+Recurse: include,lib,info
+EOCONF
+
+$testsites1 << "ENDSITES1";
+ENDSITES1
+
+%test1 = (label => 'Elementary recursion test',
+	  start => ['depot/packA/bin/hi',
+		    'depot/packA/lib/perl5/spam/x.pl',
+		    'depot/packA/include/test.h',
+		    'depot/packB/bin/hi',
+		    'depot/packB/lib/perl5/spam/y.pl',
+		    'depot/packB/include/test.h'],
+	  end =>   ['bin/', 'lib/', 'man/', 'include/',
+		    'bin/hi->depot/packA/bin/hi',
+		    'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
+		    'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
+		    'include/test.h->depot/packB/include/test.h'],
+	 conf =>   $testconf1,
+	 sites =>  $testsites1);
+
+@tests = (\%test1);	  
+
+#####################################################################
+#
+# mkdir $test_dir
+# mkdir $test_dir/depot
+#
+# touch a bunch of stuff
+# run opt_depot
+# test
+#####################################################################
+
+create_dir($test_dir);
+create_dir($test_logdir);
+create_dir($test_etc);
