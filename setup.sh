@@ -48,8 +48,8 @@
 # Jonathan Abbey 8 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.12 $
-# Last Mod Date: $Date: 2003/08/08 19:48:23 $
+# Version: $Revision: 1.13 $
+# Last Mod Date: $Date: 2003/08/08 21:49:28 $
 #
 ###############################################################################
 
@@ -65,7 +65,7 @@ prompt ()
     echo "$@\c"
   else
     # BSD style echo
-    echo -e -n "$@"
+    echo -n "$@"
   fi
 }
 
