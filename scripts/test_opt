@@ -30,26 +30,24 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.16 $
-# Last Mod Date: $Date: 2003/09/16 23:29:46 $
+# Version: $Revision: 1.17 $
+# Last Mod Date: $Date: 2003/09/16 23:45:16 $
 #
 #####################################################################
 
 use English;
 use FindBin qw($RealBin $RealScript);
 
-use lib "/home/broccol/opt_depot/work/opt_depot/modules";
-
-#use lib "$RealBin/../modules";
+use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
 $version = "3.0";
 
 ## defaults #########################################################
 
-$test_dir = "/tmp/opt_suite/base";
-$test_logdir = "/tmp/opt_suite/log";
-$test_etc = "/tmp/opt_suite/etc";
+$test_dir = "/tmp/opt_suite-$version/base";
+$test_logdir = "/tmp/opt_suite-$version/log";
+$test_etc = "/tmp/opt_suite-$version/etc";
 
 #####################################################################
 
@@ -301,7 +299,7 @@ ENDSITES1
 	  priority => 'packB',
 	  error_count => 0);
 
-@tests = (\%test0, \%test1, \%test2, \%test3, 
+@tests = (\%test0, \%test1, \%test2, \%test3,
 	  \%test4, \%test5, \%test6, \%test7,
 	  \%test8, \%test9);
 
