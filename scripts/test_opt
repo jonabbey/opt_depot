@@ -30,13 +30,13 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.4 $
-# Last Mod Date: $Date: 2003/09/12 01:50:12 $
+# Version: $Revision: 1.5 $
+# Last Mod Date: $Date: 2003/09/12 02:47:18 $
 #
 #####################################################################
 
 use English;
-use FindBin qw($RealBin);
+use FindBin qw($RealBin $RealScript);
 
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
@@ -64,34 +64,36 @@ ENDTESTCONF1
 $testsitesA =<< "ENDSITES1";
 ENDSITES1
 
-%test0 = (label => 'Simple single-package link test',
-	  root  => $test_dir,
-	  start => ['depot/packA/bin/hi',
-		    'depot/packA/lib/perl5/spam/x.pl',
-		    'depot/packA/include/test.h',
-		    'depot/packA/man/manl/test.l'],
-	  end   => ['bin/', 'lib/', 'man/', 'include/', 'man/manl/',
-		    'bin/hi->depot/packA/bin/hi',
-		    'lib/perl5->depot/packA/lib/perl5/',
-		    'include/test.h->depot/packA/include/test.h',
-		    'man/manl/test.l->depot/packA/man/manl/test.l'],
+%test0 = (label  => 'Simple single-package link test',
+	  root   => $test_dir,
+	  start  => ['depot/packA/bin/hi',
+		     'depot/packA/lib/perl5/spam/x.pl',
+		     'depot/packA/include/test.h',
+		     'depot/packA/man/manl/test.l'],
+	  end    => ['bin/', 'lib/', 'man/', 'include/', 'man/manl/',
+		     'bin/hi->depot/packA/bin/hi',
+		     'lib/perl5->depot/packA/lib/perl5/',
+		     'include/test.h->depot/packA/include/test.h',
+		     'man/manl/test.l->depot/packA/man/manl/test.l'],
+	  endex  => ['depot/'],
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot');
 
-%test1 = (label => 'Elementary recursion test',
-	  root  => $test_dir,
-	  start => ['depot/packA/bin/hi',
-		    'depot/packA/lib/perl5/spam/x.pl',
-		    'depot/packA/include/test.h',
-		    'depot/packB/bin/hi',
-		    'depot/packB/lib/perl5/spam/y.pl',
-		    'depot/packB/include/test.h'],
-	  end   => ['bin/', 'lib/', 'man/', 'include/',
-		    'bin/hi->depot/packA/bin/hi',
-		    'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
-		    'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
-		    'include/test.h->depot/packB/include/test.h'],
+%test1 = (label  => 'Elementary recursion test',
+	  root   => $test_dir,
+	  start  => ['depot/packA/bin/hi',
+		     'depot/packA/lib/perl5/spam/x.pl',
+		     'depot/packA/include/test.h',
+		     'depot/packB/bin/hi',
+		     'depot/packB/lib/perl5/spam/y.pl',
+		     'depot/packB/include/test.h'],
+	  end    => ['bin/', 'lib/', 'man/', 'include/',
+		     'bin/hi->depot/packA/bin/hi',
+		     'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
+		     'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
+		     'include/test.h->depot/packB/include/test.h'],
+	  endex  => ['depot/'],
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot');
@@ -144,8 +146,42 @@ sub setup_test {
       touch($newpath);
     }
   }
+
+  killdir($test_etc);
+  create_dir($test_etc);
+
+  if (!open(OUT, ">$test_etc/opt.config")) {
+    print "Couldn't open $test_etc/opt.config";
+    return 0;
+  }
+  print OUT $href->{'conf'};
+  close(OUT);
+
+  if (!open(OUT, ">$test_etc/sites")) {
+    print "Couldn't open $test_etc/sites";
+    return 0;
+  }
+  print OUT $href->{'sites'};
+  close(OUT);
+
+  killdir($test_logdir);
+  create_dir($test_logdir);
   
   return 1;
+}
+
+#########################################################################
+#
+#                                                                run_test
+#
+# input: a reference to one of our test descriptions
+#
+# run_test runs the test
+#
+#########################################################################
+
+sub run_test {
+  my ($href) = @_;
 }
 
 #####################################################################
@@ -162,4 +198,6 @@ sub setup_test {
 #create_dir($test_logdir);
 #create_dir($test_etc);
 
+print "$0\n";
+print "$RealScript\n";
 setup_test(\%test1);
