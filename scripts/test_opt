@@ -30,8 +30,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.13 $
-# Last Mod Date: $Date: 2003/09/16 20:45:46 $
+# Version: $Revision: 1.14 $
+# Last Mod Date: $Date: 2003/09/16 21:12:38 $
 #
 #####################################################################
 
@@ -83,7 +83,26 @@ ENDSITES1
 	  action => 'opt_depot',
 	  error_count => 0);
 
-%test1 = (label  => 'Elementary recursion test',
+%test1 = (label  => 'First exclusion test',
+	  root   => $test_dir,
+	  start  => ['depot/packA/bin/hi',
+		     'depot/packA/lib/perl5/spam/x.pl',
+		     'depot/packA/include/test.h',
+		     'depot/packB/bin/hi',
+		     'depot/packB/lib/perl5/spam/y.pl',
+		     'depot/packB/include/test.h'],
+	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		     'bin/hi->depot/packA/bin/hi',
+		     'lib/perl5->depot/packA/lib/perl5/',
+		     'include/test.h->depot/packA/include/test.h'],
+	  endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+	  conf   => $testconfA,
+	  sites  => $testsitesA,
+	  action => 'opt_depot',
+	  exclude => 'packB',
+	  error_count => 0);
+
+%test2 = (label  => 'Elementary recursion test',
 	  root   => $test_dir,
 	  start  => ['depot/packA/bin/hi',
 		     'depot/packA/lib/perl5/spam/x.pl',
@@ -98,14 +117,14 @@ ENDSITES1
 		     'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
 		     'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
 		     'include/test.h->depot/packB/include/test.h'],
-	  endex  => ['^depot\/$', '^\.priority$'],
+	  endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot',
 	  priority => 'packB',
 	  error_count => 0);
 
-%test2 = (label  => 'Recursive clean test',
+%test3 = (label  => 'Recursive clean test',
 	  root   => $test_dir,
 	  start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
                      'depot/packA/bin/hi',
@@ -119,7 +138,7 @@ ENDSITES1
                      'lib/perl5/spam/', 'lib/perl5/spam/.made_by_opt_depot',
                      'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
                      'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
-                     'include/test.h->depot/packB/include/test.h'],
+                     'include/test.h->depot/packA/include/test.h'],
 	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
 		     'bin/hi->depot/packB/bin/hi',
 		     'lib/perl5->depot/packB/lib/perl5/',
@@ -131,7 +150,7 @@ ENDSITES1
 	  exclude => 'packA',
 	  error_count => 0);
 
-@tests = (\%test0, \%test1, \%test2);
+@tests = (\%test0, \%test1, \%test2, \%test3);
 
 #####################################################################
 
@@ -178,7 +197,9 @@ sub setup_test {
 	$after = substr($after,0,length($after)-1);
       }
 
-      $after = $href->{'root'} . "/" . $after;
+      if ($after !~ /^\//) {
+	$after = $href->{'root'} . "/" . $after;
+      }
 
       if (!symlink($after, $before)) {
 	print "Error, could not create symlink($after, $before) in setup for " . $href->{'label'} . "\n";
@@ -345,11 +366,14 @@ sub recurse_check {
 	print "Error, symlink target error in test " . $test_href->{'label'} . "\n";
 	print "symlink $element should point to $desired_target, but instead points to\n";
 	print "$target.\n";
-	
-	print "\$element is $element\n";
-	print "readlink(\$element) is " . readlink($element) . "\n";
-	print "\$local_path is $local_path\n";
-	print "make_absolute(\$local_path) is " . make_absolute($local_path) . "\n";
+
+	if (0) {
+	  print "\$element is $element\n";
+	  print "readlink(\$element) is " . readlink($element) . "\n";
+	  print "\$local_path is $local_path\n";
+	  print "make_absolute(\$local_path) is " . make_absolute($local_path) . "\n";
+	}
+
 	$error_count++;
 	next;
       }
@@ -445,7 +469,7 @@ $tests_run = 0;
 
 foreach $test (@tests) {
   print "\n------------------------------------------------------------\n";
-  print "Running test " . $test->{'label'} . " at " . $test->{'root'} . "\n\n";
+  print "Running " . $test->{'action'} . " test '" . $test->{'label'} . "'\n\n";
   setup_test($test);
   if (!run_test($test)) {
     $test_failures++;
