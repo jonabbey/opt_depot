@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.21 $
-# Last Mod Date: $Date: 2003/08/11 21:48:15 $
+# Version: $Revision: 1.22 $
+# Last Mod Date: $Date: 2003/08/13 23:02:48 $
 #
 #####################################################################
 
@@ -192,7 +192,9 @@ sub add_list ($\@) {
   $add = <STDIN>;
   chop $add;
 
-  push @$list, $add;
+  if ($add ne "") {
+    push @$list, $add;
+  }
 }
 
 ##########################################################################
