@@ -6,8 +6,8 @@
 # Get enough information from the user to be able to find Perl 5
 #
 # Release: $Name:  $
-# Version: $Revision: 1.5 $
-# Last Mod Date: $Date: 2003/07/08 03:40:23 $
+# Version: $Revision: 1.6 $
+# Last Mod Date: $Date: 2003/07/08 03:54:10 $
 #
 ###############################################################################
 
@@ -32,26 +32,40 @@ verify_perl ()
 {
   _perl_loc=$1
 
-  echo "Perl has been located as $perl_loc"
-  echo
-  echo "### The following is pertinent perl version information ###"
-  $_perl_loc -v   # this call to perl prints out the version info needed
-  echo "###########################################################"
-  echo
-  echo "Note - The version of perl must be 5.000 or greater to use opt_depot" 
-  echo
-  echo "Do you wish to use $_perl_loc? [Y/N]"
-  prompt "----> "
-  read _answer
-  echo
+  $_perl_loc > /dev/null 2>&1 <<EOF
+# this Perl script is used to validate that we have a new enough version of perl
+die if $] < 5.000;
+exit 0;
+EOF
 
-  case $_answer in
-    y|Y|yes|Yes) perlok="y"
-      ;;
-    *) perlok="n"
-       perl_loc=""
-      ;;
-  esac
+  if [ $? = 0 ]; then
+    echo "Perl has been located as $_perl_loc"
+    echo
+#  echo "### The following is pertinent perl version information ###"
+    echo "###########################################################"
+    $_perl_loc -v   # this call to perl prints out the version info needed
+    echo "###########################################################"
+    echo
+    echo
+    echo "Do you wish to use $_perl_loc? [Y/N]"
+    prompt "----> "
+    read _answer
+    echo
+
+    case $_answer in
+      y|Y|yes|Yes) perlok="y"
+        ;;
+      *) perlok="n"
+         perl_loc=""
+        ;;
+    esac
+  else
+    echo "$_perl_loc is too old, we require Perl 5.0"
+    echo "or later for opt_depot"
+    echo
+    perlok="n"
+    perl_loc=""
+  fi
 
   return 0
 }
@@ -82,8 +96,8 @@ perlok="n"
 
 while [ "$perlok" = "n" ]; do
   if [ "$perl_loc" = "" ]; then
-    echo "Please enter the name of the Perl 5 version you are using"
-    echo "and its location (ie /usr/local/bin/perl) " 
+    echo "Please enter the name of the Perl 5 version you want to use"
+    echo "and its location" 
     prompt "----> "
     read perl_loc
     echo
