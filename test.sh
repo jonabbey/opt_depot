@@ -42,14 +42,13 @@
 # University of Texas at Austin  opt-depot@arlut.utexas.edu
 #
 # v3.0
-# Rewrote setup.sh to provide a clean, consistent interface on various
-# UNIX systems.
+# Created test.sh to find Perl and invoke the test_opt test suite
 #
-# Jonathan Abbey 8 August 2003
+# Jonathan Abbey 17 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.1 $
-# Last Mod Date: $Date: 2003/09/17 05:13:46 $
+# Version: $Revision: 1.2 $
+# Last Mod Date: $Date: 2003/09/17 05:15:18 $
 #
 ###############################################################################
 
@@ -172,4 +171,4 @@ done
 
 export PERLLOC=$perl_loc
 
-$perl_loc scripts/test_install $perl_loc
+$perl_loc scripts/test_opt
