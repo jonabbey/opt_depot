@@ -55,8 +55,8 @@
 # Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.16 $
-# Last Mod Date: $Date: 2003/08/12 06:51:57 $
+# Version: $Revision: 1.17 $
+# Last Mod Date: $Date: 2003/08/12 06:54:25 $
 #
 #########################################################################
 
@@ -409,7 +409,7 @@ sub cleandir {
     logprint("Collapsing Directory: $dir\n",1);
 
     if (killdir("$dir")) {
-      symlink ("$first", "$dir");
+      symlink("$first", "$dir");
       return;
     } else {
       logprint("Couldn't successfully collapse $dir!\n", 1);
