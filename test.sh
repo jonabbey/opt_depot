@@ -1,9 +1,7 @@
 #!/bin/sh
 #
-# This is the bootstrapping configuration script for opt_depot. The
+# This is the validation testing script for the opt_depot suite.  The
 # only thing we count on to run this script is that /bin/sh works.
-#
-# Get enough information from the user to be able to find Perl 5
 #
 # ############################################################
 #
@@ -47,8 +45,8 @@
 # Jonathan Abbey 17 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.4 $
-# Last Mod Date: $Date: 2003/09/17 05:35:05 $
+# Version: $Revision: 1.5 $
+# Last Mod Date: $Date: 2003/09/17 06:35:31 $
 #
 ###############################################################################
 
