@@ -1,5 +1,4 @@
 #
-#
 # opt_clean v3.0 -*- Perl -*-
 #
 # This is a perl script that will find all the links under
@@ -55,8 +54,8 @@
 # Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.18 $
-# Last Mod Date: $Date: 2003/08/12 07:04:09 $
+# Version: $Revision: 1.19 $
+# Last Mod Date: $Date: 2003/08/12 18:06:46 $
 #
 #########################################################################
 
