@@ -42,8 +42,8 @@
 # University of Texas at Austin  opt-depot@arlut.utexas.edu
 #
 # Release: $Name:  $
-# Version: $Revision: 1.10 $
-# Last Mod Date: $Date: 2003/08/08 19:43:44 $
+# Version: $Revision: 1.11 $
+# Last Mod Date: $Date: 2003/08/08 19:46:38 $
 #
 ###############################################################################
 
@@ -81,18 +81,22 @@ EOF
     echo "###########################################################"
     echo
     echo
-    echo "Do you wish to use $_perl_loc? [Y/N]"
-    prompt "----> "
+    echo "Do you wish to use $_perl_loc?"
+    prompt "[Yes]> "
     read _answer
     echo
 
-    case $_answer in
-      y|Y|yes|Yes) perlok="y"
-        ;;
-      *) perlok="n"
-         perl_loc=""
-        ;;
-    esac
+    if [ "$_answer" = "" ]; then
+      perlok="y"
+    else
+      case $_answer in
+        y|Y|yes|Yes) perlok="y"
+          ;;
+        *) perlok="n"
+           perl_loc=""
+          ;;
+      esac
+    fi
   else
     echo "Perl has been located as $_perl_loc"
     echo
@@ -138,13 +142,9 @@ while [ "$perlok" = "n" ]; do
   if [ "$perl_loc" = "" ]; then
     echo "Please enter the name of the Perl 5 version you want to use"
     echo "and its location" 
-    prompt "[$perl_loc]> "
-    read perl_ans
+    prompt "> "
+    read perl_loc
     echo
-
-    if [ "$perl_ans" != "" ]; then
-	$perl_loc = $perl_ans
-    fi
 
     if [ ! -r "$perl_loc" ]; then
       if [ "$perl_loc" != "" ]; then
