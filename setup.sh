@@ -6,10 +6,12 @@
 # Get enough information from the user to be able to find Perl 5
 #
 # Release: $Name:  $
-# Version: $Revision: 1.4 $
-# Last Mod Date: $Date: 2003/07/08 03:39:29 $
+# Version: $Revision: 1.5 $
+# Last Mod Date: $Date: 2003/07/08 03:40:23 $
 #
 ###############################################################################
+
+depot_version="2.02"
 
 # 
 # Figure out how to do an echo without trailing newline
@@ -59,7 +61,7 @@ verify_perl ()
 #
 
 echo
-echo "## opt_depot setup shell version 1.0 ##"
+echo "## opt_depot setup version $depot_version ##"
 echo
 echo "Searching for 'perl'..."
 echo
