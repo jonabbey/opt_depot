@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.8 $
-# Last Mod Date: $Date: 2003/08/08 00:16:46 $
+# Version: $Revision: 1.9 $
+# Last Mod Date: $Date: 2003/08/08 00:18:30 $
 #
 #####################################################################
 
@@ -487,7 +487,7 @@ sub create_config {
 
   removelastslash($dest);
   $dest = make_absolute($dest);
-  testmakedir($dest);
+  testmakedir($dest, "Yes");
 
   ################### find depot ##################
 
@@ -497,7 +497,7 @@ sub create_config {
 
   removelastslash($depot);
   $depot = make_absolute($depot);
-  testmakedir($depot);
+  testmakedir($depot, "Yes");
 
   ################# find logdir ##################
 
@@ -650,7 +650,7 @@ print "\n";
 $targetdir = askstring("Please enter the directory where you want the opt_depot package installed",
 		       "/opt/depot/$depotname");
 $targetdir = make_absolute(removelastslash($targetdir));
-testmakedir($targetdir);
+testmakedir($targetdir, "Yes");
 
 mkdir "$targetdir/bin", 0777;
 mkdir "$targetdir/man", 0777;

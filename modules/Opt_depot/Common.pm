@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.9 $
-# Last Mod Date: $Date: 2003/08/08 00:12:32 $
+# Version: $Revision: 1.10 $
+# Last Mod Date: $Date: 2003/08/08 00:18:36 $
 #
 #####################################################################
 
@@ -430,7 +430,7 @@ sub create_dir {
 #
 #                                                              testmakedir
 #
-# input: a pathname to test
+# input: a pathname to test, default
 #
 # this directory will insure that the given path exists as a directory,
 # or it will die.  If the path doesn't already exist, the user will
@@ -438,7 +438,7 @@ sub create_dir {
 #
 #########################################################################
 sub testmakedir {
-  my($dir)= @_;
+  my($dir,$default)= @_;
   my($ans);
 
   if (-f $dir) {
@@ -447,7 +447,8 @@ sub testmakedir {
 
   if (!(-d $dir)) {
     print "\n";
-    unless (askyn("$dir does not exist. Do you wish to create it?")) {
+    unless (askyn("$dir does not exist. Do you wish to create it?",
+		  $default)) {
       die "Installation process aborted\n";
     }
     create_dir($dir);
