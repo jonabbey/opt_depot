@@ -54,8 +54,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.11 $
-# Last Mod Date: $Date: 2003/07/09 19:20:37 $
+# Version: $Revision: 1.12 $
+# Last Mod Date: $Date: 2003/07/19 01:03:02 $
 #
 #####################################################################
 
@@ -125,6 +125,17 @@ $opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
 #
 #####################################################################
 
+
+##########################################################################
+#
+#                                                              print_usage
+#
+##########################################################################
+sub print_usage {
+  print "Usage:  opt_depot [-vnqmrR] [-f\"config file\"] [-d\"depot dir\"] \n";
+  print "                  [-l\"log dir\"] [-b\"software base dir\"]\n";
+}
+
 #####################################################################
 #
 #                                                        is_man_there
@@ -163,6 +174,20 @@ sub needs_unify {
   my ($param) = @_;
 
   my ($temp, $match, $p);
+
+  # if we were given the -R flag, we always want to unify, whatever path
+  # we're looking at
+
+  if (exists $switches{'R'}) {
+    return 1;
+  }
+
+  # failing -R, if we're not given the -r flag, we're not recursing,
+  # so return 0
+
+  if (!exists $switches{'r'}) {
+    return 0;
+  }
 
   # We are going to be sure that we suffix our search term and list of
   # to-be-unified subdirectories with trailing slashes if they lack
@@ -221,6 +246,43 @@ sub extractdir {
 #
 ##########################################################################
 sub get_vars {
+
+  my($i, $word, $localword, $check_local);
+
+  # we'll want to check for a local (dest relative) config file,
+  # unless we find a -f option
+
+  $check_local = 1;
+
+  # scan through our command line parameters to find the -f parameter,
+  # if it exists
+
+  $i = 0;
+
+  while ($ARGV[$i] =~ /^-(.*)$/) {
+    $word=$1;
+    $i = $i + 1;
+
+    if ($word =~ /^f/) {
+      # redefine config file location
+
+      if (length($word)==1) {
+	$localword = $ARGV[$i];
+	$i = $i + 1;
+      } else {
+	$word =~ /^f(.*)$/;	
+	$localword = $1;
+      }
+
+      if (-r $localword) {
+	$config_file = $localword;
+	$check_local = 0;
+      } else {
+	die "Can't find/read $localword";
+      }
+    }
+  }
+
   open(CONFIG,"$config_file") || die "Could not open $config_file\n";
 
   while (<CONFIG>){
@@ -256,7 +318,7 @@ sub get_vars {
   # configuration file. This file should be placed into the $dest directory,
   # and will override the file on the server.
 
-  if (-e "$dest/opt.config") {
+  if ($check_local && -e "$dest/opt.config") {
     open(CONFIG,"$dest/opt.config") || die "Could Not open $dest/opt.config";
 
     while (<CONFIG>){
@@ -1142,6 +1204,11 @@ sub procargs {
 
   my ($word, $localword);
 
+  # note that we look for -f in the get_vars subroutine, so that we
+  # can allow for changes to the location of the opt.config file, but
+  # still override any other parameters defined in opt.config on the
+  # command line, here
+
   while ($ARGV[0] =~ /-(.*)$/) {
     $word=$1;
     $localword = "";
@@ -1195,15 +1262,14 @@ sub procargs {
 
       # set switches
 
-      if ($word =~ /(^[vnqmr]+)$/) {
+      if ($word =~ /(^[vnqmrR]+)$/) {
 	@switches= split (//, $1);
 	for $switch (@switches) {
 	  $switches{$switch}=1;
 	}
       } else {
 	print "\"$word\" is an invalid command entry!\n";
-	print "Usage:  opt_depot [-vnqmr] [-d\"depot dir\"]\n";
-	print "                  [-l\"log dir\"] [-b\"software based dir\"]\n";
+	&print_usage();
 	exit 0;
       }
     }	
@@ -1215,8 +1281,7 @@ sub procargs {
     # too many arguments
 
     print "Too many arguments!\n";
-    print "Usage:  opt_depot [-vnqmr] [-d\"depot dir\"] \n";
-    print "                  [-l\"log dir\"] [-b\"software base  dir\"]\n";
+    &print_usage();
     exit (0);
   }
 }
@@ -1511,7 +1576,7 @@ sub link_me {
 
 	      # check and see if a merge is actually required
 
-	      if ($switches{'r') && &needs_unify($subdir)) {
+	      if (&needs_unify($subdir)) {
 		&depth_first ($new_pack, $old_pack, $opt_directory);
 
 		# if we've decided to merge things, let's remove the
@@ -1570,7 +1635,7 @@ sub link_me {
   # make recursive call to link_me if necessary..
   #
 
-  if ($switches{'r'} && defined %pack_hash) {
+  if (($switches{'r'} || $switches{'R'}) && defined %pack_hash) {
     # we've got a directory conflict. let's call link_me again
 
     foreach $common_dir (keys %pack_hash) {
