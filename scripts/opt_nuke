@@ -50,8 +50,8 @@
 # Jonathan Abbey 31 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.6 $
-# Last Mod Date: $Date: 2003/08/02 03:47:03 $
+# Version: $Revision: 1.7 $
+# Last Mod Date: $Date: 2003/08/02 03:48:29 $
 #
 #####################################################################
 
@@ -141,7 +141,7 @@ sub is_under {
 
 #########################################################################
 #
-#                                                                  rmdirs
+#                                                                nukedirs
 #
 # input: $dir - directory to scan
 #
@@ -150,10 +150,10 @@ sub is_under {
 # output: removes all symbolic links from under $dir that point
 #         to a location under $depot
 #
-# NOTE: rmdirs() is recursive
+# NOTE: nukedirs() is recursive
 #
 #########################################################################
-sub rmdirs {
+sub nukedirs {
   my ($dir)= @_;
 
   my (@dirs, $dirs, @links, $link, $where, @contents);
@@ -189,7 +189,7 @@ sub rmdirs {
 
   for $dirs (@dirs) {
     if ("$dir/$dirs" ne $depot) {
-      rmdirs("$dir/$dirs");
+      nukedirs("$dir/$dirs");
     }
   }
 }
@@ -202,7 +202,7 @@ sub rmdirs {
 
 $usage_string =<<'ENDUSAGE';
 Usage:  opt_nuke [-vq] [-f\"config file\"] [-d\"depot dir\"]
-                  [-l\"log directory\"] [\b\"base directory\"]
+                 [-l\"log directory\"] [\b\"base directory\"]
 ENDUSAGE
 
 read_prefs($usage_string, $config_file, "vq", @ARGV);
@@ -210,6 +210,6 @@ init_log("opt_nuke $version");
 
 print "\nopt_nuke $version\n\n" if ($switches{'v'});
 
-rmdirs($dest); # go to base directory and remove the links
+nukedirs($dest); # go to base directory and remove the links
 
 close_log();
