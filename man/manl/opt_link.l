@@ -1,25 +1,30 @@
-.TH OPT_LINK l "09 July 2003" "ARL:UT/CSD"
+.TH OPT_LINK l "14 October 2003" "ARL:UT/CSD"
 .SH NAME
-opt_link 2.02 \- creates links from a single depot directory to packages located in one or more central package archive directories.
+opt_link 3.0 \- creates links from a single depot directory to packages located in one or more central package archive directories.
 .SH SYNOPSIS
 .B opt_link
 [
-.B -vqg
+.B -asqvng
 ]
 [
-.BI -l directory
+.BI -f config file
 ]
 [
-.BI -b directory
+.BI -l log file/directory
+]
+[
+.BI -b base directory
 ]
 .RS
 [
-.BI -d directory
+.BI -d depot directory
 ] 
 .SH ARGUMENTS
 .TP
+.BI -f file
+sets the location of the opt_depot suite's config file
 .BI -l directory
-sets the log file directory
+sets the log file directory or filename
 .TP
 .BI -b directory
 sets the software base directory (i.e. /opt) - this is where opt_link will look for .exclude
@@ -27,17 +32,23 @@ sets the software base directory (i.e. /opt) - this is where opt_link will look 
 .BI -d directory
 sets the depot directory
 .TP
+.B -a
+add only.  If -a is supplied on the command line, opt_link will not remove links from the depot directory, even if a .exclude file would normally require that
+.TP
+.B -s
+setup mode.  opt_link will not try to establish its own lock file.
+.TP
 .B -q
 quiet mode.  Logging will be turned off.
 .TP
 .B -v
 verbose mode
 .TP
+.B -n
+test mode.  As with make, -n will cause opt_link to display what it will do without doing it
+.TP
 .B -g 
 get_most_recent.  When this option is selected, opt_link will allow exclusions to occur regardless of the priority of the archive where a package is located. For example, a version of emacs-19.33 which excludes emacs-19.30 would be installed even if it resided on a lower priority site volume than emacs-19.30.
-.TP
-.BI -d directory
-changes the destination directory (default is /opt/depot)
 .SH DESCRIPTI0N
 opt_link is a companion to the opt_depot script.  Given the location of a central package archive (where packages are physically stored), opt_link 
 will construct links to all the directories in that site from a depot 
