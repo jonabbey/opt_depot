@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.21 $
-# Last Mod Date: $Date: 2003/09/18 18:56:08 $
+# Version: $Revision: 1.22 $
+# Last Mod Date: $Date: 2003/09/18 18:56:46 $
 #
 #####################################################################
 
@@ -715,7 +715,7 @@ sub run_test {
       print "Test " . $href->{'label'} . " had too few errors.\n";
     }
 
-    print "Target errors: " . $href->{'error_count'} . ", Actual errors: $result\n";
+    print "Target errors: " . $href->{'error_count'} . ", Actual errors: $error_count\n";
     return 0;
   } else {
     print "Success\n";
