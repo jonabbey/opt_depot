@@ -54,8 +54,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.14 $
-# Last Mod Date: $Date: 2003/07/25 02:26:53 $
+# Version: $Revision: 1.15 $
+# Last Mod Date: $Date: 2003/07/25 02:32:52 $
 #
 #####################################################################
 
@@ -71,7 +71,6 @@ $version = "2.02";
 
 # all directories listed below should not have trailing slashes
 
-$pack_ex = ".exclude";                  # per-package exclusion file name
 $catman = "catman -w -M $dest/$man";	# command to rebuild the whatis database
                                         # for the man command..
 
@@ -129,28 +128,6 @@ $opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
 #
 #####################################################################
 
-
-#####################################################################
-#
-#                                                        is_man_there
-# input: none
-#
-# uses: global @subdirs array
-#
-# output: returns true if our list of @subdirs includes $man
-#
-#####################################################################
-sub is_man_there {
-  my ($subdirectory);
-
-  foreach $subdirectory (@subdirs) {
-    if ($subdirectory eq "$man") {
-      return 1;
-    }
-  }
-
-  return 0;
-}
 
 #####################################################################
 #
@@ -313,8 +290,6 @@ sub read_exfile {
 #
 #########################################################################
 sub read_pack_ex {
-  my($exfile) = @_;
-
   my(@allfiles,@contents);
 
   opendir (IN, $depot) || die "Could not open $depot";
@@ -324,8 +299,8 @@ sub read_pack_ex {
   @allfiles = grep ((-e "$depot/$_") && ("$depot/$_" !~/^\./), @contents);
 
   foreach $file (@allfiles) {
-    if (-e "$depot/$file/$exfile") {
-      open(EXFILE, "$depot/$file/$exfile") || die "Could not open $depot/$file/$exfile";
+    if (-e "$depot/$file/.exclude") {
+      open(EXFILE, "$depot/$file/.exclude") || die "Could not open $depot/$file/.exclude";
 
       while (<EXFILE>){
 	s/\s+$//;		# cut off trailing whitespace
@@ -1378,15 +1353,11 @@ init_log("opt_depot");
 
 check_lock();
 
-$exfile = "$dest/.exclude";     # name of the .exclude file
-$prifile = "$dest/.priority";   # name of the .priority file
-
 logprint("\nopt_depot $version\n\n", 0);
 
-read_exfile($exfile);		# initialize exclude and priority lists
-read_pack_ex($pack_ex);		# add per-package exclusions to exclude hash
-read_prifile($prifile);
-handleinit();			# process lock, log this run
+read_exfile("$dest/.exclude");	# initialize exclude hash from primary file
+read_pack_ex();			# add per-package exclusions to exclude hash
+read_prifile("$dest/.priority");
 prepdirs();			# get our dirs set up
 
 ##
@@ -1410,17 +1381,13 @@ foreach $subdir (@subdirs) {
 
   if ($subdir ne "$man") {
     link_me($subdir,$opt_directory, @packages);
-  }
-}
+  } else {
+    logprint("LINKING:  $man\n",0);
 
-# we've got the simple stuff.. do the man pages now
-
-if (is_man_there()) {
-  logprint("LINKING:  $man\n",0);
-
-  foreach $package (@packages) {
-    if (!$packexclude{$package}) {
-      manlink($package);
+    foreach $package (@packages) {
+      if (!$packexclude{$package}) {
+	manlink($package);
+      }
     }
   }
 }
