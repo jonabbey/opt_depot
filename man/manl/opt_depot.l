@@ -35,8 +35,8 @@
 .\" University of Texas at Austin  opt-depot@arlut.utexas.edu
 .\"
 .\" Release: $Name:  $
-.\" Version: $Revision: 1.4 $
-.\" Last Mod Date: $Date: 2003/09/25 02:55:35 $
+.\" Version: $Revision: 1.5 $
+.\" Last Mod Date: $Date: 2003/10/06 22:06:41 $
 .TH OPT_DEPOT l "24 September 2003" "ARL:UT/CSD"
 .SH NAME
 opt_depot 3.0 \- creates a directory structure with links to packages under a "depot" directory
@@ -44,13 +44,13 @@ opt_depot 3.0 \- creates a directory structure with links to packages under a "d
 \fBopt_depot\fR [\fB-svnqmR\fR] [\fB-f\f(BI config file\fR] [\fB-d\f(BI directory\fR] [\fB-l\f(BI path\fR] [\fB-b\f(BI directory\fR]
 .SH DESCRIPTION
 \fBopt_depot\fR manages the creation of a symbolic link farm under a
-targeted base directory.
+targeted Base directory.
 The Base directory (\fI__BASEDIR__\fR)
-contains a set of deployment directories (\fIbin\fR, \fIlib\fR,
-\fIinclude\fR, \fIman\fR, by default).
+contains a set of Deployment directories (\fI__BASEDIR__/bin\fR, \fI__BASEDIR__/lib\fR,
+\fI__BASEDIR__/include\fR, \fI__BASEDIR__/man\fR, by default).
 \fBopt_depot\fR creates symbolic links from these directories to the
-matching subdirectories of packages contained under a depot directory.
-Typically the depot directory (\fI__DEPOTDIR__\fR) is contained under the base directory
+matching subdirectories of packages contained under a Depot directory.
+Typically the Depot directory (\fI__DEPOTDIR__\fR) is contained under the Base directory
 but in principle it can be placed anywhere in the file system.
 .P
 The point of the symbolic link farm created by \fBopt_depot\fR is that
@@ -61,7 +61,7 @@ there is no confusion as to which file goes with which package, and
 de-installing packages is as easy as installing them.
 .P
 \fBopt_depot\fR does nothing but create symbolic links from the
-deployment directories to the depot package subdirectories.
+Deployment directories to the depot package subdirectories.
 \fBopt_depot\fR can overwrite old links if it determines that a
 different package has been given priority (see the \fIpriority\fR
 section, below), but otherwise is dependent on \fBopt_clean\fR to take care
@@ -96,14 +96,14 @@ configuration file.
 .TP
 \fB-l\f(BI directory\fR set the location of the log directory/file
 .TP
-\fB-b\f(BI directory\fR sets the base directory for opt_depot
+\fB-b\f(BI directory\fR sets the Base directory for opt_depot
 .SH CONFIGURATION FILE
-\fBopt_depot\fR supports a configuration file, \fIopt.config\fR, to
+\fBopt_depot\fR uses a configuration file, \fIopt.config\fR, to
 set a number of configuration options, including many that are not
 supported by \fBopt_depot\fR's command line arguments.
-These include the list of package subdirectories (such as \fIbin\fR,
-\fIinclude\fR, and so on) to be linked by default, the list of
-subdirectories requiring recursive directory unification and so on.
+These include options to fine tune the list of Deployment directories
+to be managed, the list of subdirectories requiring recursive
+directory unification and so on.
 .P
 \fBopt_depot\fR looks for the \fIopt.config\fR file by examining
 the contents of the \fB-f\fR flag on the \fBopt_depot\fR command
@@ -111,7 +111,7 @@ line, if provided.
 If no \fB-f\fR flag is specfied on the \fBopt_depot\fR command line,
 \fBopt_depot\fR will look for the \fIopt.config\fR file first under
 the installation directory at \fI__INSTALLDIR__/etc/opt.config\fR, 
-and second under the base directory at \fI__BASEDIR__/opt.config\fR.
+and second under the Base directory at \fI__BASEDIR__/opt.config\fR.
 \fBopt_depot\fR in this case will take configuration information from
 both locations in turn, with the configuration settings in \fI__BASEDIR__/opt.config\fR
 overriding those set in \fI__INSTALLDIR__/etc/opt.config\fR.
@@ -119,7 +119,7 @@ overriding those set in \fI__INSTALLDIR__/etc/opt.config\fR.
 See the \fIopt.config\fR man page for more details.
 .SH LOCK FILE
 \fBopt_depot\fR employs a lock file (\fIlock.opt_depot\fR) located under
-the base directory (\fI__BASEDIR__/lock.opt_depot\fR) to make sure that
+the Base directory (\fI__BASEDIR__/lock.opt_depot\fR) to make sure that
 only one instance of any of the \fBopt_depot\fR scripts is running at
 any given time.
 If an \fBopt_depot\fR script is terminated abnormally, the user will
@@ -130,44 +130,36 @@ The \fB-s\fR command line flag inhibits this locking by the
 \fBopt_depot\fR scripts, and is intended to allow \fBopt_setup\fR to
 handle locking across the several scripts that it runs.
 .P
-.SH LINK CONTROL
+.SH .PRIORITY AND .EXCLUDE
 The \fBopt_depot\fR scripts use two configuration files,
 \fI__BASEDIR__/.priority\fR and \fI__BASEDIR__/.exclude\fR, to
-control what files are linked into the base directory structure.
-The \fI__BASEDIR__/.priority\fR file controls how to decide between competing
-choices multiple installed depot packages have conflicting files or directories.
-The \fI__BASEDIR__/.exclude\fR file specifies a list of directories and
-files which are not to be linked into the base directory, conflicts or no conflicts.
+help decide which files are linked into the Deployment directories.
+The \fI__BASEDIR__/.priority\fR file is used to decide between competing
+choices when depot packages have conflicting file or directory names.
+The \fI__BASEDIR__/.exclude\fR file lists directories and
+files which are not to be linked into the Deployment directories.
 .P
 .SH \f(BI.priority\fR
-The \fI.priority\fR file contains a list of packages and package
-files, one per line, in order of decreasing priority.  This is to
-allow the user to specify which packages or files are more important
-when name conflicts arise.  If two files conflict then the priority
-list is searched. If either of the files or directories containing
-them are found then a comparison is made to determine which is of
-higher priority.  If a file or its package is not contained in the
-priority list then it has the lowest priority.  If two files conflict
-and neither are found in the list then the first one linked remains.
-Files included in the list can either start with the package name
-(e.g. \fIxemacs-21.7/bin/xemacs\fR) or be absolute pathnames
-(e.g. \fI__DEPOTDIR__/xemacs-21.7/bin/xemacs\fR), or be the the names
-of the packages themselves, if you want to assign relative priority of
-all files in a pair of packages. Package names should be the name of
-the package as listed under the "depot" directory and should contain
-no slashes.  Comments may follow a pound sign placed at the beginning
-of a line.
+The \fI__BASEDIR__/.priority\fR file contains a list of packages and
+package files, in order of decreasing priority, one per line.
+Files or directories listed at the top of the
+\fI__BASEDIR__/.priority\fR file have higher priority than files or
+directories listed towards the end of the \fI.priority\fR file.
+All files or directories listed anywhere in the \fI.priority\fR file
+have priority over any files or directories not listed in the \
+\fI.priority\fR file.
 .P
 When \fBopt_depot\fR tries to resolve a conflict through the use of
-the \fI.priority\fR file, it first checks to see if the files involved
-in the conflict are explicitly listed in the \fI.priority\fR file.
+the \fI.priority\fR file, it first checks to see if any of the
+files involved in the conflict are explicitly listed in the \
+\fI.priority\fR file.
 If so, the priority of the file or files in the \fI.priority\fR file
 are used to determine which individual file should be linked.
-If neither of the files at issue are listed in the \fI.priority\fR
+If none of the files at issue are listed in the \fI.priority\fR
 file, \fBopt_depot\fR will give preference to whichever file is listed
 in a package or subdirectory of the highest priority.
-That is, if the file in question is \fI/opt/depot/test/bin/file\fR,
-and a link to \fI/opt/depot/old/bin/file\fR is already in place in \fI/opt/bin/file\fR,
+That is, if the file in question is \fI__DEPOTDIR__/test/bin/file\fR,
+and a link to \fI__DEPOTDIR__/old/bin/file\fR is already in place at \fI__BASEDIR__/bin/file\fR,
 the old link will be removed if:
 .P
 .RS
@@ -203,12 +195,11 @@ gnuemacs-19.23
 gnuemacs-18.57
 .RE
 .P
-In the above example, X11R5/man/manl/xterm.l
-.I
-would
-be given preference in linking, because it is a specific file.  In all other cases, the X11R6 man pages
-would be given preference, because they are not specifically enumerated, and X11R6/man, which contains
-the man pages, has a higher preference than X11R5/man.
+In the above example, X11R5/man/manl/xterm.l would be given preference
+in linking, because it is a specific file.
+In all other cases, the X11R6 man pages would be given preference,
+because they are not specifically enumerated, and X11R6/man, which
+contains the man pages, has a higher preference than X11R5/man.
 .P
 If X11R5 had been listed above X11R6/man in the .priority file, then
 X11R5's man pages would be linked.  \fBopt_depot\fR only looks at the
@@ -217,19 +208,23 @@ based on containing directories.
 .P
 .SH \f(BI.exclude\fR
 \fI__BASEDIR__/.exclude\fR is a list of packages and package files that should not
-be linked to the software base directory structure.  The format is the
-same as that for \fI__BASEDIR__/.priority\fR, with one package, directory, or file
-name per line.
+be linked to the software Base directory structure.  
+The format is the same as that for \fI__BASEDIR__/.priority\fR, with
+one package, directory, or file name per line.
 .P
-In addition to the software base directory (\fI__BASEDIR__\fR), \
-\fI.exclude\fR files may be placed in each package.
-These per-package \fI.exclude\fR files are effectively combined with
-the \fI.exclude\fR file contained in the software base directory.
-\fBopt_depot\fR treats all exclusions the same wherever they occur,
-but the per-package \fI.exclude\fR files have a special role to play
-when it comes to the \fBopt_link\fR script.
+In addition to the primary \fI__BASEDIR__/.exclude\fR file,
+\fBopt_depot\fR will scan all directories under the Depot directory
+(\fI__DEPOTDIR__\fR) for \fI.exclude\fR files.  Any \fI.exclude\fR
+files found in a depot package will be combined with the contents of
+the \fI__BASEDIR__/.exclude\fR file to produce the complete list of
+files to exclude from the Deployment directories.
+.P
+Note that the per-package \fI.exclude\fR files have a special and
+expanded role to play when it comes to the \fBopt_link\fR script's
+management of symbolic links from the Depot directory to remote
+package archives.
 See that manpage for details.
-.SH CONFLICT HANDLING
+.SH CONFLICT HANDLING RULES
 If \fBopt_depot\fR finds that a link to be made conflicts with an
 already existing link, it will follow some simple rules for resolving
 conflicts.
@@ -244,28 +239,40 @@ Second, if neither of the link targets has any priority set in the
 older link.
 .P
 This is generally the appropriate behavior, but there are times when a
-single symbolic link is not adequate to link software together.  Take
-the case where two packages each contain an \fIinclude\fR directory,
-and both of those \fIinclude\fR directories contain a common
-subdirectory, such as \fIperl\fR.  If \fBopt_depot\fR just followed
-the logic above, \fI__BASEDIR__/include/perl\fR would point to one of the
-two \fIinclude/perl\fR subdirectories.  There would be no effective unification
-of the files contained under those two subdirectories.
+single symbolic link placed in the Deployment directories is not
+adequate.
+Take the case where two packages each contain an \fIinclude\fR
+directory, and both of those \fIinclude\fR directories contain a
+common subdirectory, such as \fIperl\fR.
+If \fBopt_depot\fR just followed the logic above,
+\fI__BASEDIR__/include/perl\fR would point to one of the two
+\fIinclude/perl\fR subdirectories.
+There would be no effective unification of the files contained under
+those two subdirectories.
 .P
-If the \fB-R\fR command line flag is provided to \fBopt_depot\fR or if
-the \fIopt.config\fR file contains any directories specified by the
-\fIRecurse:\fR directive, \fBopt_depot\fR will perform a recursive
-directory unification process.  In our example, \fBopt_depot\fR would
-create a \fI__BASEDIR__/include/perl\fR directory, recurse down into it,
-and create symbolic links to lower level files or directories in the
-two source packages.  If a lower-level directory was also present in
-both packages' \fIinclude/perl\fR subdirectories, opt_depot
-would create yet another common subdirectory, and recurse down to link
-files from both subdirectory trees.
+The \fBopt_depot\fR (and \fBopt_clean\fR) scripts deal with this by
+supporting a recursive directory unification process, if enabled in
+the \fIopt.config\fR file or on the command line.
+In our example, \fBopt_depot\fR would create a
+\fI__BASEDIR__/include/perl\fR directory, recurse down into it, and
+create symbolic links to lower level files or directories in the two
+source packages.
+If a lower-level directory was also present in both packages'
+\fIinclude/perl\fR subdirectories, opt_depot would create yet another
+common subdirectory, and recurse down to link files from both
+subdirectory trees.
 .P
 Note that \fBopt_depot\fR will only ever attempt to perform recursive
 unification in cases where an existing link does not have priority
 over new files or directories to be linked.
+.P
+The \fBopt_depot\fR and \fBopt_clean\fR scripts will always perform
+recursive directory unification if the \fB-R\fR command line flag is
+supplied, or if the \fIopt.config\fR file has the \fBAlwaysRecurse:\fR
+option turned on.  Otherwise, recursive directory unification will only
+take place in those Deployment directories listed in the \fIopt.config\fR
+file's \fBRecurse:\fR directive.
+.P
 .SH LOGGING
 By default, \fBopt_depot\fR will log the run in the file specified in the
 \f(BILog:\fR directive specified in the \fIopt.config\fR file.  See
