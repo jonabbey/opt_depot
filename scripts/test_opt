@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.29 $
-# Last Mod Date: $Date: 2003/09/21 06:51:02 $
+# Version: $Revision: 1.30 $
+# Last Mod Date: $Date: 2003/09/21 07:05:56 $
 #
 #####################################################################
 
@@ -374,9 +374,9 @@ ENDSITES3
 		     'depot/'],
 	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
 		     'depot/',
-		     "depot/packA-1.0->".$siteA->{'path'}."/packA-1.0",
-		     "depot/packC-1.0->".$siteA->{'path'}."/packC-1.0",
-		     "depot/packX-1.2->".$siteA->{'path'}."/packX-1.2"],
+		     "depot/packA-1.0->".$siteA{'path'}."/packA-1.0",
+		     "depot/packC-1.0->".$siteA{'path'}."/packC-1.0",
+		     "depot/packX-1.2->".$siteA{'path'}."/packX-1.2"],
 	  endex  => ['^\.priority$', '^\.exclude$'],
 	  conf   => $testconfA,
 	  sites  => $testsitesB,
@@ -677,7 +677,11 @@ sub unexpected_check {
 	next;
       }
 
-      $desired_target = $test_href->{'root'} . "/" . $end_href->{$element};
+      if ($end_href->{$element} =~ /^\//) {
+	$desired_target = $end_href->{$element};
+      } else {
+	$desired_target = $test_href->{'root'} . "/" . $end_href->{$element};
+      }
 
       if ($desired_target =~ /\/$/ && $target !~ /\/$/) {
 	$target .= "/";
@@ -722,7 +726,11 @@ sub unexpected_check {
     # any symlink definitions look like 'dir/name/->target'..
 
     if ($end_href->{$element} ne "") {
-      $desired_target = $test_href->{'root'} . "/" . $end_href->{$element};
+      if ($end_href->{$element} =~ /^\//) {
+	$desired_target = $end_href->{$element};
+      } else {
+	$desired_target = $test_href->{'root'} . $end_href->{$element};
+      }
 
       print "Error, symlink mismatch in test " . $test_href->{'label'} . "\n";
       print "File $element was expected to be a symlink pointing at $desired_target.\n\n";
