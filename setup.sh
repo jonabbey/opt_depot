@@ -6,8 +6,8 @@
 # Get enough information from the user to be able to find Perl 5
 #
 # Release: $Name:  $
-# Version: $Revision: 1.3 $
-# Last Mod Date: $Date: 2003/07/07 21:25:25 $
+# Version: $Revision: 1.4 $
+# Last Mod Date: $Date: 2003/07/08 03:39:29 $
 #
 ###############################################################################
 
@@ -15,11 +15,44 @@
 # Figure out how to do an echo without trailing newline
 #
 
-case "`echo 'x\c'`" in
-'x\c')  echo="echo -n"   nnl= ;;       # BSD 
-x)      echo="echo"      nnl="\c" ;;   # Sys V
-*)      echo "$0 quitting: Can't set up echo." 1>&2; exit 1 ;;
-esac
+prompt ()
+{
+  if [ `echo "Z\c"` = "Z" ] > /dev/null 2>&1; then
+    # System V style echo
+    echo "$@\c"
+  else
+    # BSD style echo
+    echo -e -n "$@"
+  fi
+}
+
+verify_perl ()
+{
+  _perl_loc=$1
+
+  echo "Perl has been located as $perl_loc"
+  echo
+  echo "### The following is pertinent perl version information ###"
+  $_perl_loc -v   # this call to perl prints out the version info needed
+  echo "###########################################################"
+  echo
+  echo "Note - The version of perl must be 5.000 or greater to use opt_depot" 
+  echo
+  echo "Do you wish to use $_perl_loc? [Y/N]"
+  prompt "----> "
+  read _answer
+  echo
+
+  case $_answer in
+    y|Y|yes|Yes) perlok="y"
+      ;;
+    *) perlok="n"
+       perl_loc=""
+      ;;
+  esac
+
+  return 0
+}
 
 #
 # Let the games begin
@@ -33,54 +66,38 @@ echo
 
 # Find perl (GPERL)
 
-perl_loc=`which perl5` 2> /dev/null
-perl_name="perl5"
+perl_loc=`which perl5 2> /dev/null`
 
-if test ! -r "$perl_loc"; then
-  perl_loc=`which perl` 2> /dev/null
-  perl_name="perl"
+if [ ! -r "$perl_loc" ]; then
+  perl_loc=`which perl 2> /dev/null`
 fi
 
-if test ! -r "$perl_loc"; then
-  perl_loc = "no"
-fi
-  
-if [ $perl_loc = "no" ]; then 
-  echo "Perl has been located in $perl_loc under the name: $perl_name"	
-  echo "### The following is pertinent perl version information ###"
-  $perl_loc -v   # this call to perl prints out the version info needed
-  echo "###########################################################"
-  echo
-  echo "Note - The version of perl must be 5.000 or greater to use opt_depot" 
-  echo
-  echo "Do you wish to use this copy of Perl? [Y/N]"
-  $echo "----> ${nnl}"
-  read answer
-  echo
-else
-  echo "Perl not found"
-  echo
-  answer=N
+if [ ! -r "$perl_loc" ]; then
+  perl_loc=""
 fi
 
-if [ $answer = y ]; then 
-  answer="Y"
-fi
+perlok="n"
 
-if [ $answer != Y ]; then
-  echo "Please enter the name of the Perl 5 version you are using"
-  echo "and its location (ie /usr/local/bin/perl) " 
-  $echo "----> ${nnl}"
-  read perl_loc
-	
-  if [ -f "$perl_loc" ]; then 
-    echo "perl found"
-  else 
-    echo "The file $perl_loc was not located"
-    echo "Please check the filename and location and try again"
-    exit	
+while [ "$perlok" = "n" ]; do
+  if [ "$perl_loc" = "" ]; then
+    echo "Please enter the name of the Perl 5 version you are using"
+    echo "and its location (ie /usr/local/bin/perl) " 
+    prompt "----> "
+    read perl_loc
+    echo
+
+    if [ ! -r "$perl_loc" ]; then
+      if [ "$perl_loc" != "" ]; then
+        echo "Could not find $perl_loc"
+	echo
+      fi
+      perl_loc=""
+      continue
+    fi
   fi
-fi
+
+  verify_perl $perl_loc
+done
 
 echo
 echo "The following line will be added to the opt_depot scripts:"
@@ -95,5 +112,3 @@ fi
 
 echo " "
 $perl_loc scripts/opt_copy $perl_loc
- 
-
