@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.17 $
-# Last Mod Date: $Date: 2003/08/08 01:23:59 $
+# Version: $Revision: 1.18 $
+# Last Mod Date: $Date: 2003/08/08 01:37:26 $
 #
 #####################################################################
 
@@ -466,6 +466,7 @@ sub edit_sites {
   my $done = 0;
 
   while (!$done) {
+    print "\n";
     display_sites();
 
     print"\nPlease choose an option:\n";
