@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.40 $
-# Last Mod Date: $Date: 2003/10/13 09:40:24 $
+# Version: $Revision: 1.41 $
+# Last Mod Date: $Date: 2004/02/11 00:51:48 $
 #
 #####################################################################
 
@@ -553,9 +553,9 @@ sub dircheck {
 
   if (!(-d $dir)){
     if ($explain ne "") {
-      logprint("$explain ($dir) doesn't exist", 1);
+      logprint("$explain ($dir) doesn't exist\n", 1);
     } else {
-      logprint("$dir is not a directory", 1);
+      logprint("$dir is not a directory\n", 1);
     }
     clear_lock();
     exit(0);
