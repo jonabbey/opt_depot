@@ -30,8 +30,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.5 $
-# Last Mod Date: $Date: 2003/09/12 02:47:18 $
+# Version: $Revision: 1.6 $
+# Last Mod Date: $Date: 2003/09/15 19:19:33 $
 #
 #####################################################################
 
@@ -172,16 +172,143 @@ sub setup_test {
 
 #########################################################################
 #
+#                                                           recurse_check
+#
+# input:
+#	a path string
+#
+#	a reference to a test definition
+#
+#	a reference to a hash mapping directory and path element names
+#	to a target (if they should be links) or to empty string if
+#	they are physical directories and files.
+#
+#	a reference to a hash mapping excluded path elements to empty string
+#
+# recurse_check recurses on the path string, looking at each item found
+# and seeing whether it is in the test description's end state.  Any
+# path element listed in the test description's endex end state exclusion
+# list will not be checked.
+#
+# returns 1 on success, 0 on failure
+#
+#########################################################################
+
+sub recurse_check {
+  my ($path, $test_href, $end_href, $exclusion_href) = @_;
+
+  $local_path = $path;
+  if ($local_path eq "") {
+    $local_path = ".";
+  }
+
+  opendir(DIR, $local_path) || return 0;
+  @elements = grep (!/^\.\.?$/, readdir(DIR));
+  closedir(DIR);
+
+  # make sure we have base-qualified paths
+
+  if ($path ne "") {
+    @elements = map { $path . "/" . $_ } @elements;
+  }
+  
+  foreach $element (@elements) {
+    if (-d $element && !-l $element) {
+      $element = $element . "/";
+    }
+
+    if (defined $exclusion_href->{$element}) {
+      next;
+    }
+
+    if (!defined $end_href->{$element}) {
+      print "Error, found unexpected item $element in test " . $test->{'label'} . "\n";
+      $failed = 1;
+      next;
+    }
+
+    if (-l $element) {
+      $target = resolve(make_absolute($local_path), readlink($element));
+      
+      if ($target ne $end_href->{$element}) {
+	print "Error, symlink target error in test " . $test->{'label'} . "\n";
+	print "symlink $element should point to " . $end_href->{$element} . ", but instead points to\n";
+	print "$target.\n";
+	$failed = 1;
+	next;
+      }
+    }
+  }
+
+  # okay, we've finished checking this level.. look to see about recursion
+
+  foreach $element (@elements) {
+    if (-d $element && !-l $element) {
+      $element = $element . "/";
+
+      if (!defined $exclusion_href->{$element}) {
+	if (!recurse_check($element, $test_href, $end_href, $exclusion_href)) {
+	  $failed = 1;
+	}
+      }
+    }
+  }
+
+  if ($failed) {
+    return 0;
+  }
+
+  return 1;
+}
+
+#########################################################################
+#
 #                                                                run_test
 #
 # input: a reference to one of our test descriptions
 #
 # run_test runs the test
 #
+# returns 1 on success, 0 on failure
+#
 #########################################################################
 
 sub run_test {
   my ($href) = @_;
+
+  my ($command);
+
+  $command = $href->{'action'};
+  system('perl', $command) == 0 or {
+    print "Could not execute $command with perl.\n";
+    return 0;
+  };
+
+  # start the recurse_check from our base directory
+
+  @end_ary = @$href->{'end'};
+  
+  foreach $item (@end_ary) {
+    if ($item =~ /->/) {
+      ($before, $after) = split /->/, $item;
+      $end_hash{$item} = $after;
+    } else {
+      $end_hash{$item} = "";
+    }
+  }
+
+  @exclusion_ary = @$href->{'endex'};
+
+  foreach $item (@exclusion_ary) {
+    $exclusion_hash{$item} = "";
+  }
+
+  chdir($test_dir);
+  if (!recurse_check("", $href, \%end_hash, \%exclusion_hash)) {
+    print "Test " . $href->{'label'} . " failed.";
+  } else {
+    print "Test " . $href->{'label'} . " succeeded.";
+  }
 }
 
 #####################################################################
@@ -201,3 +328,4 @@ sub run_test {
 print "$0\n";
 print "$RealScript\n";
 setup_test(\%test1);
+run_test(\%test1);
