@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.11 $
-# Last Mod Date: $Date: 2003/08/08 00:31:18 $
+# Version: $Revision: 1.12 $
+# Last Mod Date: $Date: 2003/08/08 00:32:37 $
 #
 #####################################################################
 
@@ -241,8 +241,10 @@ sub edit_list ($\@) {
 
     if ($choice =~ /^a/i) {
       add_list($descriptor, @$list);
+      print "\n";
     } elsif ($choice =~ /^d/i) {
       delete_list($descriptor, @$list);
+      print "\n";
     } elsif ($choice =~ /^q/i) {
       $done = 1;
     } else {
