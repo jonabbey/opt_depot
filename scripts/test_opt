@@ -30,8 +30,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.12 $
-# Last Mod Date: $Date: 2003/09/16 03:02:45 $
+# Version: $Revision: 1.13 $
+# Last Mod Date: $Date: 2003/09/16 20:45:46 $
 #
 #####################################################################
 
@@ -92,19 +92,46 @@ ENDSITES1
 		     'depot/packB/lib/perl5/spam/y.pl',
 		     'depot/packB/include/test.h'],
 	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
-		     'bin/hi->depot/packA/bin/hi',
+		     'bin/hi->depot/packB/bin/hi',
 		     'lib/perl5/', 'lib/perl5/.made_by_opt_depot',
 		     'lib/perl5/spam/', 'lib/perl5/spam/.made_by_opt_depot',
 		     'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
 		     'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
 		     'include/test.h->depot/packB/include/test.h'],
-	  endex  => ['^depot\/$'],
+	  endex  => ['^depot\/$', '^\.priority$'],
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot',
-	  error_count => 1);
+	  priority => 'packB',
+	  error_count => 0);
 
-@tests = (\%test0, \%test1);
+%test2 = (label  => 'Recursive clean test',
+	  root   => $test_dir,
+	  start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+                     'depot/packA/bin/hi',
+		     'depot/packA/lib/perl5/spam/x.pl',
+		     'depot/packA/include/test.h',
+		     'depot/packB/bin/hi',
+		     'depot/packB/lib/perl5/spam/y.pl',
+		     'depot/packB/include/test.h',
+                     'bin/hi->depot/packB/bin/hi',
+                     'lib/perl5/', 'lib/perl5/.made_by_opt_depot',
+                     'lib/perl5/spam/', 'lib/perl5/spam/.made_by_opt_depot',
+                     'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
+                     'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
+                     'include/test.h->depot/packB/include/test.h'],
+	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		     'bin/hi->depot/packB/bin/hi',
+		     'lib/perl5->depot/packB/lib/perl5/',
+		     'include/test.h->depot/packB/include/test.h'],
+	  endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+	  conf   => $testconfA,
+	  sites  => $testsitesA,
+	  action => 'opt_clean',
+	  exclude => 'packA',
+	  error_count => 0);
+
+@tests = (\%test0, \%test1, \%test2);
 
 #####################################################################
 
@@ -128,9 +155,9 @@ sub setup_test {
   $rootdir = $href->{'root'};
   $startary = $href->{'start'};
 
-  print "Setting up \"$label\" at $rootdir\n";
-
   killdir($rootdir);
+  create_dir($rootdir);
+  chdir($rootdir);
   
   foreach $element (@$startary) {
 
@@ -140,16 +167,35 @@ sub setup_test {
       $newpath = $rootdir . "/" . $element;
     }
 
-    if ($newpath =~ /\/$/) {
-      if (!create_dir($newpath)) {
-	return 0;
-      }
-    } else {
-      if (!create_dir(extractdir($newpath))) {
+    if ($newpath =~ /->/) {
+      ($before, $after) = split /->/, $newpath;
+
+      if (!create_dir(extractdir($before))) {
 	return 0;
       }
 
-      touch($newpath);
+      if ($after =~ /\/$/) {
+	$after = substr($after,0,length($after)-1);
+      }
+
+      $after = $href->{'root'} . "/" . $after;
+
+      if (!symlink($after, $before)) {
+	print "Error, could not create symlink($after, $before) in setup for " . $href->{'label'} . "\n";
+	return 0;
+      }
+    } else {
+      if ($newpath =~ /\/$/) {
+	if (!create_dir($newpath)) {
+	  return 0;
+	}
+      } else {
+	if (!create_dir(extractdir($newpath))) {
+	  return 0;
+	}
+
+	touch($newpath);
+      }
     }
   }
 
@@ -157,14 +203,14 @@ sub setup_test {
   create_dir($test_etc);
 
   if (!open(OUT, ">$test_etc/opt.config")) {
-    print "Couldn't open $test_etc/opt.config";
+    print "Couldn't open $test_etc/opt.config\n";
     return 0;
   }
   print OUT $href->{'conf'};
   close(OUT);
 
   if (!open(OUT, ">$test_etc/sites")) {
-    print "Couldn't open $test_etc/sites";
+    print "Couldn't open $test_etc/sites\n";
     return 0;
   }
   print OUT $href->{'sites'};
@@ -172,6 +218,26 @@ sub setup_test {
 
   killdir($test_logdir);
   create_dir($test_logdir);
+
+  if (defined $href->{'priority'}) {
+    if (!open(OUT, ">$test_dir/.priority")) {
+      print "Couldn't open $test_dir/.priority\n";
+      return 0;
+    }
+    print OUT $href->{'priority'};
+    print OUT "\n";
+    close(OUT);
+  }
+
+  if (defined $href->{'exclude'}) {
+    if (!open(OUT, ">$test_dir/.exclude")) {
+      print "Couldn't open $test_dir/.exclude\n";
+      return 0;
+    }
+    print OUT $href->{'exclude'};
+    print OUT "\n";
+    close(OUT);
+  }
   
   return 1;
 }
@@ -267,6 +333,7 @@ sub recurse_check {
 
     if (-l $element) {
       $target = resolve(make_absolute($local_path), readlink($element));
+      $target = resolve($test_href->{'root'} . "/" . $local_path, readlink($element));
 
       $desired_target = $test_href->{'root'} . "/" . $end_href->{$element};
 
@@ -278,6 +345,11 @@ sub recurse_check {
 	print "Error, symlink target error in test " . $test_href->{'label'} . "\n";
 	print "symlink $element should point to $desired_target, but instead points to\n";
 	print "$target.\n";
+	
+	print "\$element is $element\n";
+	print "readlink(\$element) is " . readlink($element) . "\n";
+	print "\$local_path is $local_path\n";
+	print "make_absolute(\$local_path) is " . make_absolute($local_path) . "\n";
 	$error_count++;
 	next;
       }
@@ -353,7 +425,7 @@ sub run_test {
     print "Target errors: " . $href->{'error_count'} . ", Actual errors: $result\n";
     return 0;
   } else {
-    print "\nTest " . $href->{'label'} . " had the expected number of errors.\n";
+    print "Success\n";
     return 1;
   }
 }
@@ -373,7 +445,7 @@ $tests_run = 0;
 
 foreach $test (@tests) {
   print "\n------------------------------------------------------------\n";
-  print "Running test " . $test->{'label'} . "\n\n";
+  print "Running test " . $test->{'label'} . " at " . $test->{'root'} . "\n\n";
   setup_test($test);
   if (!run_test($test)) {
     $test_failures++;
