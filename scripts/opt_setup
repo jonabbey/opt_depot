@@ -51,8 +51,8 @@
 # Jonathan Abbey 31 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.7 $
-# Last Mod Date: $Date: 2003/08/02 03:47:03 $
+# Version: $Revision: 1.8 $
+# Last Mod Date: $Date: 2003/08/07 03:04:57 $
 #
 ##########################################################################
 
@@ -77,11 +77,11 @@ $config_file = resolve($RealBin, "../etc/opt.config");
 ################################################################################
 
 $usage_string =<<'ENDUSAGE';
-Usage:  opt_setup [-vqgmnr] [-f\"config file\"] [-d\"depot dir\"]
+Usage:  opt_setup [-vqgmnrR] [-f\"config file\"] [-d\"depot dir\"]
                   [-l\"log dir\"] [-b \"software base directory\"]
 ENDUSAGE
 
-read_prefs($usage_string, $config_file, "gvqmnr", @ARGV);
+read_prefs($usage_string, $config_file, "gvqmnrR", @ARGV);
 init_log("opt_setup $version");
 
 $localpath = "$RealBin";
@@ -102,8 +102,8 @@ $file_string = "-f$config_file -d$depot -l$logdir -b$dest";
 # opt_setup, and so don't need to do their own lock handling
 
 !system ("${localpath}/opt_link -s $switches{'g'} $switches{'v'} $switches{'q'} $switches{'n'} $file_string") || die "opt_link failed";
-!system ("${localpath}/opt_clean -s $switches{'v'} $switches{'q'} $switches{'r'} $file_string") || die "opt_clean failed";
-!system ("${localpath}/opt_depot -s $switches{'m'} $switches{'v'} $switches{'q'} $switches{'r'} $switches{'n'} $file_string")
+!system ("${localpath}/opt_clean -s $switches{'v'} $switches{'q'} $switches{'r'} $switches{'R'} $file_string") || die "opt_clean failed";
+!system ("${localpath}/opt_depot -s $switches{'m'} $switches{'v'} $switches{'q'} $switches{'r'} $switches{'R'} $switches{'n'} $file_string")
         || die "opt_depot failed";
 
 clear_lock();

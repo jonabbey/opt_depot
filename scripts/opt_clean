@@ -46,8 +46,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.10 $
-# Last Mod Date: $Date: 2003/08/02 03:51:15 $
+# Version: $Revision: 1.11 $
+# Last Mod Date: $Date: 2003/08/07 03:03:42 $
 #
 #########################################################################
 
@@ -291,7 +291,7 @@ sub rmdirs{
     # but only if the -r option is not in effect and the dir
     # contains an $opt_file
 
-    if (($switches{'r'}) && (-e "$dir/$opt_file")) {
+    if (($switches{'r'} || $switches{'R'}) && (-e "$dir/$opt_file")) {
       logprint("Removing empty directory: $dir\n", 1);
 
       if (!killdir("$dir")) {
@@ -398,7 +398,7 @@ sub rmdirs{
 	# we should collapse this directory, but only if the $opt_file
 	# exists, and if the -r option is employed
 
-	if (($switches{'r'}) && (-e "$dir/$dirs/$opt_file")) {
+	if (($switches{'r'} || $switches{'R'}) && (-e "$dir/$dirs/$opt_file")) {
 	  logprint("Collapsing Directory: $dir/$dirs\n",1);
 
 	  if (killdir("$dir/$dirs")) {
@@ -421,11 +421,11 @@ sub rmdirs{
 ################################################################################
 
 $usage_string =<<'ENDUSAGE';
-Usage:  opt_clean [-svqr] [-f\"config file\"] [-d\"depot dir\"]
+Usage:  opt_clean [-svqrR] [-f\"config file\"] [-d\"depot dir\"]
                   [-l\"log directory\"] [\b\"base directory\"]
 ENDUSAGE
 
-read_prefs($usage_string, $config_file, "svqr", @ARGV);
+read_prefs($usage_string, $config_file, "svqrR", @ARGV);
 init_log("opt_clean $version");
 
 print "\nopt_clean $version\n\n" if ($switches{'v'});
