@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.30 $
-# Last Mod Date: $Date: 2003/08/15 02:52:03 $
+# Version: $Revision: 1.31 $
+# Last Mod Date: $Date: 2003/08/15 03:04:17 $
 #
 #####################################################################
 
@@ -199,7 +199,9 @@ sub read_exfile {
 	$_ = parsequoted($_, 0); # leave in escapes
 
 	# if we have an unescaped :, treat that as a label separator,
-	# and skip this entry
+	# and skip this entry.. we (opt_depot) don't care about
+	# exclusions from a particular site volume.. that's for
+	# opt_link.
 
 	if (!/(?:\\.|[^:])*$/){	
 	  next;
@@ -823,9 +825,9 @@ sub prepdirs {
 # uses: opt_file global variable name
 #
 # output: makes sure the specified directory exists. If it doesn't
-#         then synthesize_dir makes it (along with any super-directories),
-#         and places a .made_by_opt_depot tag in it.
-#
+#         then synthesize_dir makes it (along with any necessary
+#         super-directories), and places a .made_by_opt_depot tag in
+#         it.
 #
 #########################################################################
 sub synthesize_dir {
