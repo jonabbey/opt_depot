@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.18 $
-# Last Mod Date: $Date: 2003/09/17 05:09:10 $
+# Version: $Revision: 1.19 $
+# Last Mod Date: $Date: 2003/09/17 06:31:51 $
 #
 #####################################################################
 
@@ -44,9 +44,10 @@ $version = "3.0";
 
 ## defaults #########################################################
 
-$test_dir = "/tmp/opt_suite-$version/base";
-$test_logdir = "/tmp/opt_suite-$version/log";
-$test_etc = "/tmp/opt_suite-$version/etc";
+$test_root = "/tmp/opt_suite-$version";
+$test_dir = "$test_root/base";
+$test_logdir = "$test_root/log";
+$test_etc = "$test_root/etc";
 
 if (defined $ENV{'PERLLOC'}) {
   $perlloc = $ENV{'PERLLOC'};
@@ -635,3 +636,12 @@ foreach $test (@tests) {
 
 print "\n------------------------------------------------------------\n";
 print "Tests Ran: $tests_run\tTests Succeeded: " . ($tests_run-$test_failures) . "\tTests Failed: " . $test_failures . "\n";
+
+if (!$test_failures) {
+  killdir($test_root);
+} else {
+  print "\n";
+  if (!askyn("There were failures encountered.. do you wish to retain the test tree in $test_root?")) {
+    killdir($test_root);
+  }
+}
