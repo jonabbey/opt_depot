@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.24 $
-# Last Mod Date: $Date: 2003/09/18 19:35:44 $
+# Version: $Revision: 1.25 $
+# Last Mod Date: $Date: 2003/09/18 19:37:45 $
 #
 #####################################################################
 
@@ -645,7 +645,7 @@ sub expected_check {
 
 	if (!-e $itempath) {
 	  print "Error, directory missing in test " . $test_href->{'label'} . "\n";
-	  print "$itempath was supposed to be a directory, but does not exist.\n";
+	  print "$itempath was supposed to be a directory, but does not exist.\n\n";
 	  $error_count++;
 	  next;
 	}
@@ -654,7 +654,7 @@ sub expected_check {
 
 	if (!-e $itempath) {
 	  print "Error, file missing in test " . $test_href->{'label'} . "\n";
-	  print "file $itempath does not exist.\n";
+	  print "file $itempath does not exist.\n\n";
 	  $error_count++;
 	  next;
 	}
