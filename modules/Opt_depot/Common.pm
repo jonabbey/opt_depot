@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.39 $
-# Last Mod Date: $Date: 2003/10/13 08:32:45 $
+# Version: $Revision: 1.40 $
+# Last Mod Date: $Date: 2003/10/13 09:40:24 $
 #
 #####################################################################
 
@@ -813,12 +813,16 @@ sub subpathcheck ($\%) {
   my ($path, $assoc_ref) = @_;
   my %assoc = %$assoc_ref;
   my ($t_pri, $hi_pri);
+  my ($pathregexp);
 
   # we only work if we're given a directory element, of course,
   # otherwise there's no point trying to imagine subcomponent
   # priorities
 
   $path = removelastslash($path);
+
+  $pathregexp = $path;
+  $pathregexp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
 
   if (!-d $path) {
     logprint("Subpathcheck ASSERT ERROR: non-directory item $path submitted\n", 1);
@@ -848,7 +852,7 @@ sub subpathcheck ($\%) {
   # be greater than zero, so we just look for the lowest
 
   foreach $key (keys %assoc) {
-    if ($key =~ /^$path\//) {
+    if ($key =~ /^$pathregexp\//) {
 
       # you only get counted for priority if you exist
 
@@ -1016,17 +1020,25 @@ sub make_absolute {
 sub swap_prefixes {
   my($path, $oldprefix, $newprefix) = @_;
 
-  my($temp, $result);
+  my($temp, $temp2, $result);
 
-  if ($path !~ /^$oldprefix/) {
+  $temp = $oldprefix;
+  $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
+
+  $temp2 = $newprefix;
+  $temp2 =~ s/(\W)/\\$1/g;	# backslash escape any special chars
+
+  if ($path !~ /^$temp/) {
     logprint("Error, swap_prefixes called with a path ($path) that doesn't begin with the oldprefix ($oldprefix)\n", 1);
     return "";
   }
 
   $result = $path;
-  $temp = $oldprefix;
-  $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
-  $result =~ s/^$temp/$newprefix/;
+  $result =~ s/^$temp/$temp2/;
+
+  # undo our backslashing
+
+  $result =~ s/\\(.)/$1/g;
 
   return $result;
 }
@@ -1343,22 +1355,25 @@ sub read_config {
 sub find_arg {
   my ($token, @args) = @_;
 
-  my ($i, $word, $localword);
+  my ($i, $word, $localword, $tokenregexp);
 
   $i = 0;
   $localword = "";
+
+  $tokenregexp = $token;
+  $tokenregexp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
 
   while ($i <= $#args && $args[$i] =~ /^-(.*)$/) {
     $word=$1;
     $i++;
 
-    if ($word =~ /^$token/) {
+    if ($word =~ /^$tokenregexp/) {
       # redefine config file location
 
       if (length($word)==1) {
 	$localword = $args[$i];
       } else {
-	$word =~ /^$token(.*)$/;
+	$word =~ /^$tokenregexp(.*)$/;
 	$localword = $1;
       }
 
@@ -1427,6 +1442,11 @@ sub check_args {
   my ($switchlist, @args) = @_;
 
   my ($i, $word);
+
+  if ($switchlist =~ /\W/) {
+    logprint("ASSERT: check_args received special characters in switchlist\n", 1);
+    exit(1);
+  }
 
   $i = 0;
 
