@@ -54,8 +54,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.12 $
-# Last Mod Date: $Date: 2003/07/19 01:03:02 $
+# Version: $Revision: 1.13 $
+# Last Mod Date: $Date: 2003/07/19 01:12:09 $
 #
 #####################################################################
 
@@ -1209,7 +1209,7 @@ sub procargs {
   # still override any other parameters defined in opt.config on the
   # command line, here
 
-  while ($ARGV[0] =~ /-(.*)$/) {
+  while ($ARGV[0] =~ /^-(.*)$/) {
     $word=$1;
     $localword = "";
 
