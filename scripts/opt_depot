@@ -1,4 +1,4 @@
-# opt_depot v2.01 -*- Perl -*-
+# opt_depot v2.02 -*- Perl -*-
 #
 # This script will go through the $depot directory and find files in
 # specific subdirectories of various packages and make links in the
@@ -45,15 +45,23 @@
 # A -b option must now be given with the destination (or base) directory
 # Erik Grostic 10 July 1997
 #
+# v2.02
+# Reworked the recursive unification implementation to not get confused
+# due to an under-specified regexp.  Made the per-package exclude files
+# properly affect man page linking.  Lots of reformatting, and various
+# minor code fixes and cleanups.
+# Jonathan Abbey 30 June 2003
+#
+#
 # Release: $Name:  $
-# Version: $Revision: 1.6 $
-# Last Mod Date: $Date: 2003/06/28 03:29:43 $
+# Version: $Revision: 1.7 $
+# Last Mod Date: $Date: 2003/07/02 01:11:26 $
 #
 #####################################################################
 
 use English;
 
-$version = "2.01";
+$version = "2.02";
 
 ## defaults #########################################################
 
@@ -1510,10 +1518,10 @@ sub link_me {
 		  foreach $dir (keys %merge_list) {
 		    &create_dir ($dir);
 		  }
+
+		  next; # we've made directories, we'll do the linking through recursion
 		}
 	      }
-
-	      next; # we've made directories, we'll do the linking through recursion
 	    }
 	  } elsif (-d "$dest/$subdir/$file") {
 	    # there is already a subdirectory built for us.
@@ -1531,7 +1539,7 @@ sub link_me {
 
 	    next; # ditto -- wait to recurse to link
 	  }
-	}
+	} # end if (-d "$depot/$package/$subdir/$file")
 
 	# no subdirectory unification to worry about, just link the file
 
