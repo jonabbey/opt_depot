@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.43 $
-# Last Mod Date: $Date: 2003/10/14 23:02:05 $
+# Version: $Revision: 1.44 $
+# Last Mod Date: $Date: 2003/10/15 03:56:49 $
 #
 #####################################################################
 
@@ -743,6 +743,27 @@ ENDSITES3
 	   action => 'opt_link',
 	   error_count => 0);
 
+%test13b = (label  => 'opt_link -a test',
+	   root   => $test_dir,
+	   start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/',
+		      'depot/packB-1.0->'.$siteA{'path'}.'/packB-1.0'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/',
+		      "depot/packA-1.0->".$siteA{'path'}."/packA-1.0",
+		      "depot/packB-2.0->".$siteB{'path'}."/packB-2.0",
+		      "depot/packB-1.0->".$siteA{'path'}."/packB-1.0",
+		      "depot/packC-1.0->".$siteA{'path'}."/packC-1.0",
+		      "depot/packX-1.2->".$siteA{'path'}."/packX-1.2",
+		      "depot/packY-4.51->".$siteB{'path'}."/packY-4.51"],
+	   endex  => ['^\.priority$', '^\.exclude$'],
+	   conf   => $testconfA,
+	   sites  => $testsitesD,
+	   sitedefs => [\%siteA, \%siteB],
+	   action => 'opt_link',
+	   params => '-a',
+	   error_count => 0);
+
 # test14 uses $testsitesD to put siteA ahead of siteB in the priority
 # order, and asserts $testconfB to make opt_link use the GetMostRecent
 # (-g) algorithm, allowing packages to exclude each other across site
@@ -824,7 +845,7 @@ ENDSITES3
 	  \%test4g, \%test4h,
 	  \%test5, \%test6, \%test7,
 	  \%test8, \%test9, \%test10, \%test11,
-	  \%test12, \%test13, \%test14, \%test15);
+	  \%test12, \%test13, \%test13b, \%test14, \%test15);
 
 #####################################################################
 
@@ -1297,16 +1318,28 @@ sub expected_check {
 sub run_test {
   my ($href) = @_;
 
-  my ($command, @end_ary, $item, $before, $after, %end_hash, $error_count);
+  my ($command, $params, @end_ary, $item, $before, $after, %end_hash, $error_count);
 
   $error_count = 0;
 
   $command = $href->{'action'};
 
-  if (system($perlloc, "$RealBin/" . $command, "-f$test_etc/opt.config")) {
-    print "Could not execute $command with $perlloc.\n";
-    return 0;
-  };
+  $params = $href->{'params'};
+
+  if (defined $params) {
+
+    print "Running $command with param $params\n";
+
+    if (system($perlloc, "$RealBin/" . $command, "-f$test_etc/opt.config", $params)) {
+      print "Could not execute $command with $perlloc.\n";
+      return 0;
+    };
+  } else {
+    if (system($perlloc, "$RealBin/" . $command, "-f$test_etc/opt.config")) {
+      print "Could not execute $command with $perlloc.\n";
+      return 0;
+    };
+  }
 
   # check to make sure we don't have anything in the test tree that we
   # don't expect to be there
