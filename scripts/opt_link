@@ -53,8 +53,8 @@
 # Jonathan Abbey 29 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.9 $
-# Last Mod Date: $Date: 2003/08/02 03:27:55 $
+# Version: $Revision: 1.10 $
+# Last Mod Date: $Date: 2003/08/02 03:47:02 $
 #
 #####################################################################
 
@@ -73,11 +73,11 @@ $activity = 0;
 # ordered priority listing of various package site labels and their
 # corresopnding directories
 
-$sites_file = "$RealBin/../etc/sites";
+$sites_file = resolve($RealBin, "../etc/sites");
 
 # configuration file containing $dest, $depot and $logdir vars
 
-$config_file = "$RealBin/../etc/opt.config";
+$config_file = resolve($RealBin, "../etc/opt.config");
 
 # The global variable $test is used with the -n command line option.
 # If it is true, then no actual linking or removal is performed

@@ -46,8 +46,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.7 $
-# Last Mod Date: $Date: 2003/08/02 03:27:54 $
+# Version: $Revision: 1.8 $
+# Last Mod Date: $Date: 2003/08/02 03:47:02 $
 #
 #########################################################################
 
@@ -61,18 +61,14 @@ $version = "3.0";
 
 ## defaults #########################################################
 
-# none of these directories should have trailing slashes
+# configuration file containing $dest, $depot and $logdir vars
 
-# Note: The definitions for .exclude can be found under MAIN
+$config_file = resolve($RealBin, "$../etc/opt.config");
 
+# this file is created by opt_depot when it makes a directory. only
+# directories containing this file may be removed or collapsed
 
-$config_file = "$RealBin/../etc/opt.config";
-                                        # configuration file containing
-                                        # $dest, $depot and $logdir vars
-
-$opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
-                                  # when it makes a directory. only these
-                                  # directories may be removed or collapsed
+$opt_file = ".made_by_opt_depot";
 
 #########################################################################
 #

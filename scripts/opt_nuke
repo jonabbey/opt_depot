@@ -1,5 +1,4 @@
 #
-#
 # opt_nuke v3.0 -*- Perl -*-
 #
 # This is a perl script that will find all the links under
@@ -51,8 +50,8 @@
 # Jonathan Abbey 31 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.5 $
-# Last Mod Date: $Date: 2003/08/02 03:27:55 $
+# Version: $Revision: 1.6 $
+# Last Mod Date: $Date: 2003/08/02 03:47:03 $
 #
 #####################################################################
 
@@ -66,11 +65,9 @@ $version = "3.0";
 
 ## defaults #########################################################
 
-# none of these should have trailing slashes
-
 # configuration file containing $dest, $depot and $logdir vars
 
-$config_file = "$RealBin/../etc/opt.config";
+$config_file = resolve($RealBin, "../etc/opt.config");
 
 #########################################################################
 #

@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.18 $
-# Last Mod Date: $Date: 2003/08/02 03:27:54 $
+# Version: $Revision: 1.19 $
+# Last Mod Date: $Date: 2003/08/02 03:47:02 $
 #
 #####################################################################
 
@@ -71,13 +71,15 @@ $version = "3.0";
 
 ## defaults #########################################################
 
-$config_file = "$RealBin/../etc/opt.config";
-                                        # configuration file containing
-                                        # $dest, $depot and $logdir vars
+# configuration file containing $dest, $depot and $logdir vars
 
-$opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
-                                  # when it makes a directory. only these
-                                  # directories may be removed or collapsed
+$config_file = resolve($RealBin, "../etc/opt.config");
+
+# this file is created by opt_depot when it makes a directory. only
+# those directories containing this hidden file may be removed or
+# collapsed by opt_clean
+
+$opt_file = ".made_by_opt_depot";
 
 #####################################################################
 #
