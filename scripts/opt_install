@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.10 $
-# Last Mod Date: $Date: 2003/08/08 00:24:06 $
+# Version: $Revision: 1.11 $
+# Last Mod Date: $Date: 2003/08/08 00:31:18 $
 #
 #####################################################################
 
@@ -199,7 +199,7 @@ sub delete_list  ($\@) {
 
   $i = 0;
   $ok = 0;
-  while ($i <= $#(@$list)) {
+  while ($i <= $#$list) {
     if ($list->[$i] eq $remove) {
       delete $list->[$i];
       $ok = 1;
