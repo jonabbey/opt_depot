@@ -54,8 +54,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.10 $
-# Last Mod Date: $Date: 2003/07/07 20:45:16 $
+# Version: $Revision: 1.11 $
+# Last Mod Date: $Date: 2003/07/09 19:20:37 $
 #
 #####################################################################
 
@@ -1344,8 +1344,7 @@ sub create_dir {
 #
 #                                                             depth_first
 # input: * Two packages for comparison
-#        * The current directory under /$dest (ie lib, bin, info, include...)
-#
+#        * The current directory under /$dest (ie lib, bin, info, include)
 #
 # uses: merge_list associative array, global @all_dirs
 #
