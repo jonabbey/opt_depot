@@ -61,8 +61,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.50 $
-# Last Mod Date: $Date: 2003/10/13 08:32:11 $
+# Version: $Revision: 1.51 $
+# Last Mod Date: $Date: 2003/10/13 09:41:33 $
 #
 #####################################################################
 
@@ -77,7 +77,7 @@ $version = "3.0";
 ## defaults #########################################################
 
 $debug = 0;
-$force_verbose = 1;
+$force_verbose = 0;
 
 # configuration file containing $dest, $depot and $logdir vars
 
@@ -500,7 +500,7 @@ sub clear_conflict {
 #########################################################################
 sub report_conflicts {
 
-  my ($target, @targetarray, $href, $link, @linkkeys);
+  my ($target, @targetarray, $href, $link, @linkkeys, $temp);
 
   if (scalar(keys %global_conflict)) {
     logprint("\nUNMADE OR UNDONE LINKS:\n", 0);
@@ -515,8 +515,12 @@ sub report_conflicts {
       foreach $link (@linkkeys) {
 	$reason = ${%$href}{$link};
 
-        $target =~ s/^$depot\/(.*)/$1/;
-        $reason =~ s/$depot\///;
+        $temp = $depot;
+        $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
+
+        $target =~ s/^$temp\/(.*)/$1/;
+        $reason =~ s/$temp\///;
+
         logprint("$target (conflict: $reason)\n", 0);
       }
     }
@@ -550,7 +554,7 @@ sub report_conflicts {
 sub smartlink {
   my ($package, $target, $link) = @_;
 
-  my ($oldtarget, $op, $np, $opp, $npp);
+  my ($oldtarget, $op, $np, $opp, $npp, $temp);
 
   # if we are supposed to exclude this file, skip linking it
 
@@ -596,7 +600,10 @@ sub smartlink {
 
   # if the existing link points out of $depot, we're done
 
-  if ("$oldtarget" !~ /^$depot\//) {
+  $temp = $depot;
+  $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
+
+  if ("$oldtarget" !~ /^$temp\//) {
     return 0;
   }
 
@@ -1020,9 +1027,15 @@ sub depth_first {
   my ($new_file, $old_file);
   my ($dir, $new_dir, $old_dir);
   my (@results, $found);
+  my ($temp);
 
   if (!-d $old_path || !-d $new_path) {
     logprint("Ditching depth_first entry because one of $old_path and $new_path aren't directories\n", -1);
+    return;
+  }
+
+  if (pathcheck("$depot/$old_path", %priority) || pathcheck("$depot/$new_path", %priority)) {
+    logprint("Ditching depth_first entry because one of $old_path and $new_path are prioritized\n", -1);
     return;
   }
 
@@ -1091,7 +1104,10 @@ sub depth_first {
 
     $pack_prefix = first_path_element($new_path);
 
-    if ($current_dir =~ /^$pack_prefix\/([^\/]+)\/(.*)$/) {
+    $temp = $pack_prefix;
+    $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
+
+    if ($current_dir =~ /^$temp\/([^\/]+)\/(.*)$/) {
       $merge_target = "$dest/$1/$2";
       logprint("\nHey!  \$merge_target is $merge_target\n", -1);
     } else {
