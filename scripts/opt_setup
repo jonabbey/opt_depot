@@ -51,8 +51,8 @@
 # Jonathan Abbey 31 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.12 $
-# Last Mod Date: $Date: 2003/08/14 01:57:51 $
+# Version: $Revision: 1.13 $
+# Last Mod Date: $Date: 2003/08/14 01:58:18 $
 #
 ##########################################################################
 
@@ -92,11 +92,6 @@ if (!check_lock("opt_setup")) {
   exit(1);
 }
 
-# we have to close the log so the other scripts can log without us
-# stomping on them
-
-close_log();
-
 # MAIN PROCESS
 
 $file_string = "-f$config_file -d$depot -l$logfile -b$dest";
@@ -110,4 +105,4 @@ $file_string = "-f$config_file -d$depot -l$logfile -b$dest";
         || die "opt_depot failed";
 
 clear_lock();
-
+close_log();
