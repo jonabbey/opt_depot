@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.25 $
-# Last Mod Date: $Date: 2003/09/12 01:54:34 $
+# Version: $Revision: 1.26 $
+# Last Mod Date: $Date: 2003/09/12 01:55:57 $
 #
 #####################################################################
 
@@ -611,10 +611,9 @@ sub killdir {
 #
 # input: a pathname
 #
-# touch will attempt to open the pathname for append and then
-# close it again without writing anything, so as to update the modification
-# time of the file if it already exists, or to create it as a zero length
-# file if it does not.
+# this function implements a standard unix touch.. touching a file causes
+# it to be created as a zero length file if it does not exist, or to
+# update its access and modification times if it does.
 #
 # Returns 1 on success, 0 on failure.
 #
