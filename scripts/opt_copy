@@ -7,12 +7,12 @@
 
 $version = "2.02";
 
-@opt_scripts = ("scripts/opt_depot",
-		"scripts/opt_nuke",
-		"scripts/opt_link",
-		"scripts/opt_clean",
-		"scripts/opt_setup",
-		"scripts/fixperms");
+@opt_scripts = ("opt_depot",
+		"opt_nuke",
+		"opt_link",
+		"opt_clean",
+		"opt_setup",
+		"fixperms");
 
 @others = ("opt.config", "sites");
 
@@ -214,7 +214,7 @@ mkdir "$dir/man/manl",0777;
 foreach $script (@opt_scripts) {
   if (-e $script) {
     &add_line($new_line, $script);
-    system "cp $script.new $dir/bin/$script";
+    system "cp scripts/$script.new $dir/bin/$script";
     chmod 0755, "$dir/bin/$script";
     unlink $script.new;
   } else {
