@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.19 $
-# Last Mod Date: $Date: 2003/08/13 23:24:10 $
+# Version: $Revision: 1.20 $
+# Last Mod Date: $Date: 2003/08/14 01:49:30 $
 #
 #####################################################################
 
@@ -273,27 +273,26 @@ sub init_log {
     $temphandle = select(LOG);
     $| = 1;
     select($temphandle);
-
-    logprint("\n\n**$appname $version **  ", 0);
-
-    ($sec, $min, $hour, $mday, $mon, $year)= localtime(time);
-    $mon=$mon + 1;
-
-    if ($mon < 10) {
-      $mon = "0" . $mon;
-    }
-
-    if ($sec < 10) {
-      $sec = "0" . $sec;
-    }
-
-    $year = $year + 1900;	# y2k ok!
-
-    logprint("$hour:$min:$sec  $mon\/$mday\/$year\n\n", 0);
-    printparams();
-
     $log_init = 1;
   }
+
+  logprint("\n\n**$appname $version **  ", 0);
+
+  ($sec, $min, $hour, $mday, $mon, $year)= localtime(time);
+  $mon=$mon + 1;
+
+  if ($mon < 10) {
+    $mon = "0" . $mon;
+  }
+
+  if ($sec < 10) {
+    $sec = "0" . $sec;
+  }
+
+  $year = $year + 1900;	# y2k ok!
+
+  logprint("$hour:$min:$sec  $mon\/$mday\/$year\n\n", 0);
+  printparams();
 }
 
 #########################################################################
