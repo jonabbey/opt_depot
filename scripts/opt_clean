@@ -1,3 +1,5 @@
+#
+#
 # opt_clean v3.0 -*- Perl -*-
 #
 # This is a perl script that will find all the links under
@@ -44,13 +46,13 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.6 $
-# Last Mod Date: $Date: 2003/08/01 01:22:16 $
+# Version: $Revision: 1.7 $
+# Last Mod Date: $Date: 2003/08/02 03:27:54 $
 #
 #########################################################################
 
 use English;
-use FindBin qr($RealBin);
+use FindBin qw($RealBin);
 
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
@@ -284,7 +286,7 @@ sub rmdirs{
 
   opendir(DIR, "$dir") || die "Could not open $dir";
   @contents = readdir(DIR);
-  @real_files = grep (!/^\./), @contents);
+  @real_files = grep (!/^\./, @contents);
   closedir(DIR);
 
   if ($#real_files<0) {

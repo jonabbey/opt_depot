@@ -1,3 +1,5 @@
+#
+#
 # opt_nuke v3.0 -*- Perl -*-
 #
 # This is a perl script that will find all the links under
@@ -49,13 +51,13 @@
 # Jonathan Abbey 31 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.4 $
-# Last Mod Date: $Date: 2003/08/01 01:21:51 $
+# Version: $Revision: 1.5 $
+# Last Mod Date: $Date: 2003/08/02 03:27:55 $
 #
 #####################################################################
 
 use English;
-use FindBin qr($RealBin);
+use FindBin qw($RealBin);
 
 use lib "$RealBin/../modules";
 use Opt_depot::Common;

@@ -1,3 +1,4 @@
+#
 # opt_link  -*- Perl -*-
 #
 # This is a perl script that will create links from the $depot directory to
@@ -52,13 +53,13 @@
 # Jonathan Abbey 29 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.8 $
-# Last Mod Date: $Date: 2003/08/01 01:41:44 $
+# Version: $Revision: 1.9 $
+# Last Mod Date: $Date: 2003/08/02 03:27:55 $
 #
 #####################################################################
 
 use English;
-use FindBin qr($RealBin);
+use FindBin qw($RealBin);
 
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
@@ -131,7 +132,7 @@ sub read_exfile {
       }
     }
 
-    if ($_ =~ /\//) {
+    if (/\//) {
       # if we've got a slash in the name, don't exclude it,
       # we're just interested in full package exclusion
       next
@@ -171,12 +172,12 @@ sub read_site_file {
   # priority level.. we give higher priority levels to the sites that
   # are listed earlier in the site file.
 
-  my $i= 1;
+  my $i = 1;
 
   open(SITEFILE,"$sitefile") || die "Could not open $sitefile \n";
 
   while (<SITEFILE>) {
-    s/\s+$//;			# cut off trailing whitespace
+    s/\s+$//;
 
     if (/^$/ || /^\s*#/) {
       next;
@@ -189,7 +190,7 @@ sub read_site_file {
       # label:package syntax in .exclude and .priority files will fail.
 
       if ($label =~ /:/) {
-	die("Error, $sitefile contains a site label ($label) which contains a colon\n";
+	die("Error, $sitefile contains a site label ($label) which contains a colon\n");
       }
 
       $tmpstr = $2;
@@ -198,9 +199,10 @@ sub read_site_file {
 	$tmpstr = parsequoted($tmpstr,1); # process escapes
       }
 
-      $priority{$label} = $i;
-      push(@sites,$tmpstr);
+      removelastslash($tmpstr);
+      push(@sites,$tmpstr);	# we add these in descending priority
       $sitedirs{$tmpstr} = $label;
+      $priority{$label} = $i;
       $i++;
     }
   }
@@ -305,7 +307,7 @@ sub process_sites {
     foreach $pack (@allpacks) {
       $pack_exclude = "$tempsite/$pack/.exclude";
 
-      if (defined $excluded{$pack}) { # package's generic name excluded
+      if (exists $excluded{$pack}) { # package's generic name excluded
 	chk_pack_ex($pack,$pack_exclude,$pack_priority);
 	# the call to chk_pack_ex adds the packages exclusions to
 	# the exclusion hash, retaining the transitive property
@@ -313,7 +315,7 @@ sub process_sites {
 	next;
       }
 
-      if (defined $excluded{"$sitelabel:$pack"}) { # ex is site specific
+      if (exists $excluded{"$sitelabel:$pack"}) { # ex is site specific
 	next;
       }
 
@@ -347,7 +349,7 @@ sub process_sites {
 sub chk_pack_ex {
   my ($packname,$packex,$priort) = @_;
 
-  my (@pack_exclusions);
+  my (@pack_exclusions, $package);
 
   if (!-e $packex) {
     return 1;
@@ -385,17 +387,17 @@ sub chk_pack_ex {
   # higher priority, in which case we have to forget about the $packname
   # chk_pack_ex() was called on being installed
 
-  unless ($get_most_recent) {
-    foreach (@pack_exclusions) {
+  if (!$get_most_recent) {
+    foreach $package (@pack_exclusions) {
       # check to see that each is not already installed
       # from a higher priority package site
 
-      if (defined $installed{$_} && $installed{$_} < $priort) {
+      if (exists $installed{$package} && $installed{$package} < $priort) {
 	# the package cannot exclude another which has a higher (lower
 	# integer value) priority - therefore we can't install it
 
 	logprint("## Priority Conflict: could not install $packname\n", 1);
-	logprint("\tCould not exclude $_\n", 1);
+	logprint("\tCould not exclude $package\n", 1);
 
 	# remove this if it's currently linked
 	$excluded{$packname} = $priort;
@@ -405,18 +407,18 @@ sub chk_pack_ex {
     }
   }
 
-  foreach (@pack_exclusions) {	
+  foreach $package (@pack_exclusions) {	
     # since there are no conflicts we can add these packages to the
     # exclusions to hash
 
-    $excluded{$_} = $priort; # add to exclusion hash
+    $excluded{$package} = $priort; # add to exclusion hash
 
-    if (! defined $excluded_by{$_}) {
-      $excluded_by{$_} = $packname;
+    if (! exists $excluded_by{$package}) {
+      $excluded_by{$package} = $packname;
     }
 
-    if (defined $installed{$_}) {
-      delete $installed{$_};# if it's in the installed hash remove it
+    if (exists $installed{$package}) {
+      delete $installed{$package};# if it's in the installed hash remove it
     }
   }
 
@@ -439,7 +441,7 @@ sub chk_pack_ex {
 sub install_package {
   my ($packname,$pack_priority) = @_;
 
-  unless (defined $installed{$packname}) {
+  unless (exists $installed{$packname}) {
     $installed{$packname} = $pack_priority;
   }
 }
@@ -458,7 +460,7 @@ sub install_package {
 #
 #####################################################################
 sub link_me {
-  my ($pack,$newlink,$oldlink,$oldpriority,$oldlabel,@temp_pack);
+  my ($pack,$newlink,$oldlink);
 
   foreach $pack (keys %installed) {
 
@@ -482,25 +484,17 @@ sub link_me {
       $oldlink = extractdir(resolve($depot, readlink("$depot/$pack")));
 
       if ($oldlink ne $newlink) {
-	# remove oldlink and make new one if the old one isn't in
-	# installed
+	# if the link is not from the site it's supposed to be from
+	# then remove it and replace with the correct link
 
-	$oldlabel = $sitedirs{$oldlink};
-	$old_priority = $priority{$oldlabel};
+	logprint("Replacing link $oldlink/$pack with $newlink/$pack\n", 1);
 
-	unless ($installed{$pack} == $old_priority) {
-	  # if the link is not from the site it's supposed to be from
-	  # then remove it and replace with the correct link
-
-	  logprint("Replacing link $oldlink/$pack with $newlink/$pack\n", 1);
-
-	  if (!$test) {
-	    unlink "$depot/$pack" || logprint("Could not unlink $oldlink/$pack\n", 1);
-	    symlink ("$newlink/$pack","$depot/$pack") || logprint("Could not link $newlink/$pack to $depot/$pack\n", 1);
-	  }
-
-	  $activity = 1; # yes, we've actually done something
+	if (!$test) {
+	  unlink "$depot/$pack" || logprint("Could not unlink $oldlink/$pack\n", 1);
+	  symlink ("$newlink/$pack","$depot/$pack") || logprint("Could not link $newlink/$pack to $depot/$pack\n", 1);
 	}
+
+	$activity = 1; # yes, we've actually done something
       }
     } else {
       # No old link to remove. Just make the new one
@@ -591,53 +585,52 @@ sub exclude_me {
 #
 #######################################################################
 sub print_info {
-  my (@allpacks,$sitedirs,$pack_priority,$tempsite);
+  my (@allpacks,$sitedirs,$pack_priority,$tempsite,$pack);
 
-  foreach (@sites) {
+  foreach $tempsite (@sites) {
     if ($verbose || $test) {
-      print"\nSite: $_ \n";
+      print"\nSite: $tempsite \n";
     }
 
     if (!$switches{'q'} && !$test) {
-      print LOG "\nSite: $_\n";
+      print LOG "\nSite: $tempsite\n";
     }
 
-    $tempsite = $_;
-    $sitelabel = $sitedirs{$_}; # stores the corresponding label
+    $sitelabel = $sitedirs{$tempsite}; # stores the corresponding label
     $pack_priority = $priority{$sitelabel}; # priority of site volume
 
-    opendir(PACKSITE,"$_")|| print"Could not open directory $_\n";
+    opendir(PACKSITE,"$tempsite")|| print"Could not open directory $tempsite\n";
     @allpacks = grep (-d "$tempsite/$_", readdir PACKSITE);
     closedir (PACKSITE);
 
-    foreach (@allpacks) {
-      if (($installed{$_} == $pack_priority) &&
-	  ($prev_installed{$_} != $pack_priority)) {
+    foreach $pack (@allpacks) {
+      if (($installed{$pack} == $pack_priority) &&
+	  ($prev_installed{$pack} != $pack_priority)) {
 
 	if (!$switches{'q'} && !$test) {
-	  print LOG "\tAdded link: $_\n";
+	  print LOG "\tAdded link: $pack\n";
 	}
 	
 	if ($verbose || $test) {
-	  print "\tAdded link: $_\n";
+	  print "\tAdded link: $pack\n";
 	}
       }
 
-      if (($prev_installed{$_} == $pack_priority) &&
-	  ($installed{$_} != $pack_priority)) {
+      if (($prev_installed{$pack} == $pack_priority) &&
+	  ($installed{$pack} != $pack_priority)) {
 	if (!$switches{'q'} && !$test) {
-	  print LOG "\tRemoved link: $_\n";
+	  print LOG "\tRemoved link: $pack\n";
 
-	  if (defined $excluded_by{$_}) {
-	    print LOG "\t\tExcluded By: $excluded_by{$_}\n";
+	  if (exists $excluded_by{$pack}) {
+	    print LOG "\t\tExcluded By: $excluded_by{$pack}\n";
 	  }
 	}
 
 	if ($verbose || $test) {
-	  print "\tRemoved link: $_\n";
+	  print "\tRemoved link: $pack\n";
 
-	  if (defined $excluded_by{$_}) {
-	    print "\t\tExcluded By: $excluded_by{$_}\n";
+	  if (exists $excluded_by{$pack}) {
+	    print "\t\tExcluded By: $excluded_by{$pack}\n";
 	  }
 	}
       }
@@ -693,9 +686,9 @@ if (!check_lock("opt_link")) {
   exit(1);
 }
 
-$switches{'v'} && $verbose = 1;
-$switches{'n'} && $test = 1;
-$switches{'g'} && $get_most_recent = 1;
+if (exists $switches{'v'}) {$verbose = 1;}
+if (exists $switches{'n'}) {$test = 1;}
+if (exists $switches{'g'}) {$get_most_recent = 1;}
 
 # File containing all the manually entered exclusion information
 

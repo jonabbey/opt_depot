@@ -1,3 +1,4 @@
+#
 # opt_depot v3.0 -*- Perl -*-
 #
 # This script will go through the $depot directory and find files in
@@ -55,13 +56,13 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.17 $
-# Last Mod Date: $Date: 2003/08/01 01:23:56 $
+# Version: $Revision: 1.18 $
+# Last Mod Date: $Date: 2003/08/02 03:27:54 $
 #
 #####################################################################
 
 use English;
-use FindBin qr($RealBin);
+use FindBin qw($RealBin);
 
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
@@ -454,7 +455,7 @@ sub makedir {
 
 #########################################################################
 #
-#                                                                    link
+#                                                                 ourlink
 #
 # input: $package - name of package containing $file
 #        $file - an absolute filename to possibly generate a link to
@@ -463,16 +464,16 @@ sub makedir {
 # output: potentially generates a symbolic link from $link to $file
 #         returns 1 if a new link was made, 0 otherwise
 #
-# link() may not generate a link if an existing link has a higher
+# ourlink() may not generate a link if an existing link has a higher
 # priority, or if $file or the package that $file is under has been
 # excluded due to a reference in the .exclude file.
 #
-# in general, link() will not overwrite an existing link unless the
+# in general, ourlink() will not overwrite an existing link unless the
 # .priority or .exclude file specifically gives the new link priority
 # over the existing link.
 #
 #########################################################################
-sub link {
+sub ourlink {
   my ($package, $file, $link) = @_;
 
   my ($return_value, $where, $oldpackage, $directory, $rwhere);
@@ -832,7 +833,7 @@ sub manlink {
 	      }
 	    }
 				
-	    if (link($package, "$depot/$package/man/$file/$mfile", "$dest/man/man$newsuf/$mfile")) {
+	    if (ourlink($package, "$depot/$package/man/$file/$mfile", "$dest/man/man$newsuf/$mfile")) {
 	      if ($newsuf ne $suf) {
 		logprint("WARNING: suffix does not match directory for $depot/$package/man/$file/$mfile\n", 0);
 		logprint("         Placed in $dest/man/man$newsuf\n", 0);
@@ -874,7 +875,7 @@ sub manlink {
 	  makedir("$dest/man/cat$1");
 	}
 
-	link($package, "$depot/$package/man/$file", "$dest/man/man$1/$file");
+	ourlink($package, "$depot/$package/man/$file", "$dest/man/man$1/$file");
 	$mademan=1;
       }
     }
@@ -1169,7 +1170,7 @@ sub link_me {
 	# the current "$dest/$subdir/$file", if any.  if so, we'll
 	# unlink the old and link the new.
 
-	link($package, "$depot/$package/$subdir/$file", "$dest/$subdir/$file");
+	ourlink($package, "$depot/$package/$subdir/$file", "$dest/$subdir/$file");
       }
     }
   }
