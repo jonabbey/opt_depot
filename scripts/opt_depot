@@ -55,8 +55,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.47 $
-# Last Mod Date: $Date: 2003/10/11 03:14:15 $
+# Version: $Revision: 1.48 $
+# Last Mod Date: $Date: 2003/10/13 06:48:14 $
 #
 #####################################################################
 
@@ -237,7 +237,7 @@ sub read_exfile {
 	} elsif (/^\s*(\S+)/) {
 	  # take this as a depot directory relative path
 	  # $1 is the complete relative path and filename
-	
+
 	  $exclude{removelastslash("$depot/$1")}=1;
 	} else {
 	  logprint("  ERROR:  bad entry in .exclude file \"$_\"", 1);
@@ -385,7 +385,7 @@ sub read_prifile {
 	# leading slash - absolute filename
 	# handle priority for individual file
 	# this clause handles absolute pathnames
-	
+
 	unshift(@parray, $1);
       } else {
 	# this clause handles depot relative pathnames
@@ -441,6 +441,84 @@ sub makedir {
 
 #########################################################################
 #
+#                                                         record_conflict
+#
+# input: name of a link we could not establish due to unguided conflict
+#        target of the link we couldn't make
+#        name of blocking target or other reason for conflict
+#
+# All path names must be fully qualified
+#
+#########################################################################
+sub record_conflict {
+  my($link, $target, $reason) = @_;
+
+  my ($href);
+
+  if (defined $global_conflict{$target}) {
+    $href = $global_conflict{$target};
+    ${%$href}{$link} = $reason;
+  } else {
+    $global_conflict{$target} = {$link => $reason};
+  }
+}
+
+#########################################################################
+#
+#                                                          clear_conflict
+#
+# input: name of a link we were able to establish
+#        name of the target
+#
+# All path names must be fully qualified
+#
+#########################################################################
+sub clear_conflict {
+  my($link, $target) = @_;
+
+  my ($href);
+
+  if (defined $global_conflict{$target}) {
+    $href = $global_conflict{$target};
+
+    delete ${%$href}{$link};
+  }
+}
+
+#########################################################################
+#
+#                                                        report_conflicts
+#
+# prints out a list of conflicts detected during our run
+#
+#########################################################################
+sub report_conflicts {
+
+  my ($target, @targetarray, $href, $link, @linkkeys);
+
+  if (scalar(keys %global_conflict)) {
+    logprint("\nUNMADE OR UNDONE LINKS:\n", 0);
+
+    @targetarray = sort(keys(%global_conflict));
+
+    foreach $target (@targetarray) {
+      $href = $global_conflict{$target};
+
+      @linkkeys = sort(keys(%{$href}));
+
+      foreach $link (@linkkeys) {
+	$reason = ${%$href}{$link};
+
+        $target =~ s/^$depot\/(.*)/$1/;
+        $reason =~ s/$depot\///;
+        logprint("$target (conflict: $reason)\n", 0);
+      }
+    }
+  }
+}
+
+#########################################################################
+#
 #                                                               smartlink
 #
 # Check a proposed new link for conflicts, exclusion, and priority.. if
@@ -490,7 +568,7 @@ sub smartlink {
     logprint("  ERROR:  $link already exists and is not a link\n", 0);
     logprint("          Did not make link to link $target\n", 0);
 
-    push(@conflicts,"  $target (conflict: physical file/directory)\n");
+    record_conflict($link, $target, "blocked by physical file/directory");
 
     return 0;
   }
@@ -565,7 +643,7 @@ sub smartlink {
   # note.
 
   if (!$opp) {
-    push(@conflicts,"  $target (conflict: $oldtarget)\n");
+    record_conflict($link, $target, "blocked by $oldtarget");
   }
 
   return 0;
@@ -589,7 +667,7 @@ sub fablink {
       print ("  unlink:   $newlink ->\n");
       print ("            $target\n");
     } else {
-      if (!unlink($newlink)) {
+      if (!smartunlink($newlink)) {
 	logprint("  ERROR:  Could not remove $newlink", 1);
 	return 0;
       }
@@ -605,13 +683,82 @@ sub fablink {
 
   if (!symlink($target,$newlink)) {
     logprint("  ERROR: Could not link $newlink\n", 0);
-    push (@conflicts, "  $target (link failed)\n");
+    record_conflict($newlink, $target, "link failed");
 
     return 0;
   }
 
+  # we were able to make the newlink, so forget about any earlier
+  # belief that we couldn't
+
+  clear_conflict($newlink, $target);
+
   logprint("  link:   $newlink ->\n", 0);
   logprint("          $target\n", 0);
+
+  return 1;
+}
+
+#########################################################################
+#
+#                                                             smartunlink
+#
+# Removes an old symlink, making sure to clear any conflicts listed on
+# the link so we don't report a blockage that's no longer there
+#
+# Returns 1 on success, 0 on failure
+#
+#########################################################################
+
+sub smartunlink {
+  my ($oldlink) = @_;
+
+  my ($result, $oldtarget, @targetarray, $target,
+      $href, @linkkeys, $link, $reason,
+      %tmphash);
+
+  if (-l $oldlink) {
+    $oldtarget = readlink($oldlink);
+  }
+
+  $result = unlink($oldlink);
+
+  if (!$result) {
+    return 0;
+  }
+
+  # here's the crazy bit.  if we've just removed a link that we
+  # previously recorded as blocking something, then the looping logic
+  # in link_me will revisit the old blocked link and the blocked link
+  # will either be made or will be blocked by something else.  in
+  # either case, we don't want to keep a lingering 'blocked by' record
+  # in our conflict tree.  Scan for everything blocked by the old
+  # target, and wipe those records.
+
+  if (defined $oldtarget) {
+    if (scalar(keys %global_conflict)) {
+      @targetarray = keys(%global_conflict);
+
+      foreach $target (@targetarray) {
+	$href = $global_conflict{$target};
+	%tmphash = %$href;
+
+	@linkkeys = keys(%$href);
+
+	foreach $link (@linkkeys) {
+	  $reason = $tmphash{$link};
+
+	  if ($reason eq "blocked by $oldtarget") {
+	    delete $tmphash{$link};
+
+	    if (!scalar(keys(%tmphash))) {
+	      delete $global_conflict{$target};
+	    }
+	  }
+	}
+      }
+    }
+  }
 
   return 1;
 }
@@ -647,7 +794,7 @@ sub manlink {
 
     if (pathcheck("$depot/$package/man/$file", %exclude)) {
       # do nothing.. don't link these manpages
-	
+
       logprint("  Excluding man directory $depot/$package/man/$file/\n", 0);
 
       next;
@@ -657,7 +804,7 @@ sub manlink {
     # there really shouldn't be anything in the package's man
     # directory except man subdirectories (i.e., not cat directories),
     # but there might be readme's or something.  we'll ignore those.
-	
+
     if (-d "$depot/$package/man/$file" && $file =~ /^man([0-9a-z]+)$/) {
 
       # we've got a man directory.  $1 is the man dir suffix
@@ -676,24 +823,24 @@ sub manlink {
       }
 
       if (-d "$depot/$package/man/$file") {
-			
+
 	opendir (MDIR, "$depot/$package/man/$file") || print "Could not open $depot/$package/man/$file";
 	@mfiles=grep (!/^\.\.?$/, readdir(MDIR));
 	closedir (MDIR);
-			
+
 	# link all man pages in this man directory into the
 	# appropriate $dest directory
-			
+
 	for $mfile (@mfiles) {
 
 	  if ($mfile =~ /\.([^\.]+)$/) {
-				
+
 	    $newsuf = $1;
-				
+
 	    # if the man page's filename doesn't end in the right
 	    # suffix, warn the user and link it where it should
 	    # go.
-				
+
 	    if ($newsuf ne $suf) {
 
 	      # if the man page ends in a suffix different than
@@ -710,17 +857,17 @@ sub manlink {
 		makedir("$dest/man/cat$newsuf");
 	      }
 	    }
-				
+
 	    if (smartlink($package, "$depot/$package/man/$file/$mfile", "$dest/man/man$newsuf/$mfile")) {
 	      if ($newsuf ne $suf) {
 		logprint("WARNING: suffix does not match directory for $depot/$package/man/$file/$mfile\n", 0);
 		logprint("         Placed in $dest/man/man$newsuf\n", 0);
 	      }
-		
+
 	      $mademan=1;
 	    }
 	  } else {
-				
+
 	    # the filename wasn't valid for a manpage
 
 	    logprint("WARNING: file $depot/$package/man/$file/$mfile is not properly named for a man page..\n", 0);
@@ -729,22 +876,22 @@ sub manlink {
 	}
       }
     } else {
-	
+
       # $file isn't a directory.. perhaps this means that this
       # package's man directory directly contains man pages rather
       # than man1..mann subdirectories.  check to see if we have a man
       # file with a recognizable extension, and link it into the
       # appropriate man subdirectory if so.
-	
+
       if (-f "$depot/$package/man/$file" && $file =~ /\.([^\.]+)$/) {
 
 	# file is a man page, link it to the appropriate man
 	# directory.
-			
+
 	# note that this means that the man directory in this
 	# package isn't structured properly, but we can deal with
 	# it since we have the suffix to guide us.
-			
+
 	if (!(-e "$dest/man/man$1")) {
 	  makedir("$dest/man/man$1");
 	}
@@ -816,11 +963,16 @@ sub synthesize_dir {
 
     if (! -d $temp && ($temp ne "")) {
       if (!$switches{'n'}) {
-	mkdir($temp, 0755) || print "Could not make dir $temp\n";
-	open (NEW, ">$temp/$opt_file") || die "Waaaah!!!";
-	print NEW "This file is used by opt_depot to keep track of created directories.\n";
-	print NEW "Please don't delete me.  Thanks.\n";
-	close NEW;
+	if (mkdir($temp, 0755)) {
+	  clear_conflict($temp);
+
+	  open (NEW, ">$temp/$opt_file") || die "Waaaah!!!";
+	  print NEW "This file is used by opt_depot to keep track of created directories.\n";
+	  print NEW "Please don't delete me.  Thanks.\n";
+	  close NEW;
+	} else {
+	  print "Could not make dir $temp\n";
+	}
       }
 
       logprint("MKDIR $temp\n", 0);
@@ -985,12 +1137,15 @@ sub link_me {
   logprint("LINKING:  $subdir\n", 0);
 
   do {
+    if ($change_made) {
+      logprint("          LOOPING!\n", -1);
+    }
     $change_made = 0;
 
     foreach $package (@pack_list) {
       if (pathcheck("$depot/$package/$subdir", %exclude)) {
 	logprint("\n  *** EXCLUDING DIRECTORY: $depot/$package/$subdir\n\n", 0);
-	
+
 	next;
       }
 
@@ -1008,7 +1163,7 @@ sub link_me {
       foreach $file (@files) {
 	undef @temp_list;
 	$common_dir = "$subdir/$file";
-	
+
 	if (-d "$depot/$package/$common_dir") {
 	  # we're looking at a subdirectory.. unify?
 
@@ -1046,7 +1201,7 @@ sub link_me {
 	    # should do recursive unification under $subdir
 
 	    if (!-d $old_target) {
-	      logprint("LINKME-ERROR: $old_target is not a directory", -1);
+	      logprint("LINKME-ERROR: $old_target is not a directory\n", -1);
 	    }
 
 	    if (-d $old_target && needs_unify($subdir)) {
@@ -1063,14 +1218,14 @@ sub link_me {
 		@temp_list[0] = $old_pack;
 		@temp_list[1] = $new_pack;
 		$pack_hash{$common_dir} = [ @temp_list ];
-		unlink("$dest/$common_dir"); # remove old symlink
-		
+		smartunlink("$dest/$common_dir"); # remove old symlink
+
 		foreach $dir (keys %merge_list) {
 		  synthesize_dir($dir);
 		}
-		
+
 		$change_made = 1;
-		
+
 		next; # we've made directories, we'll do the linking through recursion
 	      }
 	    }  # end if (-d $old_target && ..)
@@ -1091,15 +1246,15 @@ sub link_me {
 	    next; # ditto -- wait to recurse to link
 	  }
 	} # end if (-d "$depot/$package/$common_dir")
-	
+
 	# no subdirectory unification to worry about, just look to see
 	# if the new file or directory ($depot/$package/$subdir/$file
 	# can be a directory) has priority or exclusion rights over
 	# the current "$dest/$subdir/$file", if any.  if so, we'll
 	# unlink the old and link the new.
-	
+
 	logprint("Calling smartlink on ($package, $depot/$package/$common_dir, $dest/$common_dir)\n", -1);
-	
+
 	if (smartlink($package, "$depot/$package/$common_dir", "$dest/$common_dir")) {
 	  $change_made = 1;
 	}
@@ -1133,7 +1288,7 @@ sub link_me {
     if (needs_unify($conflict)) {
       link_me($conflict, $opt_directory, @recurse_list);
     }
-  }	
+  }
 }
 
 ################################################################################
@@ -1200,10 +1355,7 @@ foreach $subdir (@subdirs) {
 # list uncreated links
 #
 
-if ($conflicts[0]) {
-  logprint("\nUNMADE OR UNDONE LINKS:\n", 0);
-  logprint("@conflicts", 0);
-}
+report_conflicts();
 
 #
 # rebuild catman database if we touched the manpages
