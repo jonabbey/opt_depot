@@ -32,34 +32,73 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.1 $
-# Last Mod Date: $Date: 2003/07/25 02:25:57 $
+# Version: $Revision: 1.2 $
+# Last Mod Date: $Date: 2003/08/02 03:30:52 $
 #
 #####################################################################
 
 package Opt_depot::Common;
 
-use Text::ParseWords;
+use Text::ParseWords qw(quotewords);
 
 use vars qw($VERSION @ISA @EXPORT $PERL_SINGLE_QUOTE);
-$VERSION="2.02";
+$VERSION="3.0";
 
 require 5.000;
 
 use Exporter;
 @ISA = qw(Exporter);
 @EXPORT = qw($dest $depot $logdir %switches @subdirs @unify_list
-	     LOG
-	     logprint dircheck extractdir removelastslash resolve read_prefs
+	     *LOG
+	     parsequoted
+	     init_log close_log logprint
+	     check_lock clear_lock
+	     dircheck extractdir killdir removelastslash resolve pathcheck
+	     read_prefs
 	    );
 @EXPORT_OK = qw();
 
 # declare our package globals that we're not exporting
 
 our $usage_string;
-our CONFIG;
+#our CONFIG;
 our $log_init;
-our LOG;
+#our LOG;
+our $lockset = 0;
+
+
+##########################################################################
+#
+#                                                              parsequoted
+#
+# input: $str, $remove_escapes
+#
+# This subroutine is designed to process a string that is surrounded by
+# quotation marks, with proper escape handling.
+#
+# output: the quoted string, minus the surrounding quotes.  Any
+# backslash (\) escapes are preserved in the returned string, for later
+# processing.
+#
+##########################################################################
+sub parsequoted {
+  my ($str, $remove_escapes) = @_;
+
+  my $quoted = "";
+  my $strcopy = $str;
+
+  $strcopy =~ s/^\s+//;		# trim leading whitespace
+
+  if ($strcopy =~ m/^(["'])((?:\\.|(?!\1)[^\\])*)\1/) {
+    $quoted = $2;
+
+    if ($remove_escapes) {
+      $quoted =~ s/\\(.)/$1/g;
+    }
+  }
+
+  return $quoted;
+}
 
 #########################################################################
 #
@@ -76,21 +115,28 @@ our LOG;
 # it needs to be called after read_prefs().
 #
 #########################################################################
-sub handleinit {
+sub init_log {
   my ($appname) = @_;
 
-  my ($buf, @dest, $log);
+  my ($buf, @dest, $log, $temphandle);
 
   # name log file, with colons separating the path of the log target
 
   @dest= split (/\//, $dest);
   shift(@dest);
-  $log = "$logdir/" . join(':',@dest)
+  $log = "$logdir/" . join(':',@dest);
 
   # open log file and time stamp entry
 
-  if (!($switches{'q'})) {
+  if (!$switches{'q'}) {
     open (LOG, ">> $log") || die "Could not open $log";
+
+    # don't do command buffering on LOG
+
+    $temphandle = select(LOG);
+    $| = 1;
+    select($temphandle);
+
     print (LOG "\n\n**$appname**  ");
     ($sec, $min, $hour, $mday, $mon, $year)= localtime(time);
     $mon=$mon + 1;
@@ -98,14 +144,10 @@ sub handleinit {
   }
 }
 
-
 #########################################################################
 #
 #                                                               close_log
 #
-# input:
-#
-# uses:
 #
 # This function closes the log file if the %switches hash doesn't
 # contain q.
@@ -139,6 +181,93 @@ sub logprint {
 
 #########################################################################
 #
+#                                                              check_lock
+#
+# input: $application, the name of the program being locked
+#
+# check_lock is a test-and-set routine for checking whether a lock can
+# be established.  If a lock already exists and the user declines to
+# break the lock, or if the user doesn't have permission to create a new
+# lock file, check_lock will return 0.
+#
+# If the lock file can be created under $dest, check_lock returns 1.
+#
+# NOTE: check_lock consults the package global %switches hash to see
+# if -s was specified on the command line.  If so, the lock will not be
+# created or checked.  This is to allow opt_setup to set up an umbrella
+# lock when running the other opt_depot scripts.
+#
+#########################################################################
+sub check_lock {
+  my ($application) = @_;
+
+  my ($user, $software, $lock, $mins_ago, $cont);
+  local *LOCK;
+
+  if (exists $switches{'s'}) {
+    return 1;
+  }
+
+  $lock = "$dest/lock.optdepot";
+
+  # read lock and die if found
+
+  if (open (LOCK, "<$lock")) {
+    $user = <LOCK>;
+    $software = <LOCK>;
+    close(LOCK);
+
+    chomp $user;
+    chomp $software;
+
+    print "\"$user\" may still be using $software.\n";
+    $mins_ago= (-M $lock) * 24 * 60;
+    printf ("The lock was created %3.1f minutes ago.\n", $mins_ago);
+    print "Would you like to override?";
+    $cont=getc;
+    if (($cont ne "Y") && ($cont ne "y")) {
+      $lockset = 0;
+      return 0;
+    } else {
+      unlink($lock);
+    }
+  }
+
+  # create a lock
+
+  if (!open LOCK, ">$lock") {
+    logprint("Could not create lockfile ($lock)", 1);
+    $lockset = 0;
+    return 0;
+  } else {
+    print LOCK "$ENV{'USER'}\n";
+    print LOCK "$application\n";
+    close (LOCK);
+    $lockset = 1;
+  }
+
+  return 1;
+}
+
+#########################################################################
+#
+#                                                              clear_lock
+#
+# input: none
+#
+# uses: $log LOCK $dest %switches
+#
+# output: clears the lock file established by check_lock()
+#
+#########################################################################
+sub clear_lock {
+  if ($lockset) {
+    unlink("$dest/lock.optdepot") || logprint("Could not remove lock!", 1);
+  }
+}
+
+#########################################################################
+#
 #                                                                dircheck
 #
 # input: a pathname to test
@@ -152,6 +281,7 @@ sub dircheck {
 
   if (!(-d $dir)){		
     logprint("$dir is not a directory", 1);
+    clear_lock();
     exit(0);
   }
 }
@@ -179,6 +309,31 @@ sub extractdir {
 
 #########################################################################
 #
+#                                                                 killdir
+#
+# input: $filepath, a string containing a directory to be deleted
+#
+# returns 0 on failure, or a positive value on success
+#
+#########################################################################
+sub killdir {
+  my ($filepath) = @_;
+
+  my $errcount = 0;
+
+  local $SIG{__WARN__} = sub {$errcount++};	# have to use local for dynamic scope
+
+  rmtree($filepath, 0, 0);
+
+  if ($errcount > 0) {
+    return 0;
+  }
+
+  return 1;
+}
+
+#########################################################################
+#
 #                                                         removelastslash
 #
 # input: a pathname to test
@@ -193,6 +348,81 @@ sub removelastslash {
   }
 }
 
+
+#########################################################################
+#
+#                                                               pathcheck
+#
+# This function is used to determine if $file is contained under any
+# directory listed in the keys of %assoc.  The keys of %assoc should
+# map to integer values, in which the lowest positive number is taken
+# to be the best priority, if we're dealing with a priority hash.  If
+# we're dealing with an exclusion hash, then all values in the exclusion
+# hash will be positive numbers, so if we find any of them we'll wind
+# up returning a positive (true) integer value.
+#
+# In other words, when used on the global %priority hash, we'll return an
+# integer that can be compared to determine relative priority.  When
+# used on the global %exclude hash, we'll effectively return a boolean
+# value.
+#
+# input: $file - a fully qualified filepath
+#        *assoc - a name for an associative array (exclude or priority)
+#
+# output: as above.
+#
+#########################################################################
+sub pathcheck {
+  local ($file, *assoc) = @_;
+
+  @components = split(/\//, $file);
+
+  my ($t_pri, $temp, $low_pri);
+
+  # we want to find the best (lowest numerical value) priority
+  # that pertains to $file
+
+  $low_pri = 9999;
+  $temp = "";
+
+  # now loop over the path, from top down.  Since we're splitting on
+  # /, if $file began with a slash, our first component will be the
+  # empty string, and we'll start adding non-empty strings after we've
+  # appended the first slash in the second clause of the loop
+
+  foreach $comp (@components) {
+    $temp .= "$comp";
+
+    if (exists $assoc{$temp}) {
+      $t_pri = $assoc{$temp};
+
+      if ($t_pri && $t_pri < $low_pri) {
+	$low_pri = $t_pri;
+      }
+    }
+
+    # add a trailing /, in case the trailing slash was present in the
+    # hash, and check again.  Adding the trailing slash here will
+    # also prep us to add the next component.
+
+    $temp .= "/";
+
+    if (exists $assoc{$temp}) {
+      $t_pri = $assoc{$temp};
+
+      if ($t_pri && $t_pri < $low_pri) {
+	$low_pri = $t_pri;
+      }
+    }
+  }
+
+  if ($low_pri != 9999) {
+    return $low_pri;
+  }
+
+  return 0;
+}
+
 #########################################################################
 #
 #                                                                 resolve
@@ -201,7 +431,10 @@ sub removelastslash {
 #        $link - string containing the readlink() results for a
 #                symbolic link in $dir to be processed
 #
-# returns: absolute pathname of the target of the symbolic link
+# This function takes the current directory and the string
+# obtained from a readlink() call and calculates and returns the
+# absolute path to the target of the readlink, resolving any relative
+# path elements along the way.
 #
 #########################################################################
 sub resolve {
@@ -287,7 +520,7 @@ sub read_prefs ($$$\@) {
 
   # first see if we have a config file override on the command line
 
-  $cmd_config_file = find_arg('f', $$ARGV_ref);
+  $cmd_config_file = find_arg('f', @$ARGV_ref);
 
   if ($cmd_config_file) {
     if (-r $cmd_config_file) {
@@ -313,33 +546,34 @@ sub read_prefs ($$$\@) {
 
   # now for final after-the-fact command line overrides
 
-  $cmd_depot = find_arg('d',$$ARGV_ref);
+  $cmd_depot = find_arg('d',@$ARGV_ref);
 
   if ($cmd_depot) {
-    removelastslash($cmd_depot);
     dircheck($cmd_depot);
     $depot = $cmd_depot;
   }
 
-  $cmd_dest = find_arg('b', $$ARGV_ref);
+  $cmd_dest = find_arg('b', @$ARGV_ref);
 
   if ($cmd_dest) {
-    removelastslash($cmd_dest);
     dircheck($cmd_dest);
     $dest = $cmd_dest;
   }
 
-  $cmd_logdir = find_arg('l', $$ARGV_ref);
+  $cmd_logdir = find_arg('l', @$ARGV_ref);
 
   if ($cmd_logdir) {
-    removelastslash($cmd_logdir);
     dircheck($cmd_logdir);
     $logdir = $cmd_logdir;
   }
 
-  read_switches($switchlist, $$ARGV_ref);
+  read_switches($switchlist, @$ARGV_ref);
 
-  check_args($switchlist, $$ARGV_ref);
+  check_args($switchlist, @$ARGV_ref);
+
+  removelastslash($depot);
+  removelastslash($logdir);
+  removelastslash($dest);
 }
 
 ##########################################################################
@@ -365,7 +599,7 @@ sub read_config {
 
       if (($dest =~ /^\s*\"/) ||
 	  ($dest =~ /^\s*\'/)) {
-	$dest = parsequoted($dest);
+	$dest = parsequoted($dest, 1);
       }
     }
 
@@ -374,7 +608,7 @@ sub read_config {
 
       if (($depot =~ /^\s*\"/) ||
 	  ($depot =~ /^\s*\'/)) {
-	$depot = parsequoted($depot);
+	$depot = parsequoted($depot, 1);
       }
     }
 
@@ -383,7 +617,7 @@ sub read_config {
 
       if (($logdir =~ /^\s*\"/) ||
 	  ($logdir =~ /^\s*\'/)) {
-	$logdir = parsequoted($logdir);
+	$logdir = parsequoted($logdir, 1);
       }
     }
 
@@ -391,14 +625,14 @@ sub read_config {
       $dirs = $1;
       $dirs =~ s/^\s+//;
       $dirs =~ s/\s+$//;
-      @subdirs = quoteword('\s+|,',0,$dirs); # from Text::ParseWords
+      @subdirs = quotewords('\s+|,',0,$dirs); # from Text::ParseWords
     }
 
     if (/^Recurse:\s*(.*)/) {
       $rdirs = $1;
       $rdirs =~ s/^\s+//;
       $rdirs =~ s/\s+$//;
-      @unify_list = quoteword('\s+|,',0,$rdirs); # from Text::ParseWords
+      @unify_list = quotewords('\s+|,',0,$rdirs); # from Text::ParseWords
     }
   }
 
@@ -476,10 +710,10 @@ sub read_switches {
     if ($word =~ /(^[$switchlist]+)$/) {
       @switches= split (//, $1);
       for $switch (@switches) {
-	$switches{$switch}=1;
+	$switches{$switch}="-$switch";
       }	
     } else {
-      print "\"$word\" is an invalid command entry!\n";
+      print "\"$word\" is an invalid command entry!\n\n";
       print $usage_string;
       exit 0;
     }
@@ -496,7 +730,7 @@ sub read_switches {
 #
 ##########################################################################
 
-sub find_arg {
+sub check_args {
   my ($switchlist, @args) = @_;
 
   my ($i, $word);
@@ -517,45 +751,19 @@ sub find_arg {
 	  # argument for the flag
 	  $i++;
 	}
-      } else if ($word !~ (^[$switchlist]+)$/) {
+      } elsif ($word =~ /^[$switchlist]+$/) {
 	# just a set of switch flags, no big deal either
       } else {
-	print "\"$word\" is an unrecognized command line flag!\n";
+	print "\"$word\" is an unrecognized command line flag!\n\n";
 	print $usage_string;
 	exit 0;
       }
     } else {
-      print "\"$word\" is an unrecognized command line flag!\n";
+      print "\"$word\" is an unrecognized command line flag!\n\n";
       print $usage_string;
       exit 0;
     }
   }
 }
 
-##########################################################################
-#
-#                                                              parsequoted
-#
-# input: $str
-#
-# This subroutine is designed to process a string that is surrounded by
-# quotation marks, with proper escape handling
-#
-# output: the quoted string, minus the surrounding quotes
-#
-##########################################################################
-sub parsequoted {
-  my ($str) = @_;
-
-  my $quoted = "";
-  my $strcopy = $str;
-
-  $strcopy =~ s/^\s+//;		# trim leading whitespace
-
-  if ($strcopy =~ m/^(["'])((?:\\.|(?!\1)[^\\])*)\1/) {
-    $quoted = $2;
-    $quoted =~ s/\\(.)/$1/g;
-  }
-
-  return $quoted;
-}
+1;
