@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.30 $
-# Last Mod Date: $Date: 2003/09/18 01:04:10 $
+# Version: $Revision: 1.32 $
+# Last Mod Date: $Date: 2003/09/18 01:09:00 $
 #
 #####################################################################
 
@@ -641,7 +641,7 @@ sub create_config {
   }
 
   print "\n";
-  unless (askyn("Is this information correct?")) {
+  unless (askyn("Is this information correct?", "Yes")) {
     die "Installation process aborted\n";
   }
 
@@ -762,7 +762,7 @@ print "\nDone with configuration.\n";
 fix_perms(); # see if the installer wants to run the fixperms program
              # on the opt_depot package directory
 
-print "## Opt_depot installation process complete ##\n\n";
+print "\n## Opt_depot installation process complete ##\n\n";
 
 printwrap("If you want to further tweak your installation, examine $targetdir/etc/opt.config.",
 	  "This is especially appropriate if you want to add additional primary link directories",

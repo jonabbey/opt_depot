@@ -48,8 +48,8 @@
 # Jonathan Abbey 8 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.15 $
-# Last Mod Date: $Date: 2003/09/18 01:01:41 $
+# Version: $Revision: 1.16 $
+# Last Mod Date: $Date: 2003/09/18 01:04:18 $
 #
 ###############################################################################
 
@@ -164,7 +164,6 @@ while [ "$perlok" = "n" ]; do
   verify_perl $perl_loc
 done
 
-echo
 echo "The following line will be added to the opt_depot scripts:"
 echo "#!$perl_loc"
 echo
