@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.3 $
-# Last Mod Date: $Date: 2003/08/02 04:11:02 $
+# Version: $Revision: 1.4 $
+# Last Mod Date: $Date: 2003/08/05 03:05:36 $
 #
 #####################################################################
 
@@ -276,10 +276,14 @@ sub clear_lock {
 #
 #########################################################################
 sub dircheck {
-  my($dir) = @_;
+  my ($dir, $explain) = @_;
 
-  if (!(-d $dir)){		
-    logprint("$dir is not a directory", 1);
+  if (!(-d $dir)){
+    if ($explain ne "") {
+      logprint("$explain ($dir) doesn't exist", 1);
+    } else {
+      logprint("$dir is not a directory", 1);
+    }
     clear_lock();
     exit(0);
   }
@@ -533,6 +537,8 @@ sub read_prefs ($$$\@) {
 
   # read the config file
 
+  $logdir = undef;
+
   read_config($config_file);
 
   # if we didn't get an explicit -f config file specifier on the
@@ -547,32 +553,43 @@ sub read_prefs ($$$\@) {
 
   $cmd_depot = find_arg('d',@$ARGV_ref);
 
-  if ($cmd_depot) {
-    dircheck($cmd_depot);
+  if ($cmd_depot ne "") {
     $depot = $cmd_depot;
   }
 
   $cmd_dest = find_arg('b', @$ARGV_ref);
 
-  if ($cmd_dest) {
-    dircheck($cmd_dest);
+  if ($cmd_dest ne "") {
     $dest = $cmd_dest;
   }
 
   $cmd_logdir = find_arg('l', @$ARGV_ref);
 
-  if ($cmd_logdir) {
-    dircheck($cmd_logdir);
+  if ($cmd_logdir ne "") {
     $logdir = $cmd_logdir;
   }
 
   read_switches($switchlist, @$ARGV_ref);
 
+  # if we didn't find a Log: directive in the configuration file or
+  # the command line, assert -q to turn off logging
+
+  if (!defined $logdir) {
+    $switches{'q'} = 1;
+  }
+
   check_args($switchlist, @$ARGV_ref);
 
   removelastslash($depot);
-  removelastslash($logdir);
+  dircheck($depot, "The specified depot directory");
+
+  if (defined $logdir && $logdir ne "") {
+    removelastslash($logdir);
+    dircheck($logdir, "The specified log directory");
+  }
+
   removelastslash($dest);
+  dircheck($dest, "The specified link target directory");
 }
 
 ##########################################################################
