@@ -30,8 +30,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.10 $
-# Last Mod Date: $Date: 2003/09/15 21:41:02 $
+# Version: $Revision: 1.11 $
+# Last Mod Date: $Date: 2003/09/16 02:57:57 $
 #
 #####################################################################
 
@@ -77,11 +77,11 @@ ENDSITES1
 		     'lib/perl5->depot/packA/lib/perl5/',
 		     'include/test.h->depot/packA/include/test.h',
 		     'man/manl/test.l->depot/packA/man/manl/test.l'],
-	  endex  => ['depot/'],
+	  endex  => ['^depot\/$', '^man\/cat.*\/'],
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot',
-	  desired => 1);
+	  error_count => 0);
 
 %test1 = (label  => 'Elementary recursion test',
 	  root   => $test_dir,
@@ -97,11 +97,11 @@ ENDSITES1
 		     'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
 		     'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
 		     'include/test.h->depot/packB/include/test.h'],
-	  endex  => ['depot/'],
+	  endex  => ['^depot\/$'],
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot',
-	  desired => 0);
+	  error_count => 3);
 
 @tests = (\%test0, \%test1);
 
@@ -177,6 +177,38 @@ sub setup_test {
 
 #########################################################################
 #
+#                                                         exclusion_check
+#
+# input:
+#	a path string
+#
+#	a reference to a test definition
+#
+# This method returns 1 if the passed path element is excluded by the
+# endex array in the test definition.  This method treats the elements
+# in the endex array as regular expressions.
+#
+#
+#########################################################################
+
+sub exclusion_check {
+  my ($path, $test_href) = @_;
+  
+  my (@ary, $element);
+
+  @ary = @{$test_href->{'endex'}};
+
+  foreach $element (@ary) {
+    if ($path =~ /$element/) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+#########################################################################
+#
 #                                                           recurse_check
 #
 # input:
@@ -188,7 +220,6 @@ sub setup_test {
 #	to a target (if they should be links) or to empty string if
 #	they are physical directories and files.
 #
-#	a reference to a hash mapping excluded path elements to empty string
 #
 # recurse_check recurses on the path string, looking at each item found
 # and seeing whether it is in the test description's end state.  Any
@@ -200,12 +231,12 @@ sub setup_test {
 #########################################################################
 
 sub recurse_check {
-  my ($path, $test_href, $end_href, $exclusion_href) = @_;
+  my ($path, $test_href, $end_href) = @_;
 
   local(*DIR);
-  my($local_path, @elements, $element, $target, $failed, $desired_target);
+  my($local_path, @elements, $element, $target, $failed, $desired_target, $error_count);
 
-  $failed = 0;
+  $error_count = 0;
 
   chdir($test_href->{'root'});	# make sure we're operating out of the test root
 
@@ -229,7 +260,7 @@ sub recurse_check {
       $element = $element . "/";
     }
 
-    if (defined $exclusion_href->{$element}) {
+    if (exclusion_check($element, $test_href)) {
       next;
     }
 
@@ -246,12 +277,12 @@ sub recurse_check {
 	print "Error, symlink target error in test " . $test_href->{'label'} . "\n";
 	print "symlink $element should point to $desired_target, but instead points to\n";
 	print "$target.\n";
-	$failed = 1;
+	$error_count++;
 	next;
       }
     } elsif (!defined $end_href->{$element}) {
       print "Error, found unexpected item $element in test " . $test_href->{'label'} . "\n";
-      $failed = 1;
+      $error_count++;
       next;
     }
   }
@@ -260,19 +291,16 @@ sub recurse_check {
 
   foreach $element (@elements) {
     if (-d $element && !-l $element) {
-      if (!defined $exclusion_href->{$element}) {
-	if (!recurse_check($element, $test_href, $end_href, $exclusion_href)) {
-	  $failed = 1;
-	}
+      
+      # only recurse if we're not excluding
+
+      if (!exclusion_check($element, $test_href)) {
+	$error_count = $error_count + recurse_check($element, $test_href, $end_href, $exclusion_href);
       }
     }
   }
 
-  if ($failed) {
-    return 0;
-  }
-
-  return 1;
+  return $error_count;
 }
 
 #########################################################################
@@ -290,7 +318,7 @@ sub recurse_check {
 sub run_test {
   my ($href) = @_;
 
-  my ($command, @end_ary, $item, $before, $after, %end_hash, @exclusion_ary, %exclusion_hash);
+  my ($command, @end_ary, $item, $before, $after, %end_hash);
 
   $command = $href->{'action'};
 
@@ -312,26 +340,20 @@ sub run_test {
     }
   }
 
-  @exclusion_ary = @{$href->{'endex'}};
+  $result = recurse_check("", $href, \%end_hash);
 
-  foreach $item (@exclusion_ary) {
-    $exclusion_hash{$item} = "";
-  }
-
-  $result = recurse_check("", $href, \%end_hash, \%exclusion_hash);
-
-  if ($result != $href->{'desired'}) {
-    if ($result) {
-      print "Test " . $href->{'label'} . " improperly succeeded.\n";
+  if ($result != $href->{'error_count'}) {
+    if ($result > $href->{'error_count'}) {
+      print "\nTest " . $href->{'label'} . " had too many errors.\n";
     } else {
-      print "Test " . $href->{'label'} . " improperly failed.\n";
+      print "\nTest " . $href->{'label'} . " had too few errors.\n";
     }
+
+    print "Target errors: " . $href->{'error_count'} . ", Actual errors: $result\n";
+    return 0;
   } else {
-    if ($result) {
-      print "Test " . $href->{'label'} . " properly succeeded.\n";
-    } else {
-      print "Test " . $href->{'label'} . " properly failed.\n";
-    }
+    print "\nTest " . $href->{'label'} . " had the expected number of errors.\n";
+    return 1;
   }
 }
 
@@ -345,9 +367,18 @@ sub run_test {
 # test
 #####################################################################
 
+$test_failures = 0;
+$tests_run = 0;
+
 foreach $test (@tests) {
   print "\n------------------------------------------------------------\n";
   print "Running test " . $test->{'label'} . "\n\n";
   setup_test($test);
-  run_test($test);
+  if (!run_test($test)) {
+    $test_failures++;
+  }
+  $tests_run++;
 }
+
+print "\n------------------------------------------------------------\n";
+print "Tests Ran: $tests_run\tTests Succeeded: " . ($tests_run-$test_failures) . "\tTests Failed: " . $test_failures . "\n";
