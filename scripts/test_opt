@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.20 $
-# Last Mod Date: $Date: 2003/09/18 18:43:24 $
+# Version: $Revision: 1.21 $
+# Last Mod Date: $Date: 2003/09/18 18:56:08 $
 #
 #####################################################################
 
@@ -41,6 +41,8 @@ use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
 $version = "3.0";
+
+$| = 1;				# auto-flush
 
 ## defaults #########################################################
 
@@ -708,9 +710,9 @@ sub run_test {
 
   if ($error_count != $href->{'error_count'}) {
     if ($error_count > $href->{'error_count'}) {
-      print "\nTest " . $href->{'label'} . " had too many errors.\n";
+      print "Test " . $href->{'label'} . " had too many errors.\n";
     } else {
-      print "\nTest " . $href->{'label'} . " had too few errors.\n";
+      print "Test " . $href->{'label'} . " had too few errors.\n";
     }
 
     print "Target errors: " . $href->{'error_count'} . ", Actual errors: $result\n";
