@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.32 $
-# Last Mod Date: $Date: 2003/10/06 23:02:09 $
+# Version: $Revision: 1.33 $
+# Last Mod Date: $Date: 2003/10/06 23:38:17 $
 #
 #####################################################################
 
@@ -71,7 +71,8 @@ use Exporter;
 	     &create_dir &testmakedir &dircheck &extractdir &killdir
 	     &touch
 	     &first_path_element
-	     &removelastslash &resolve &make_absolute &pathcheck &subpathcheck
+	     &removelastslash &resolve &make_absolute
+	     &pathcheck &subpathcheck &totalpriority
 	     &read_prefs
 	    );
 @EXPORT_OK = qw();
@@ -784,17 +785,18 @@ sub pathcheck ($\%) {
 # priority values, if $path is a superdirectory of any path elements
 # contained in the keys of %assoc.  The keys of %assoc should map to
 # integer values, in which the lowest positive number is taken to be
-# the best priority, if we're dealing with a priority hash.  If we're
-# dealing with an exclusion hash, then all values in the exclusion
-# hash will be positive numbers, so if we find any of them we'll wind
-# up returning a positive (true) integer value.
+# the best priority, if we're dealing with a priority hash.
+#
+# And, really, this subroutine's function only makes sense with the
+# global %priority hash, as we wouldn't necessarily want to exclude
+# something because a subcomponent has been excluded
 #
 # In other words, when used on the global %priority hash, we'll return an
 # integer that can be compared to determine relative priority.  When
 # used on the global %exclude hash, we'll effectively return a boolean
 # value.
 #
-# input: $path - a fully qualified filepath
+# input: $path - a fully qualified directory path
 #        $assoc_ref - a reference to an associative array (exclude or priority)
 #
 # Note that we're using perl prototypes for this subroutine definition, so
@@ -804,14 +806,21 @@ sub pathcheck ($\%) {
 # output: as above.
 #
 #########################################################################
-sub subpathcheck ($\%) {
+sub subpathcheck ($$\%) {
   my ($path, $assoc_ref) = @_;
   my %assoc = %$assoc_ref;
   my ($t_pri, $low_pri);
 
-  # we only work if we're given a directory element, of course..
+  # we only work if we're given a directory element, of course,
+  # otherwise there's no point trying to imagine subcomponent
+  # priorities
 
   removelastslash($path);
+
+  if (!-d $path || -l _) {
+    logprint("Subpathcheck ASSERT ERROR: non-directory item $path submitted\n", 1);
+    exit(1);
+  }
 
   # if we have the directory name itself in the %assoc, start things
   # off with its priority.. we'll check for it both with a trailing
@@ -837,15 +846,20 @@ sub subpathcheck ($\%) {
 
   foreach $key (keys %assoc) {
     if ($key =~ /^$path\//) {
-      $t_pri = $assoc{$key};
 
-      if ($t_pri == 0) {
-	logprint("Subpathcheck ASSERT ERROR: 0 value item $key in hash\n", 1);
-	exit(1);
-      }
+      # you only get counted for priority if you exist
 
-      if ($t_pri < $low_pri) {
-	$low_pri = $t_pri;
+      if (-e $key) {
+	$t_pri = $assoc{$key};
+
+	if ($t_pri == 0) {
+	  logprint("Subpathcheck ASSERT ERROR: 0 value item $key in hash\n", 1);
+	  exit(1);
+	}
+
+	if ($t_pri < $low_pri) {
+	  $low_pri = $t_pri;
+	}
       }
     }
   }
@@ -855,6 +869,52 @@ sub subpathcheck ($\%) {
   }
 
   return $low_pri;
+}
+
+#########################################################################
+#
+#                                                           totalpriority
+#
+# This function is used to provide the calculated priority of a
+# directory path element, based on any and all elements contained
+# under or over that path element.  This is the effective union of
+# pathcheck and subpathcheck.
+#
+# Like pathcheck and subpathcheck, totalpriority uses the %assoc hash
+# to look up priority values, if $path is a superdirectory of any path
+# elements contained in the keys of %assoc.  The keys of %assoc should
+# map to integer values, in which the lowest positive number is taken
+# to be the best priority.
+#
+# Note that the subpathcheck algorithm really only applies to priority
+# checks, as excluding a subcomponent should have no necessary effect on
+# exclusion of the container.
+#
+#
+# input: $path - a fully qualified directory path
+#        $assoc_ref - a reference to an associative array (priority)
+#
+# Note that we're using perl prototypes for this subroutine definition, so
+# a naked %hash passed in for the second parameter will be converted to a
+# hash reference within this subroutine.
+#
+# output: as above.
+#
+#########################################################################
+sub totalpriority ($\%) {
+  my ($path, $assoc_ref) = @_;
+  my %assoc = %$assoc_ref;
+
+  my ($pri1, $pri2);
+
+  $pri1 = pathcheck($path, %assoc);
+  $pri2 = subpathcheck($path, %assoc);
+
+  if ($pri1 < $pri2) {
+    return $pri1;
+  } else {
+    return $pri2;
+  }
 }
 
 #########################################################################
