@@ -50,8 +50,8 @@
 # Jonathan Abbey 7 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.7 $
-# Last Mod Date: $Date: 2003/08/11 14:37:25 $
+# Version: $Revision: 1.8 $
+# Last Mod Date: $Date: 2003/08/11 21:48:14 $
 #
 #####################################################################
 
@@ -74,7 +74,7 @@ if (!defined $opt_g) {
   # linux, then we just start making stuff up.  Feel free to change
   # this list, if you want.
 
-  @grouplist = ("other", "root", "bin", "sys", "users");
+  @grouplist = ("other", "root", "wheel", "bin", "sys", "users");
 
   foreach (@grouplist) {
     $group = $_;

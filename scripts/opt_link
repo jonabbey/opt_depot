@@ -53,8 +53,8 @@
 # Jonathan Abbey 29 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.11 $
-# Last Mod Date: $Date: 2003/08/02 04:26:09 $
+# Version: $Revision: 1.12 $
+# Last Mod Date: $Date: 2003/08/11 21:48:15 $
 #
 #####################################################################
 
@@ -685,6 +685,8 @@ ENDUSAGE
 
 read_prefs($usage_string, $config_file, "sqvng", @ARGV);
 init_log("opt_log $version");
+
+logprint("\nopt_link $version\n\n", 1);
 
 if (!check_lock("opt_link")) {
   logprint("Can't create lockfile, aborting\n", 1);

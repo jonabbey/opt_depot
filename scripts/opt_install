@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.20 $
-# Last Mod Date: $Date: 2003/08/08 19:54:33 $
+# Version: $Revision: 1.21 $
+# Last Mod Date: $Date: 2003/08/11 21:48:15 $
 #
 #####################################################################
 
@@ -119,7 +119,7 @@ sub fix_perms {
   # linux, then we just start making stuff up.  Feel free to change
   # this list, if you want.
 
-  @grouplist = ("other", "root", "bin", "sys", "users");
+  @grouplist = ("other", "root", "wheel", "bin", "sys", "users");
 
   foreach (@grouplist) {
     $gid = (getgrnam($_))[2];

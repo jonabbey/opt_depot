@@ -46,8 +46,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.11 $
-# Last Mod Date: $Date: 2003/08/07 03:03:42 $
+# Version: $Revision: 1.12 $
+# Last Mod Date: $Date: 2003/08/11 21:48:14 $
 #
 #########################################################################
 
@@ -267,8 +267,9 @@ sub read_pack_ex {
 #
 # input: the pathname of a directory to scan through
 #
-# rmdirs() scans through the supplied directory, removing any symbolic
-# links that point to non-existent files in the $depot directory tree.
+# rmdirs() recursively scans through the supplied directory, removing
+# any symbolic links that point to non-existent files in the $depot
+# directory tree.
 #
 # rmdirs() will also remove links pointing to a package's tree if that
 # package has been placed in the .exclude file in the $dest directory.
@@ -428,7 +429,7 @@ ENDUSAGE
 read_prefs($usage_string, $config_file, "svqrR", @ARGV);
 init_log("opt_clean $version");
 
-print "\nopt_clean $version\n\n" if ($switches{'v'});
+logprint("\nopt_clean $version\n\n", 1);
 
 if (!check_lock("opt_clean")) {
   logprint("Can't create lockfile, aborting\n", 1);
