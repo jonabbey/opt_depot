@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.30 $
-# Last Mod Date: $Date: 2003/09/22 05:44:59 $
+# Version: $Revision: 1.31 $
+# Last Mod Date: $Date: 2003/10/06 23:00:42 $
 #
 #####################################################################
 
@@ -71,7 +71,7 @@ use Exporter;
 	     &create_dir &testmakedir &dircheck &extractdir &killdir
 	     &touch
 	     &first_path_element
-	     &removelastslash &resolve &make_absolute &pathcheck
+	     &removelastslash &resolve &make_absolute &pathcheck &subpathcheck
 	     &read_prefs
 	    );
 @EXPORT_OK = qw();
@@ -412,7 +412,7 @@ sub check_lock {
   my ($user, $software, $lock, $mins_ago);
   local *LOCK;
 
-  if (exists $switches{'s'}) {
+  if (defined $switches{'s'}) {
     return 1;
   }
 
@@ -699,13 +699,19 @@ sub removelastslash {
 # value.
 #
 # input: $file - a fully qualified filepath
-#        *assoc - a name for an associative array (exclude or priority)
+#        $assoc_ref - a reference to an associative array (exclude or priority)
+#
+# Note that we're using perl prototypes for this subroutine definition, so
+# a naked %hash passed in for the second parameter will be converted to a
+# hash reference within this subroutine.
 #
 # output: as above.
 #
 #########################################################################
-sub pathcheck {
-  local ($file, *assoc) = @_;
+sub pathcheck ($\%) {
+  my ($file, $assoc_ref) = @_;
+
+  my %assoc = %$assoc_ref;
 
   @components = split(/\//, $file);
 
@@ -725,10 +731,15 @@ sub pathcheck {
   foreach $comp (@components) {
     $temp .= "$comp";
 
-    if (exists $assoc{$temp}) {
+    if (defined $assoc{$temp}) {
       $t_pri = $assoc{$temp};
 
-      if ($t_pri && $t_pri < $low_pri) {
+      if ($t_pri == 0) {
+	logprint("Pathcheck ASSERT ERROR: 0 value item $temp in hash\n", 1);
+	exit(1);
+      }
+
+      if ($t_pri < $low_pri) {
 	$low_pri = $t_pri;
       }
     }
@@ -739,20 +750,109 @@ sub pathcheck {
 
     $temp .= "/";
 
-    if (exists $assoc{$temp}) {
+    if (defined $assoc{$temp}) {
       $t_pri = $assoc{$temp};
 
-      if ($t_pri && $t_pri < $low_pri) {
+      if ($t_pri == 0) {
+	logprint("Pathcheck ASSERT ERROR: 0 value item $temp in hash\n", 1);
+	exit(1);
+      }
+
+      if ($t_pri < $low_pri) {
 	$low_pri = $t_pri;
       }
     }
   }
 
-  if ($low_pri != 9999) {
-    return $low_pri;
+  if ($low_pri == 9999) {
+    return 0;
   }
 
-  return 0;
+  return $low_pri;
+}
+
+#########################################################################
+#
+#                                                            subpathcheck
+#
+# This function is used to provide the calculated priority of a directory
+# path element, based on any and all elements contained under that path
+# element.  This is the inverse of pathcheck, which is used to determine
+# whether an element has priority from a container.
+#
+# Like pathcheck, subpathcheck uses the %assoc hash to look up
+# priority values, if $path is a superdirectory of any path elements
+# contained in the keys of %assoc.  The keys of %assoc should map to
+# integer values, in which the lowest positive number is taken to be
+# the best priority, if we're dealing with a priority hash.  If we're
+# dealing with an exclusion hash, then all values in the exclusion
+# hash will be positive numbers, so if we find any of them we'll wind
+# up returning a positive (true) integer value.
+#
+# In other words, when used on the global %priority hash, we'll return an
+# integer that can be compared to determine relative priority.  When
+# used on the global %exclude hash, we'll effectively return a boolean
+# value.
+#
+# input: $path - a fully qualified filepath
+#        $assoc_ref - a reference to an associative array (exclude or priority)
+#
+# Note that we're using perl prototypes for this subroutine definition, so
+# a naked %hash passed in for the second parameter will be converted to a
+# hash reference within this subroutine.
+#
+# output: as above.
+#
+#########################################################################
+sub subpathcheck ($\%) {
+  my ($path, $assoc_ref) = @_;
+  my %assoc = %$assoc_ref;
+  my ($t_pri, $low_pri);
+
+  # we only work if we're given a directory element, of course..
+
+  removelastslash($path);
+
+  # if we have the directory name itself in the %assoc, start things
+  # off with its priority
+
+  $low_pri = 9999;
+
+  if (defined $assoc{$path}) {
+    $low_pri = $assoc{$path};
+
+    if ($low_pri == 0) {
+      logprint("Subpathcheck ASSERT ERROR: 0 value item $path in hash\n", 1);
+      exit(1);
+    }
+  }
+
+  $path = "$path/";
+
+  # we want to find the best (lowest numerical value) priority
+  # that pertains to $file.. all the values in %assoc should
+  # be greater than zero, so we just look for the lowest
+
+  foreach $key (keys %assoc) {
+    if ($key =~ /^$path\//) {
+      $t_pri = $assoc{$key};
+
+      if ($t_pri == 0) {
+	logprint("Subpathcheck ASSERT ERROR: 0 value item $key in hash\n", 1);
+	exit(1);
+      }
+
+      if ($t_pri < $low_pri) {
+	$low_pri = $t_pri;
+      }
+    }
+  }
+
+  if ($low_pri == 9999) {
+    return 0;
+  }
+
+  return $low_pri;
 }
 
 #########################################################################
