@@ -1,6 +1,6 @@
-.TH OPT_LINK l "10 July 1997" "ARL:UT/CSD"
+.TH OPT_LINK l "09 July 2003" "ARL:UT/CSD"
 .SH NAME
-opt_link 2.01 \- creates links from a single depot directory to packages located in one or more central package archive directories.
+opt_link 2.02 \- creates links from a single depot directory to packages located in one or more central package archive directories.
 .SH SYNOPSIS
 .B opt_link
 [

@@ -1,132 +1,176 @@
-.TH OPT_DEPOT l "10 July 1997" "ARL:UT/CSD"
+.\" -*- nroff -*-
+.\"
+.\" opt_depot
+.\"
+.\" Copyright (C) 1993-2003 The University of Texas at Austin.
+.\"
+.\" Contact information
+.\"
+.\" Author Email: opt-depot@arlut.utexas.edu
+.\" Email mailing list: opt-depot-users@arlut.utexas.edu
+.\"
+.\" US Mail:
+.\"
+.\" Computer Science Division
+.\" Applied Research Laboratories
+.\" The University of Texas at Austin
+.\" PO Box 8029, Austin TX 78713-8029
+.\"
+.\" This program is free software; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program; if not, write to the Free Software
+.\" Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+.\" 02111-1307, USA
+.\"
+.\" Written by: Computer Science Division, Applied Research Laboratories,
+.\" University of Texas at Austin  opt-depot@arlut.utexas.edu
+.\"
+.\" Release: $Name:  $
+.\" Version: $Revision: 1.2 $
+.\" Last Mod Date: $Date: 2003/08/07 23:34:54 $
+.TH OPT_DEPOT l "7 August 2003" "ARL:UT/CSD"
 .SH NAME
-opt_depot 2.01 \- creates a directory structure with links to packages under a "depot" directory
+opt_depot 3.0 \- creates a directory structure with links to packages under a "depot" directory
 .SH SYNOPSIS
-.B opt_depot
-[
-.B -vnqmr
-] [
-.BI -d directory
-] [
-.BI -l directory
-]
-.RS
-[
-.BI -b directory
-]
+\fBopt_depot\fR [\fB-svnqmrR\fR] [\fB-f\f(BI config file\fR] [\fB-d\f(BI directory\fR] [\fB-l\f(BI directory\fR] [\fB-b\f(BI directory\fR]
+.SH DESCRIPTION
+\fBopt_depot\fR manages the creation of a symbolic link farm under a
+targeted base directory.  The base directory (\fI/opt\fR in our
+environment) contains a set of deployment directories (\fIbin\fR, \fIlib\fR,
+\fIinclude\fR, \fIman\fR, by default).  \fBopt_depot\fR creates
+symbolic links from these directories to the matching subdirectories of
+packages contained under a depot directory.  Typically the depot
+directory is contained under the base directory (\fI/opt/depot\fR in
+our example), but in principle it can be placed anywhere in the file
+system.
+.P
+The point of the symbolic link farm created by \fBopt_depot\fR is that
+the user need only have a single directory added to their \fBPATH\fR,
+\fBMANPATH\fR, and \fBLD_LIBRARY_PATH\fR environment variables in
+order to gain access to all installed \fIdepot-ized\fR packages, yet
+there is no confusion as to which file goes with which package, and
+de-installing packages is as easy as installing them.
+.P
+\fBopt_depot\fR does nothing but create symbolic links from the
+deployment directories to the depot package subdirectories.
+\fBopt_depot\fR can overwrite old links if it determines that a
+different package has been given priority (see the \fIpriority\fR
+section, below), but otherwise is dependent on \fBopt_clean\fR to take care
+of removing old and unneeded links.
+.P
 .SH ARGUMENTS
 .TP
-.B -v
-verbose mode.
+\fB-s\fR inhibits lock creation.  used when opt_setup handles locking.
 .TP
-.B -n
-test mode.  No action will actually occur while run information is
-output to the screen.
+\fB-v\fR verbose mode.
 .TP
-.B -m
-rebuild manpage index after making any changes to the man subdirectory,
-using the catman program.  The command to run catman is defined inside
-the opt_depot script and may be changed there.
+\fB-n\fR test mode.
+When \fB-n\fR is set, \fBopt_depot\fR will print out a list of actions that it would take if \fB-n\fR had not been set.
 .TP
-.B -q
-quiet mode.  Logging will be turned off.
+\fB-q\fR quiet mode.
+Logging will be turned off.
 .TP
-.B -r
-enable recursion. opt_depot will be able to solve package conflicts by merging
-directories recursivly.
+\fB-m\fR rebuild manpage index
+If any man page links are created, the catman program will be run to
+update the system's manpage index.  The command to run catman is
+defined inside the opt_depot script and may be changed there.
+.TP 
+\fB-r\fR enable recursion.
+When \fB-r\fR is set, subdirectories listed in the \fIopt.config\fR
+configuration file's \fIRecurse:\fR directive will be recursively
+unified by \fBopt_depot\fR in the event of common subdirectories.
 .TP
-.BI -d directory
-sets the "depot" directory (i.e. the directory to be searched)
+\fB-R\fR enable full recursion.
+When \fB-R\fR is set, \fBopt_depot\fR will perform recursive
+unification of package subdirectories whenever possible.
 .TP
-.BI -l directory
-set the location of the log directory
+\fB-f\f(BI config file\fR sets the location of the "\fIopt.config\fR" configuration file
 .TP
-.BI -b directory
-sets the software base directory
-.RE
-.SH DESCRIPTION
-opt_depot is a script that creates a directory structure that contains 
-links to packages under a "depot" directory (default is /opt/depot).  
-It will create  the directories "bin", "lib", "man", etc. in a designated directory 
-(default is /opt) and create links from these directories to the files under each 
-package's "bin", "lib", "man", etc. directories.  This will allow the user to access the 
-files for many different packages in one place and still keep the packages physically 
-separate from each other.
-.sp
-opt_depot employs a lock file
-.I (lock.opt_depot)
-to prevent multiple runs on the same 
-destination directory.  When a user runs 
-opt_depot to link /opt to /opt/depot (i.e., /opt is the sofdtware base directory and 
-/opt/depot is the depot directory) a lock file is created in /opt and is removed when 
-the run is completed.  If the user cancels (hits control C) in the middle of the run or
-an error occurs during the run then the user
-should remember to remove the lock file from the software base directory.  
-.sp
-The software base directory is the last argument in the command line without 
-any switches directly preceding it.  The default software base directory is 
-/opt.  The directory must already exist; however, any required sub directories 
-(i.e., "bin", "lib", "man", etc.) will be created if they do not exist.
-.sp
-Usually the user should not have to do much more than simply type "opt_depot" 
-when updating /opt; however, there may be situations where one wants to change the software base directory, add
-a couple of subdirectories to search, or link a different depot directory than /opt/depot. 
-.sp
-For example:
-.RS
-opt_depot -vq -d/opt/depot -shelp,etc /tmp/opt
-.RE
-will first make sure that the subdirectories of /tmp/opt exist (i.e. /tmp/opt/lib, /tmp/opt/man, 
-/tmp/opt/bin, etc.), creating them if they don't, and then take the packages in /opt/depot (note that
-the "-d/opt/depot" option is not necessary since /opt/depot is already the default directory and is 
-included only for illustrative purposes), 
-search the "lib", "man", "bin", and "include" directories in each package for files, and create links from /tmp/opt/lib, /tmp/opt/man, 
-/tmp/opt/bin, etc. to the files found in the packages. 
-.sp
-opt_depot also uses two configuration files called .priority and .exclude, which should be placed in the 
-software base directory. 
-.sp 
-.I .priority 
-is a list of packages and package files in order of decreasing
-priority.  This is to allow the user to specify which packages or
-files are more important when name conflicts arise.  If two files
-conflict then the priority list is searched. If either of the files or
-directories containing them are found then a comparison is made to
-determine which is of higher priority.  If a file or its package is
-not contained in the priority list then it has the lowest priority.
-If two files conflict and neither are found in the list then the first
-one linked remains.  Files included in the list can either start with
-the package name (e.g. opt_depot/bin/opt_clean) or be absolute
-pathnames (e.g. /opt/depot/opt_depot/bin/opt_clean), or be the the
-names of the packages themselves, if you want to assign relative
-priority of all files in a pair of packages. Package names should be
-the name of the package as listed under the "depot" directory and
-should contain no slashes.  Comments may follow a pound sign placed at
-the beginning of a line.
-.sp
-When opt_depot tries to resolve a conflict through the use of the .priority
+\fB-d\f(BI directory\fR sets the "depot" directory (i.e. the directory to be searched)
+.TP
+\fB-l\f(BI directory\fR set the location of the log directory
+.TP
+\fB-b\f(BI directory\fR sets the base directory for \fBopt_depot\fR
+.SH CONFIGURATION FILE
+\fBopt_depot\fR uses a configuration file, \fIopt.config\fR, to set
+certain configuration options that are not supported by
+\fBopt_depot\fR's command line arguments.  These include the list of
+package subdirectories (such as \fIbin\fR, \fIinclude\fR, and so on)
+to be linked by default, the list of subdirectories on which recursive
+directory unification should be performed if the \fB-r\fR parameter
+flag is used, and so on.
+.P
+The \fIopt.config\fR file is looked for by the \fBopt_depot\fR script
+in \fIinstall-dir/etc/opt.config\fR.  Additional modifications to
+the configuration parameters can be made by placing an \fIopt.config\fR
+file under the Base directory set with the \fB-b\fR flag.
+.P
+See the \fIopt.config\fR man page for more details.
+.SH LOCK FILE
+opt_depot employs a lock file (\fIlock.opt_depot\fR) to prevent
+multiple runs on the same destination directory.  When a user runs
+\fBopt_depot\fR to link \fI/opt\fR to \fI/opt/depot\fR (when, \fI/opt\fR is
+the software base directory and \fI/opt/depot\fB is the depot directory) a
+lock file is created in \fI/opt\fR and is removed when the run is completed.
+If the user cancels (hits control C) in the middle of the run or an
+error occurs during the run then the user should remember to remove
+the lock file from the software base directory.
+.P
+.SH \f(BI.priority\fR
+\fBopt_depot\fR uses two configuration files called \fI.priority\fR and
+\fI.exclude\fR, which can be placed in the software base directory.
+.P
+The \fI.priority\fR file contains a list of packages and package
+files, one per line, in order of decreasing priority.  This is to
+allow the user to specify which packages or files are more important
+when name conflicts arise.  If two files conflict then the priority
+list is searched. If either of the files or directories containing
+them are found then a comparison is made to determine which is of
+higher priority.  If a file or its package is not contained in the
+priority list then it has the lowest priority.  If two files conflict
+and neither are found in the list then the first one linked remains.
+Files included in the list can either start with the package name
+(e.g. \fIopt_depot/bin/opt_clean\fR) or be absolute pathnames
+(e.g. \fI/opt/depot/opt_depot/bin/opt_clean\fR), or be the the names
+of the packages themselves, if you want to assign relative priority of
+all files in a pair of packages. Package names should be the name of
+the package as listed under the "depot" directory and should contain
+no slashes.  Comments may follow a pound sign placed at the beginning
+of a line.
+.P
+When \fBopt_depot\fR tries to resolve a conflict through the use of the \fI.priority\fR
 file, it first checks to see if the files involved in the conflict are listed in
-the .priority file.  If so, the priority of the file or files in the .priority
+the \fI.priority\fR file.  If so, the priority of the file or files in the \fI.priority\fR
 file are used to determine which individual file should be linked.  If neither
-of the files at issue are listed in the .priority file, opt_depot will give
+of the files at issue are listed in the \fI.priority\fR file, \fBopt_depot\fR will give
 preference to whichever file is listed in a package or subdirectory of the
-highest priority.  That is, if the file in question is /opt/depot/test/bin/file,
-and a link to /opt/depot/old/bin/file is already in place in /opt/bin/file,
+highest priority.  That is, if the file in question is \fI/opt/depot/test/bin/file\fR,
+and a link to \fI/opt/depot/old/bin/file\fR is already in place in \fI/opt/bin/file\fR,
 the old link will be removed if:
-.sp
-.br
+.P
 .RS
-1) test/bin/file or /opt/depot/test/bin/file is in the .priority file ahead of an entry for old/bin/file or /opt/depot/old/bin/file, if such exists
+1) \fItest/bin/file\fR or \fI/opt/depot/test/bin/file\fR is in the
+\fI.priority\fR file ahead of an entry for \fIold/bin/file\fR or
+\fI/opt/depot/old/bin/file\fR, if such exists
 .RE
-.sp
+.P
 or
-.sp
+.P
 .RS
-2) any directory in the tree containing /opt/depot/test/bin/file has a higher priority in the .priority file than all directories which contain /opt/depot/old/bin/file
+2) any directory in the tree containing \fI/opt/depot/test/bin/file\fR has a higher priority in the \fI.priority\fR file than all directories which contain \fI/opt/depot/old/bin/file\fR
 .RE
-.sp
+.P
 The individual files' relative priorities, if listed, are considered before the priority of any containing directory or package.  
-.sp
+.P
 For example:
 .RS
 #this is a priority list
@@ -145,35 +189,85 @@ gnuemacs-19.23
 .br
 gnuemacs-18.57
 .RE
-.sp
+.P
 In the above example, X11R5/man/manl/xterm.l
 .I
 would
 be given preference in linking, because it is a specific file.  In all other cases, the X11R6 man pages
 would be given preference, because they are not specifically enumerated, and X11R6/man, which contains
 the man pages, has a higher preference than X11R5/man.
-.sp
+.P
 If X11R5 had been listed above X11R6/man in the .priority file, then
 X11R5's man pages would be linked.  opt_depot only looks at the
 containing directory with the highest priority when deciding linkage
 based on containing directories.
-.sp
-.I .exclude
-is a list of packages and package files that should not be linked to the software base directory 
-structure.  The format is the same as that for .priority.
-.sp
-In the case of package conflicts, opt_depot will recursively search the package's sub-directories for files that should be linked into the software base. If
-two or more files are found that do not exclude one another, then physical su-directories are created under the software base and links to the files are placed in these directories. By doing so, opt_depot allows two or more packages to use files located in the same directory.
-This feature may be diabled using the -r option.
-.sp
-By default, opt_depot will log the run in a file located in /logs/opt_depot, and, since the default
-destination is /opt, a file there called "opt" will contain most of the logs; however, for destination directories
-which have paths more than one level deep the corresponding log file name is derived from the absolute path name by 
-replacing all but the first slash with a colon (e.g., /tmp/test/opt would be tmp:test:opt).  Logging can be turned 
-off using the q (for quiet) switch.  The log directory can be changed using the -l"directory name" option.
+.P
+.SH \f(BI.exclude\fR
+\fI.exclude\fR is a list of packages and package files that should not
+be linked to the software base directory structure.  The format is the
+same as that for \fI.priority\fR, with one package, directory, or file
+name per line.
+.P
+In addition to the software base directory (\fI/opt\fR in our
+example), \fI.exclude\fR files may be placed in each package.  These
+per-package \fI.exclude\fR files are effectively combined with the
+\fI.exclude\fR file contained in the software base directory.  \fBopt_depot\fR
+treats all exclusions the same wherever they occur, but the per-package \fI.exclude\fR
+files have a special role to play when it comes to the \fBopt_link\fR script.  See
+that manpage for details.
+.SH CONFLICT HANDLING
+If \fBopt_depot\fR finds that a link to be made conflicts with an
+already existing link, it will follow some simple rules for resolving
+conflicts.
+.P
+First, the \fI.priority\fR file is consulted to see which of the two
+possible targets has higher priority.  If one has higher priority than
+the other, then the other link will be removed (if it had already been
+established), and replaced with the one with higher priority.
+.P
+Second, if neither of the link targets has any priority set in the
+\fI.priority\fR file, \fBopt_depot\fR will simply keep the older link.
+.P
+This is generally the appropriate behavior, but there are times when a
+single symbolic link is not adequate to link software together.  Take
+the case where two packages each contain an \fIinclude\fR directory,
+and both of those \fIinclude\fR directories contain a common
+subdirectory, such as \fIperl\fR.  If \fBopt_depot\fR just followed
+the logic above, \fI<dest>/include/perl\fR would point to one of the
+two \fIinclude/perl\fR subdirectories.  There would be no effective unification
+of the files contained under those two subdirectories.
+.P
+If the \fB-r\fR or \fB-R\fR command line flags are provided to \fBopt_depot\fR,
+\fBopt_depot\fR will perform a recursive directory unification process.  In
+our example, \fBopt_depot\fR would create a \fI<dest>/include/perl\fR directory,
+recurse down into it, and create symbolic links to lower level files or directories
+in the two source packages.  If a lower-level directory was also present in
+both packages' \fIinclude/perl\fR subdirectories, \fBopt_depot\fR would create
+yet another common subdirectory, and recurse down to link files from both
+subdirectory trees.
+.P
+The only difference between the \fB-r\fR and \fB-R\fR flags is that
+with the \fB-r\fR flag, \fBopt_depot\fR will only perform recursive
+unification on package directories listed in the \fIopt.config\fR
+file's \fIRecurse:\fR directive.  \fB-R\fR will cause \fBopt_depot\fR
+to always perform recursive unification whenever it sees an
+opportunity to do so.
+.P
+Regardless of \fB-r\fR versus \fB-R\fR, \fBopt_depot\fR will only ever
+attempt to perform recursive unification in cases where an existing
+link does not have priority over new files or directories to be
+linked.
+.SH LOGGING
+By default, \fBopt_depot\fR will log the run in a file located in
+\fI/logs/opt_depot\fR, and, since the default destination is
+\fI/opt\fR, a file there called "opt" will contain most of the logs;
+however, for destination directories which have paths more than one
+level deep the corresponding log file name is derived from the
+absolute path name by replacing all but the first slash with a colon
+(e.g., \fI/tmp/test/opt\fR would be \fItmp:test:opt\fR).  Logging can
+be turned off using the \fB-q\fR (for quiet) switch.  The log
+directory can be changed using the \fB-l\fR "directory name" option.
 .SH NOTE
 All directory names should be absolute path names
 .SH SEE ALSO
 opt_clean(l), opt_nuke(l), opt_setup(l), opt_link(l)
-
-

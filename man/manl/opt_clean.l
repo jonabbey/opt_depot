@@ -1,10 +1,10 @@
-.TH OPT_CLEAN l "10 July 1997" "ARL:UT/CSD"
+.TH OPT_CLEAN l "09 July 2003" "ARL:UT/CSD"
 .SH NAME
-opt_clean 2.01 \- removes bad links to files under a depot directory
+opt_clean 3.0 \- removes bad links to files under a depot directory
 .SH SYNOPSIS
 .B opt_clean
 [
-.B -vqr
+.B -svqrR
 ] [
 .BI -d directory
 ] [
@@ -32,6 +32,9 @@ depot directory and the configuration files change.
 .sp
 See opt_depot man page for more details on the configuration files.   
 .SH ARGUMENTS
+.TP
+.B -s
+inhibits locking, used when opt_clean is run by opt_setup
 .TP
 .B -v
 verbose mode
