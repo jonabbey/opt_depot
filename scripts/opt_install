@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.28 $
-# Last Mod Date: $Date: 2003/09/18 00:58:35 $
+# Version: $Revision: 1.29 $
+# Last Mod Date: $Date: 2003/09/18 01:01:35 $
 #
 #####################################################################
 
@@ -605,7 +605,7 @@ sub create_config {
       print "\n";
       edit_list("recursively linked directory", @recurse);
     } else {
-      printwrap("The opt_depot scripts will always perform recursive directory unification where possible.\n");
+      printwrap("The opt_depot scripts will always perform recursive directory unification where possible.");
       $alwaysrecurse = 1;
     }
   }
@@ -641,7 +641,7 @@ sub create_config {
   }
 
   print "\n";
-  unless (askyn("\nIs this information correct?(y/n)")) {
+  unless (askyn("Is this information correct?")) {
     die "Installation process aborted\n";
   }
 
