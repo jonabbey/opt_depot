@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.14 $
-# Last Mod Date: $Date: 2003/08/11 14:46:36 $
+# Version: $Revision: 1.15 $
+# Last Mod Date: $Date: 2003/08/12 06:38:34 $
 #
 #####################################################################
 
@@ -503,7 +503,7 @@ sub extractdir {
   @comps =split(/\//, $filepath);
   pop @comps;
 
-  return join('/', @comps);
+  return removelastslash(join('/', @comps));
 }
 
 #########################################################################
@@ -559,16 +559,16 @@ sub first_path_element {
 #
 # input: a pathname to test
 #
-# this function will remove a trailing slash from the directory name
-# input
+# this function will remove trailing slashes from the directory name
+# input, with the exception that if the pathname is '/', the single
+# slash will not be removed.
+#
+# The string passed in will be directly modified as well as returned.
 #
 #########################################################################
 sub removelastslash {
-  if ($_[0] =~ /\/$/) {
-    chop $_[0];
-  }
-
-  $_[0];
+  $_[0] =~ s/([^\/])\/+$/$1/;
+  return $_[0];
 }
 
 #########################################################################
@@ -1107,7 +1107,7 @@ sub check_args {
       if ($word =~ /^[fdbl]/) {
 	# we've got one of the standard tokens which may permissibly
 	# be followed by an argument string
-	
+
 	if (length($word)==1) {
 	  # single char flag.. skip the next param, which is the
 	  # argument for the flag
