@@ -1,4 +1,4 @@
-# opt_depot v2.02 -*- Perl -*-
+# opt_depot v3.0 -*- Perl -*-
 #
 # This script will go through the $depot directory and find files in
 # specific subdirectories of various packages and make links in the
@@ -45,54 +45,34 @@
 # A -b option must now be given with the destination (or base) directory
 # Erik Grostic 10 July 1997
 #
-# v2.02
+# v3.0
 # Reworked the recursive unification implementation to not get confused
 # due to an under-specified regexp.  Made the per-package exclude files
-# properly affect man page linking.  Lots of reformatting, and various
-# minor code fixes and cleanups.
-# Jonathan Abbey 30 June 2003
+# properly affect man page linking.  Reworked tons to use Opt_depot::Common,
+# and modern Perl module function support.  Script is now position
+# independent.  No more attempts at Perl 4 compatibility for us, no sir.
+# Jonathan Abbey 25 July 2003
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.15 $
-# Last Mod Date: $Date: 2003/07/25 02:32:52 $
+# Version: $Revision: 1.16 $
+# Last Mod Date: $Date: 2003/07/26 02:31:51 $
 #
 #####################################################################
 
 use English;
-use Text::ParseWords;
+use FindBin qr($RealBin);
 
-use lib "<<INSTALL-DIR>>/modules";
+use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
-$version = "2.02";
+$version = "3.0";
 
 ## defaults #########################################################
 
-# all directories listed below should not have trailing slashes
-
-$catman = "catman -w -M $dest/$man";	# command to rebuild the whatis database
-                                        # for the man command..
-
-$man = "man";			# <-  gets special attention as a subdir
-				# should always be "man" for practical
-				# purposes..
-
-$config_file = "<<INSTALL-DIR>>/etc/opt.config";
+$config_file = "$RealBin/../etc/opt.config";
                                         # configuration file containing
                                         # $dest, $depot and $logdir vars
-                                        # The string \<\<INSTALL-DIR\>\> is
-                                        # replaced with the installation
-                                        # directory during the copy process
-
-# @unify_list --->         # This is a list of directory paths that
-                           # are candidates for unification by opt_depot.
-                           # Only those paths with these directories will
-                           # be able to have physical sub-directories built
-                           # under them in the software base.
-                           # The list is present in the configuration file, and
-                           # may be changed there.
-
 
 $opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
                                   # when it makes a directory. only these
@@ -216,11 +196,20 @@ sub read_exfile {
       }
 
       if (/^\s*\'/ || /^\s*\"/) {
-	$_ = parsequoted($_);
+	$_ = parsequoted($_, 0); # leave in escapes
 
-	if (/:/){	
-	  next; # a labelled exclusion. Forget about it.
+	# if we have an unescaped :, treat that as a label separator,
+	# and skip this entry
+
+	if (!/(?:\\.|[^:])*$/){	
+	  next;
 	}
+
+	# now take out escapes
+
+	s/\\(.)/$1/g;
+
+	# now see if we're excluding a qualified or nonqualified file name
 
 	if (/^(\/.+)$/) {
 	  # leading slash -- take this as an absolute path name
@@ -244,6 +233,9 @@ sub read_exfile {
 	  logprint("  ERROR:  bad entry in .exclude file \"$_\"", 1);
 	}
       } else {
+
+	# no quotations, so we'll use the older, simpler parse logic
+
 	if (/:/){	
 	  next; # a labelled exclusion. Forget about it.
 	}
@@ -314,7 +306,7 @@ sub read_pack_ex {
 	}
 
 	if (/^\s*\"/ || /^\s*\'/) {
-	  $_ = parsequoted($_);
+	  $_ = parsequoted($_, 1);
 
 	  if (/^(\/.+)$/) {
 	    # leading slash -- take this as an absolute path name
@@ -408,7 +400,7 @@ sub read_prifile {
       }
 
       if (/^\s*\"/ || /^\s*\'/) {
-	$_ = parsequoted($_);
+	$_ = parsequoted($_, 1); # take out escapes
 
 	if (/^(\/.*)/) {
 	  # leading slash - absolute filename
@@ -444,93 +436,20 @@ sub read_prifile {
 #
 # input: name of a directory to create
 #
-# makedir() creates a directory and sets permissions on it to 755
+# makedir() creates a directory and sets permissions on it to 755,
+# honoring the 'n' switch which inhibits actual file operations for the
+# sake of showing what would be done.
 #
 #########################################################################
 sub makedir {
   my($dir) = @_;
 
   if (!($switches{'n'})) {
-    system("mkdir $dir") && die "Could not make $dir";
-    system("chmod 755 $dir") && die "Could not chmod $dir";
+    mkdir($dir, 0755) || die "Could not make $dir";
     print (LOG "  Made:   directory $dir\n") if (!($switches{'q'}));
   }
 
   print ("  Make:   directory $dir\n") if ($switches{'v'});
-}
-
-#########################################################################
-#
-#                                                               pathcheck
-#
-# This function is used to determine if $file is contained under any
-# directory listed in the keys of %assoc.  The keys of %assoc should
-# map to integer values, in which the lowest positive number is taken
-# to be the best priority, if we're dealing with a priority hash.  If
-# we're dealing with an exclusion hash, then all values in the exclusion
-# hash will be positive numbers, so if we find any of them we'll wind
-# up returning a positive (true) integer value.
-#
-# In other words, when used on the global %priority hash, we'll return an
-# integer that can be compared to determine relative priority.  When
-# used on the global %exclude hash, we'll effectively return a boolean
-# value.
-#
-# input: $file - a fully qualified filepath
-#        *assoc - a name for an associative array (exclude or priority)
-#
-# output: as above.
-#
-#########################################################################
-sub pathcheck {
-  local ($file, *assoc) = @_;
-
-  @components = split(/\//, $file);
-
-  my ($t_pri, $temp, $low_pri);
-
-  # we want to find the best (lowest numerical value) priority
-  # that pertains to $file
-
-  $low_pri = 9999;
-  $temp = "";
-
-  # now loop over the path, from top down.  Since we're splitting on
-  # /, if $file began with a slash, our first component will be the
-  # empty string, and we'll start adding non-empty strings after we've
-  # appended the first slash in the second clause of the loop
-
-  foreach $comp (@components) {
-    $temp .= "$comp";
-
-    if (exists $assoc{$temp}) {
-      $t_pri = $assoc{$temp};
-
-      if ($t_pri && $t_pri < $low_pri) {
-	$low_pri = $t_pri;
-      }
-    }
-
-    # add a trailing /, in case the trailing slash was present in the
-    # hash, and check again.  Adding the trailing slash here will
-    # also prep us to add the next component.
-
-    $temp .= "/";
-
-    if (exists $assoc{$temp}) {
-      $t_pri = $assoc{$temp};
-
-      if ($t_pri && $t_pri < $low_pri) {
-	$low_pri = $t_pri;
-      }
-    }
-  }
-
-  if ($low_pri != 9999) {
-    return $low_pri;
-  }
-
-  return 0;
 }
 
 #########################################################################
@@ -824,7 +743,7 @@ sub link {
 #
 # input: $package - name of package to link man pages for
 #
-# output: potentially links man pages into $dest/$man
+# output: potentially links man pages into $dest/man
 #         if a link is made, global $mademan is set to 1
 #
 #########################################################################
@@ -833,24 +752,24 @@ sub manlink {
 
   my ($file, @files, $mfile, @mfiles, $newsuf);
 
-  # check under $package/$man and link appropriate files under man1, man2, etc
+  # check under $package/man and link appropriate files under man1, man2, etc
 
-  if (!-e "$depot/$package/$man") {
+  if (!-e "$depot/$package/man") {
     return;
   }
 
   # extract all files and directories that don't begin with .
 
-  opendir (MAN, "$depot/$package/$man") || print "Could not open $depot/$package/$man.";
+  opendir (MAN, "$depot/$package/man") || print "Could not open $depot/$package/man.";
   @files=grep (!/^\./, readdir(MAN));
   closedir(MAN);
 
   for $file (@files) {
 
-    if (pathcheck("$depot/$package/$man/$file", *exclude)) {
+    if (pathcheck("$depot/$package/man/$file", *exclude)) {
       # do nothing.. don't link these manpages
 	
-      logprint("  Excluding man directory $depot/$package/$man/$file/\n", 0);
+      logprint("  Excluding man directory $depot/$package/man/$file/\n", 0);
 
       next;
     }
@@ -860,27 +779,26 @@ sub manlink {
     # directory except man subdirectories (i.e., not cat directories),
     # but there might be readme's or something.  we'll ignore those.
 	
-    if (-d "$depot/$package/$man/$file" && $file =~ /^man([0-9a-z]+)$/) {
+    if (-d "$depot/$package/man/$file" && $file =~ /^man([0-9a-z]+)$/) {
 
       # we've got a man directory.  $1 is the man dir suffix
 
       $suf=$1;
 
       # make sure that the appropriate man and cat directories
-      # exist in $dest/$man..
-      # ($man should always be eq "man", for all practical purposes)
+      # exist in $dest/man..
 
-      if (!(-e "$dest/$man/man$suf")) {
-	makedir("$dest/$man/man$suf");
+      if (!(-e "$dest/man/man$suf")) {
+	makedir("$dest/man/man$suf");
       }
 
-      if (!(-e "$dest/$man/cat$suf")) {
-	makedir("$dest/$man/cat$suf");
+      if (!(-e "$dest/man/cat$suf")) {
+	makedir("$dest/man/cat$suf");
       }
 
-      if (-d "$depot/$package/$man/$file") {
+      if (-d "$depot/$package/man/$file") {
 			
-	opendir (MDIR, "$depot/$package/$man/$file") || print "Could not open $depot/$package/$man/$file";
+	opendir (MDIR, "$depot/$package/man/$file") || print "Could not open $depot/$package/man/$file";
 	@mfiles=grep (!/^\./, readdir(MDIR));
 	closedir (MDIR);
 			
@@ -905,19 +823,19 @@ sub manlink {
 	      # the appropriate place.  If the directory
 	      # does not exist, we'll want to create it.
 
-	      if (!-e "$dest/$man/man$newsuf") {
-		makedir("$dest/$man/man$newsuf");
+	      if (!-e "$dest/man/man$newsuf") {
+		makedir("$dest/man/man$newsuf");
 	      }
 
-	      if (!-e "$dest/$man/cat$newsuf") {
-		makedir("$dest/$man/cat$newsuf");
+	      if (!-e "$dest/man/cat$newsuf") {
+		makedir("$dest/man/cat$newsuf");
 	      }
 	    }
 				
-	    if (link($package, "$depot/$package/$man/$file/$mfile", "$dest/$man/man$newsuf/$mfile")) {
+	    if (link($package, "$depot/$package/man/$file/$mfile", "$dest/man/man$newsuf/$mfile")) {
 	      if ($newsuf ne $suf) {
-		logprint("WARNING: suffix does not match directory for $depot/$package/$man/$file/$mfile\n", 0);
-		logprint("         Placed in $dest/$man/$man$newsuf\n", 0);
+		logprint("WARNING: suffix does not match directory for $depot/$package/man/$file/$mfile\n", 0);
+		logprint("         Placed in $dest/man/man$newsuf\n", 0);
 	      }
 		
 	      $mademan=1;
@@ -926,7 +844,7 @@ sub manlink {
 				
 	    # the filename wasn't valid for a manpage
 
-	    logprint("WARNING: file $depot/$package/$man/$file/$mfile is not properly named for a man page..\n", 0);
+	    logprint("WARNING: file $depot/$package/man/$file/$mfile is not properly named for a man page..\n", 0);
 	    logprint("         Not linking\n", 0);
 	  }
 	}
@@ -939,7 +857,7 @@ sub manlink {
       # file with a recognizable extension, and link it into the
       # appropriate man subdirectory if so.
 	
-      if (-f "$depot/$package/$man/$file" && $file =~ /\.([^\.]+)$/) {
+      if (-f "$depot/$package/man/$file" && $file =~ /\.([^\.]+)$/) {
 
 	# file is a man page, link it to the appropriate man
 	# directory.
@@ -948,15 +866,15 @@ sub manlink {
 	# package isn't structured properly, but we can deal with
 	# it since we have the suffix to guide us.
 			
-	if (!(-e "$dest/$man/man$1")) {
-	  makedir("$dest/$man/man$1");
+	if (!(-e "$dest/man/man$1")) {
+	  makedir("$dest/man/man$1");
 	}
 
-	if (!(-e "$dest/$man/cat$1")) {
-	  makedir("$dest/$man/cat$1");
+	if (!(-e "$dest/man/cat$1")) {
+	  makedir("$dest/man/cat$1");
 	}
 
-	link($package, "$depot/$package/$man/$file", "$dest/$man/man$1/$file");
+	link($package, "$depot/$package/man/$file", "$dest/man/man$1/$file");
 	$mademan=1;
       }
     }
@@ -987,13 +905,12 @@ sub prepdirs {
     }
   }
 
-  if (!-e "$dest/$man") {
-    makedir("$dest/$man");
-  } elsif (!-d "$dest/$man") {
-    die "ERROR: $dest/$man is not a directory";
+  if (!-e "$dest/man") {
+    makedir("$dest/man");
+  } elsif (!-d "$dest/man") {
+    die "ERROR: $dest/man is not a directory";
   }
 }
-
 
 #########################################################################
 #
@@ -1379,10 +1296,10 @@ foreach $subdir (@subdirs) {
 
   $opt_directory = $subdir;
 
-  if ($subdir ne "$man") {
+  if ($subdir ne "man") {
     link_me($subdir,$opt_directory, @packages);
   } else {
-    logprint("LINKING:  $man\n",0);
+    logprint("LINKING:  man\n",0);
 
     foreach $package (@packages) {
       if (!$packexclude{$package}) {
@@ -1405,9 +1322,9 @@ if ($conflicts[0]) {
 # rebuild catman database if we touched the manpages
 #
 
-if ($mademan && $switches{'m'}) {
+if ($mademan && $switches{'m'} && -x "/usr/bin/catman") {
   logprint("  Rebuilding man page indices\n", 0);
-  system($catman);
+  system("/usr/bin/catman -w -M $dest/man");
   logprint("  Man page indices rebuilt \n", 0);
 }
 
