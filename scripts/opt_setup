@@ -46,12 +46,15 @@
 # opt_setup now does its own lock establishment and clearing, using
 # Opt_depot::Common logic.  It now passes the -s command line argument
 # to the constituent scripts which inhibits their use of locks, in favor
-# of the opt_setup lock.
-# Jonathan Abbey 31 July 2003
+# of the opt_setup lock.  opt_setup now runs opt_link twice, once at the start
+# of opt_setup processing to add new links from the site volume(s), and once
+# at the end to remove excluded links once opt_clean and opt_depot have had
+# a chance to run.
+# Jonathan Abbey 15 October 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.17 $
-# Last Mod Date: $Date: 2003/10/15 03:34:14 $
+# Version: $Revision: 1.18 $
+# Last Mod Date: $Date: 2003/10/15 20:28:00 $
 #
 ##########################################################################
 
