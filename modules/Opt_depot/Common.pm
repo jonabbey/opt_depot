@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.15 $
-# Last Mod Date: $Date: 2003/08/12 06:38:34 $
+# Version: $Revision: 1.16 $
+# Last Mod Date: $Date: 2003/08/13 22:59:16 $
 #
 #####################################################################
 
@@ -66,7 +66,7 @@ use Exporter;
 	     *LOG
 	     &askyn &askstring &printwrap
 	     &parsequoted &safifystring
-	     &init_log &close_log &logprint
+	     &init_log &close_log &logprint &printparams
 	     &check_lock &clear_lock
 	     &create_dir &testmakedir &dircheck &extractdir &killdir
 	     &first_path_element
@@ -233,7 +233,7 @@ sub safifystring {
 #
 #                                                                init_log
 #
-# input: $appname
+# input: $appname, $version
 #
 # uses: $logdir $dest %switches package globals
 #
@@ -245,7 +245,7 @@ sub safifystring {
 #
 #########################################################################
 sub init_log {
-  my ($appname) = @_;
+  my ($appname, $version) = @_;
 
   my ($buf, @dest, $log, $temphandle);
 
@@ -270,11 +270,23 @@ sub init_log {
     $| = 1;
     select($temphandle);
 
-    print (LOG "\n\n**$appname**  ");
+    logprint("\n\n**$appname $version **  ", 0);
+
     ($sec, $min, $hour, $mday, $mon, $year)= localtime(time);
     $mon=$mon + 1;
+
+    if ($mon < 10) {
+      $mon = "0" . $mon;
+    }
+
+    if ($sec < 10) {
+      $sec = "0" . $sec;
+    }
+
     $year = $year + 1900;	# y2k ok!
-    print (LOG "$hour:$min:$sec  $mon\/$mday\/$year\n");
+
+    logprint("$hour:$min:$sec  $mon\/$mday\/$year\n\n", 0);
+    printparams();
 
     $log_init = 1;
   }
@@ -316,6 +328,31 @@ sub logprint {
   if ($log_init) {
     print LOG $str;
   }
+}
+
+
+##########################################################################
+#
+#                                                              printparams
+#
+# This subroutine logprints the command line flags and configuration
+# data loaded from the opt.config file.
+#
+##########################################################################
+sub printparams {
+  my ($key, $switch_string, $file_string);
+
+  foreach $key (keys %switches) {
+    $switch_string .= "$switches{$key} ";
+  }
+
+  $file_string = "-f" . safifystring($config_file) .
+    " -d" . safifystring($depot) . " -l" . safifystring($logdir) .
+      " -b" . safifystring($dest);
+
+  logprint("Params:", 0);
+  logprint(wrap("","       ",$switch_string, $file_string), 0);
+  logprint("\n\n", 0);
 }
 
 #########################################################################
