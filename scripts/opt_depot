@@ -55,8 +55,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.45 $
-# Last Mod Date: $Date: 2003/10/07 21:26:25 $
+# Version: $Revision: 1.46 $
+# Last Mod Date: $Date: 2003/10/11 02:10:49 $
 #
 #####################################################################
 
@@ -70,8 +70,8 @@ $version = "3.0";
 
 ## defaults #########################################################
 
-$debug = 1;
-$force_verbose = 1;
+$debug = 0;
+$force_verbose = 0;
 
 # configuration file containing $dest, $depot and $logdir vars
 
@@ -547,10 +547,14 @@ sub smartlink {
     return fablink($link, $target);
   }
 
-  # now check for the old and new path priorities
+  # now check for the old and new path priorities.. we use
+  # totalpriority() here so that we properly deal with priorities from
+  # superdirectories or subcomponents (in the case that $oldtarget or
+  # $target are directories), as well as the priority of the actual
+  # target at issue)
 
-  $opp = pathcheck($oldtarget, %priority);
-  $npp = pathcheck($target, %priority);
+  $opp = totalpriority($oldtarget, %priority);
+  $npp = totalpriority($target, %priority);
 
   if ($npp > $opp) {
     return fablink($link, $target);
@@ -830,7 +834,6 @@ sub synthesize_dir {
 #
 #                                                             depth_first
 # input: * Two packages for comparison
-#        * The current directory under $dest (ie lib, bin, info, include)
 #
 # uses: merge_list associative array, global @all_dirs
 #
@@ -843,32 +846,39 @@ sub synthesize_dir {
 #########################################################################
 sub depth_first {
 
-  my ($new_pack_root, $old_pack_root, $opt_directory) = @_;
+  my ($new_path, $old_path) = @_;
 
-  my ($current_dir, @dirs, @files, @contents,$temp);
+  my ($current_dir, @dirs, @files, @contents);
   my ($pack_prefix, $merge_target);
   my ($new_file, $old_file);
+  my ($dir, $new_dir, $old_dir);
+
+  if (!-d $old_path || !-d $new_path) {
+    logprint("Ditching depth_first entry because one of $old_path and $new_path aren't directories\n", -1);
+    return;
+  }
 
   # The first time we enter this function, we'll prep the @all_dirs
-  # array with the name of the $new_pack_root.  This should be an
+  # array with the name of the $new_path.  This should be an
   # unqualified package name, as the assumption is that the bulk of
   # the opt_depot script is run after we do a chdir() into the $depot
   # directory.
 
   if ($#all_dirs < 0) {
-    $all_dirs[0] = $new_pack_root;
+    $all_dirs[0] = $new_path;
   }
 
   if ($debug) {
-    print "\nentering depth_first\n--------------------\n\@all_dirs = ";
+    print "\nentering depth_first\n";
+    print "--------------------\n";
+    print "\@all_dirs = ";
     printwrap(join(', ', @all_dirs));
-    print "\n\$new_pack_root = $new_pack_root\n";
-    print "\$old_pack_root = $old_pack_root\n";
-    print "\$opt_directory = $opt_directory\n";
+    print "\n\$new_path = $new_path\n";
+    print "\$old_path = $old_path\n";
   }
 
   # Now we continue with our depth-first traversal.  What we want to
-  # do is to visit all subdirectories of $depot/$new_pack_root in
+  # do is to visit all subdirectories of $depot/$new_path in
   # depth-first order.  When the recursive traversal phase is done, we
   # will see if any files exist in the subdirectory ($current_dir)
   # that we are visiting in both the new package we are linking in and
@@ -887,11 +897,18 @@ sub depth_first {
   @files = grep (!-d "$current_dir/$_", @contents);
 
   foreach $dir (@dirs) {
-    push (@all_dirs, "$current_dir/$dir");
+    $new_dir = "$current_dir/$dir";
+    $old_dir = swap_prefixes($new_dir, $new_path, $old_path);
+
+    if (-d $old_dir) {
+      push (@all_dirs, $new_dir);
+    } else {
+      logprint("NOT PUSHING $new_dir because $old_dir isn't a directory\n", -1);
+    }
   }
 
   if ($#all_dirs >= 0) {
-    depth_first($new_pack_root, $old_pack_root, $opt_directory);
+    depth_first($new_path, $old_path);
   }
 
   # now that we've finished recursing down, let's take a look at
@@ -900,38 +917,41 @@ sub depth_first {
 
   foreach $file (@files) {
     $new_file = "$current_dir/$file";
-
-    # copy $new_file string to $old_file, replacing the $new_pack_root
-    # prefix with the $old_pack_root prefix, so that we can compare the
-    # existence of files in the common relative location of the new
-    # and old packages we're looking at merging
-
-    $old_file = $new_file;
-    $temp = $new_pack_root;
-    $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
-    $old_file =~ s/^$temp/$old_pack_root/;
+    $old_file = swap_prefixes($new_file, $new_path, $old_path);
 
     logprint("\nHey! \$new_file is $new_file, \$old_file is $old_file\n", -1);
 
-    $pack_prefix = first_path_element($new_pack_root);
+    $pack_prefix = first_path_element($new_path);
 
-    if ($current_dir =~ /^$pack_prefix\/$opt_directory\/(.*)$/) {
-      $merge_target = "$dest/$opt_directory/$1";
+    if ($current_dir =~ /^$pack_prefix\/([^\/]+)\/(.*)$/) {
+      $merge_target = "$dest/$1/$2";
       logprint("\nHey!  \$merge_target is $merge_target\n", -1);
     } else {
-      logprint("Error, couldn't break the '$pack_prefix/$opt_directory' prefix from '$current_dir'\n", 1);
+      logprint("Error, couldn't break apart '$current_dir'\n", 1);
       next;
     }
 
     if (!defined $merge_list{$merge_target}) {
       if ((-e $new_file && !-e $old_file) ||
-	  (pathcheck($new_file, %priority) > pathcheck($old_file, %priority))) {
-	if (pathcheck($new_file, %exclude)) {
+	  (pathcheck("$depot/$new_file", %priority) > $priority{"$depot/$old_file"})) {
+	if (pathcheck("$depot/$new_file", %exclude)) {
 	  logprint("\n  *** EXCLUDING DIRECTORY: $new_file\n\n", 0);
 	} else {
+	  logprint("MERGING $merge_target\n", -1);
 	  $merge_list{$merge_target} = 1;
 	}
+      } else {
+	if (!-e $new_file) {
+	  logprint("ZZZ new_file $new_file doesn't exist\n", -1);
+	}
+	if (-e $old_file) {
+	  logprint("ZZZ old_file $old_file exists\n", -1);
+	}
+	logprint("ZZZ new_file priority is ". pathcheck("$depot/$new_file", %priority) . "\n", -1);
+	logprint("ZZZ old_file priority is ". pathcheck("$depot/$old_file", %priority) . "\n", -1);
       }
+    } else {
+      logprint("ALREADY SET TO MERGE $merge_target\n", -1);
     }
   }
 }
@@ -1016,10 +1036,17 @@ sub link_me {
 
 	  undef %merge_list;
 
-	  # check and see if a merge is actually required
+	  # check and see if a merge is actually required, which may
+	  # be the case if the old target is itself a directory and
+	  # our command-line/config file options indicate that we
+	  # should do recursive unification under $subdir
 
-	  if (needs_unify($subdir)) {
-	    depth_first($new_pack, $old_pack, $opt_directory);
+	  if (!-d $old_target) {
+	    logprint("LINKME-ERROR: $old_target is not a directory", -1);
+	  }
+
+	  if (-d $old_target && needs_unify($subdir)) {
+	    depth_first($new_pack, $old_pack);
 
 	    # if we've decided to merge things, let's remove the
 	    # old symlink and create as many subdirectories as
@@ -1040,7 +1067,7 @@ sub link_me {
 
 	      next; # we've made directories, we'll do the linking through recursion
 	    }
-	  }
+	  }  # end if (-d $old_target && ..)
 	} elsif (-d "$dest/$common_dir") {
 	  # there is already a subdirectory built for us.
 	  # Cool.  We'll still need to record the subdirectories
@@ -1057,7 +1084,7 @@ sub link_me {
 
 	  next; # ditto -- wait to recurse to link
 	}
-      } # end if (-d "$depot/$package/$subdir/$file")
+      } # end if (-d "$depot/$package/$common_dir")
 
       # no subdirectory unification to worry about, just look to see
       # if the new file or directory ($depot/$package/$subdir/$file
@@ -1095,7 +1122,7 @@ sub link_me {
     }
 
     if (needs_unify($conflict)) {
-      link_me($conflict,$opt_directory, @recurse_list);
+      link_me($conflict, $opt_directory, @recurse_list);
     }
   }	
 }

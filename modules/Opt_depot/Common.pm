@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.36 $
-# Last Mod Date: $Date: 2003/10/07 21:24:10 $
+# Version: $Revision: 1.37 $
+# Last Mod Date: $Date: 2003/10/11 02:10:49 $
 #
 #####################################################################
 
@@ -71,7 +71,7 @@ use Exporter;
 	     &create_dir &testmakedir &dircheck &extractdir &killdir
 	     &touch
 	     &first_path_element
-	     &removelastslash &resolve &make_absolute
+	     &removelastslash &resolve &make_absolute &swap_prefixes
 	     &pathcheck &subpathcheck &totalpriority
 	     &read_prefs
 	    );
@@ -711,10 +711,27 @@ sub removelastslash {
 #########################################################################
 sub pathcheck ($\%) {
   my ($file, $assoc_ref) = @_;
+  my ($localdebug);
 
-  my %assoc = %$assoc_ref;
+  my %assoc = %{$assoc_ref};
+
+  if ($file eq "packB/lib/perl5/spam") {
+    $localdebug = 1;
+  }
+
+  if ($localdebug) {
+    logprint("AIAIAIAI Calling pathcheck on $file\n", -1);
+
+    foreach $key (keys %assoc) {
+      logprint("AIAIAIAI hash has key $key, value " . $assoc{$key} . "\n", -1);
+    }
+  }
 
   @components = split(/\//, $file);
+
+  if ($localdebug) {
+    logprint("AIAIAIAI components = @components\n", -1);
+  }
 
   my ($t_pri, $temp, $hi_pri);
 
@@ -732,6 +749,10 @@ sub pathcheck ($\%) {
   foreach $comp (@components) {
     $temp .= "$comp";
 
+    if ($localdebug) {
+      logprint("AIAIAIAI Checking on assoc value for $temp\n", -1);
+    }
+
     if (defined $assoc{$temp}) {
       $t_pri = $assoc{$temp};
 
@@ -743,6 +764,8 @@ sub pathcheck ($\%) {
       if ($t_pri > $hi_pri) {
 	$hi_pri = $t_pri;
       }
+    } elsif($localdebug) {
+      logprint("AIAIAIAI $temp not found!\n", -1);
     }
 
     # add a trailing /, in case the trailing slash was present in the
@@ -894,11 +917,10 @@ sub subpathcheck ($\%) {
 #########################################################################
 sub totalpriority ($\%) {
   my ($path, $assoc_ref) = @_;
-  my %assoc = %$assoc_ref;
 
   my ($pri1, $pri2);
 
-  $pri1 = pathcheck($path, %assoc);
+  $pri1 = pathcheck($path, %{$assoc_ref});
 
   removelastslash($path);
 
@@ -906,7 +928,7 @@ sub totalpriority ($\%) {
     return $pri1;
   }
 
-  $pri2 = subpathcheck($path, %assoc);
+  $pri2 = subpathcheck($path, %{$assoc_ref});
 
   if ($pri1 > $pri2) {
     return $pri1;
@@ -979,7 +1001,6 @@ sub resolve {
   return $alinkp;
 }
 
-
 #########################################################################
 #
 #                                                           make_absolute
@@ -994,6 +1015,36 @@ sub make_absolute {
   my($dir) = @_;
 
   return resolve($ENV{'PWD'}, $dir);
+}
+
+#########################################################################
+#
+#                                                           swap_prefixes
+#
+# input: a pathname, an old prefix, and a new prefix
+#
+# output: If the pathname begins with the old prefix, we return an
+#         equivalent pathname with the old prefix substituted for
+#         the new.  If the pathname does not begin with the old
+#         prefix, we'll return an empty string.
+#
+########################################################################
+sub swap_prefixes {
+  my($path, $oldprefix, $newprefix) = @_;
+
+  my($temp, $result);
+
+  if ($path !~ /^$oldprefix/) {
+    logprint("Error, swap_prefixes called with a path ($path) that doesn't begin with the oldprefix ($oldprefix)\n", 1);
+    return "";
+  }
+
+  $result = $path;
+  $temp = $oldprefix;
+  $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
+  $result =~ s/^$temp/$newprefix/;
+
+  return $result;
 }
 
 ##########################################################################
