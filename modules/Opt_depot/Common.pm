@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.13 $
-# Last Mod Date: $Date: 2003/08/08 19:56:59 $
+# Version: $Revision: 1.14 $
+# Last Mod Date: $Date: 2003/08/11 14:46:36 $
 #
 #####################################################################
 
@@ -273,6 +273,7 @@ sub init_log {
     print (LOG "\n\n**$appname**  ");
     ($sec, $min, $hour, $mday, $mon, $year)= localtime(time);
     $mon=$mon + 1;
+    $year = $year + 1900;	# y2k ok!
     print (LOG "$hour:$min:$sec  $mon\/$mday\/$year\n");
 
     $log_init = 1;
