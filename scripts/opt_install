@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.25 $
-# Last Mod Date: $Date: 2003/09/17 06:28:11 $
+# Version: $Revision: 1.26 $
+# Last Mod Date: $Date: 2003/09/18 00:12:57 $
 #
 #####################################################################
 
@@ -111,48 +111,64 @@ sub mod_copy {
 sub fix_perms {
   my ($fix_ans);
 
-  my $done = 0;
   my (@grouplist, $defgroup, $gid);
+  my ($owner, $group, $done);
 
-  # find a reasonable default group
+  if ($EUID != 0 && $UID != 0) {
+    # we can't change ownership.. just go ahead and fix the perms up
+    # for readability..
 
-  # this list is made for a Solaris system first, than a redhat-y
-  # linux, then we just start making stuff up.  Feel free to change
-  # this list, if you want.
+    print "\nSetting permissions\n";
+    system("$targetdir/bin/fixperms", "$targetdir");
 
-  @grouplist = ("other", "root", "wheel", "bin", "sys", "users");
+    return 1;
+  } else {
 
-  foreach (@grouplist) {
-    $gid = (getgrnam($_))[2];
+    # find a reasonable default group
 
-    if (defined $gid) {
-      $defgroup = $_;
-      last;
+    # this list is made for a Solaris system first, than a redhat-y
+    # linux, then we just start making stuff up.  Feel free to change
+    # this list, if you want.
+
+    @grouplist = ("other", "root", "wheel", "bin", "sys", "users");
+
+    foreach (@grouplist) {
+      $gid = (getgrnam($_))[2];
+
+      if (defined $gid) {
+	$defgroup = $_;
+	last;
+      }
     }
-  }
 
-  while (!$done) {
-    print "\n";
-    if (askyn("Do you wish to run the fixperms program to fix the file permissions " .
-	      "of the opt_depot 3.0 package directory?")) {
-      # yay! we get to run it! AWRIGHT.
+    $done = 0;
+    $owner = "root";
+    $group = $defgroup;
 
+    while (!$done) {
       print "\n";
-      $owner = askstring("Please enter the name of the owner", "root");
-      print "\n";
-      $group = askstring("Please enter the group name", "$defgroup");
 
-      print "\n";
-      if (askyn("Set ownership to $owner:$group?")) {
+      $answer = askstring("Enter the owner:group for the install", "root:$defgroup");
+
+      if ($answer =~ /:/) {
+	($owner, $group) = split /:/, $answer;
+      }
+
+      if (defined(getgrnam($group)) && defined(getpwnam($owner))) {
+	print "\nSetting permissions\n";
 	system("$targetdir/bin/fixperms", "-o$owner", "-g$group", "$targetdir");
 	$done = 1;
       } else {
-	next;
+	if (!defined(getgrnam($group))) {
+	  print "\nNo such group $group\n";
+	} elsif (!defined(getpwnam($owner))) {
+	  print "\nNo such user $owner\n";
+	}
       }
-    } else {
-      $done = 1;
     }
   }
+
+  return;
 }
 
 #########################################################################
@@ -718,15 +734,16 @@ print "\nCreating config file $config\n";
 
 create_config();
 
-print "\nCreating sites file $sites_file\n\n";
-
-printwrap("If you intend to use one or more NFS package archives, you may specify them now",
-	  "by adding site volumes.  Each site volume needs a label and a logical path to the",
-	  "NFS-mounted directory volume.");
-
 print "\n";
 
-edit_sites();
+if (askyn("Do you want to register any NFS package archives?  It is safe to say No for now if you're not sure.")) {
+  print "\nCreating sites file $sites_file\n\n";
+
+  printwrap("Each NFS package archives needs a label and a logical path to the",
+	    "NFS-mounted directory volume.");
+
+  edit_sites();
+}
 
 print "\nDone with configuration.\n";
 
