@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.42 $
-# Last Mod Date: $Date: 2003/10/14 22:51:22 $
+# Version: $Revision: 1.43 $
+# Last Mod Date: $Date: 2003/10/14 23:02:05 $
 #
 #####################################################################
 
@@ -479,6 +479,74 @@ ENDSITES3
 	   priority => "packC/lib/perl5/z.pm\npackB/lib/perl5/a.pm",
 	   error_count => 0);
 
+# This is another variant on test4e, but this one has a unique
+# directory packD/lib/perl5/spam, which need to properly not go down
+# into, since there is no other lib/perl5/spam directory to merge it
+# with.
+
+%test4g = (label  => 'Single directory recursive merge limit test',
+	   root   => $test_dir,
+	   start  => ['depot/packA/lib/perl5',
+		      'depot/packB/lib/perl5/x.pm',
+		      'depot/packB/lib/perl5/y.pm',
+		      'depot/packB/lib/perl5/a.pm',
+		      'depot/packC/lib/perl5/x.pm',
+		      'depot/packC/lib/perl5/z.pm',
+                      'depot/packD/lib/perl5/a.pm',
+                      'depot/packD/lib/perl5/b.pm',
+                      'depot/packD/lib/perl5/spam/c.pm',
+                      'depot/packD/lib/perl5/spam/d.pm'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'lib/perl5/',
+		      'lib/perl5/.made_by_opt_depot',
+		      'lib/perl5/x.pm->depot/packB/lib/perl5/x.pm',
+		      'lib/perl5/y.pm->depot/packB/lib/perl5/y.pm',
+		      'lib/perl5/a.pm->depot/packB/lib/perl5/a.pm',
+		      'lib/perl5/z.pm->depot/packC/lib/perl5/z.pm',
+                      'lib/perl5/b.pm->depot/packD/lib/perl5/b.pm',
+                      'lib/perl5/spam->depot/packD/lib/perl5/spam'],
+	   endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+	   conf   => $testconfA,
+	   sites  => $testsitesA,
+	   action => 'opt_depot',
+	   priority => "packC/lib/perl5/z.pm\npackB/lib/perl5/a.pm",
+	   error_count => 0);
+
+# This is another variant on test4e, but this one has the
+# directory packD/lib/perl5/spam which has priority, so we shouldn't
+# try to do any merging with packE/lib/perl5/spam, which should be
+# entirely excluded
+
+%test4h = (label  => 'Prioritized directory recursive merge limit test',
+	   root   => $test_dir,
+	   start  => ['depot/packA/lib/perl5',
+		      'depot/packB/lib/perl5/x.pm',
+		      'depot/packB/lib/perl5/y.pm',
+		      'depot/packB/lib/perl5/a.pm',
+		      'depot/packC/lib/perl5/x.pm',
+		      'depot/packC/lib/perl5/z.pm',
+                      'depot/packD/lib/perl5/a.pm',
+                      'depot/packD/lib/perl5/b.pm',
+                      'depot/packD/lib/perl5/spam/c.pm',
+                      'depot/packD/lib/perl5/spam/d.pm',
+		      'depot/packE/lib/perl5/spam/c.pm',
+		      'depot/packE/lib/perl5/spam/d.pm'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'lib/perl5/',
+		      'lib/perl5/.made_by_opt_depot',
+		      'lib/perl5/x.pm->depot/packB/lib/perl5/x.pm',
+		      'lib/perl5/y.pm->depot/packB/lib/perl5/y.pm',
+		      'lib/perl5/a.pm->depot/packB/lib/perl5/a.pm',
+		      'lib/perl5/z.pm->depot/packC/lib/perl5/z.pm',
+                      'lib/perl5/b.pm->depot/packD/lib/perl5/b.pm',
+                      'lib/perl5/spam->depot/packD/lib/perl5/spam'],
+	   endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+	   conf   => $testconfA,
+	   sites  => $testsitesA,
+	   action => 'opt_depot',
+	   priority => "packC/lib/perl5/z.pm\npackB/lib/perl5/a.pm\npackD/lib/perl5/spam",
+	   error_count => 0);
+
 %test5 = (label  => 'Exclude link replacement test',
 	  root   => $test_dir,
 	  start  => ['bin/hi->depot/packA/bin/hi',
@@ -753,6 +821,7 @@ ENDSITES3
 
 @tests = (\%test0, \%test1, \%test2, \%test3,
 	  \%test4, \%test4b, \%test4c, \%test4d, \%test4e, \%test4f,
+	  \%test4g, \%test4h,
 	  \%test5, \%test6, \%test7,
 	  \%test8, \%test9, \%test10, \%test11,
 	  \%test12, \%test13, \%test14, \%test15);
