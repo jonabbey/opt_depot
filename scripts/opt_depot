@@ -46,8 +46,8 @@
 # Erik Grostic 10 July 1997
 #
 # Release: $Name:  $
-# Version: $Revision: 1.2 $
-# Last Mod Date: $Date: 2003/06/23 20:20:57 $
+# Version: $Revision: 1.3 $
+# Last Mod Date: $Date: 2003/06/23 20:22:20 $
 #
 #####################################################################
 
@@ -68,8 +68,8 @@ $man = "man";			# <-  gets special attention as a subdir
 $config_file = "<<INSTALL-DIR>>/etc/opt.config";
                                         # configuration file containing
                                         # $dest, $depot and $logdir vars
-                                        # The string /opt/depot/opt_depot-2.0 is 
-                                        # replaced with the installation 
+                                        # The string <<INSTALL-DIR>> is
+                                        # replaced with the installation
                                         # directory during the copy process
 
 # path_list --->           # This is a list of directory paths that
