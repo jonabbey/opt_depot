@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.2 $
-# Last Mod Date: $Date: 2003/08/02 03:30:52 $
+# Version: $Revision: 1.3 $
+# Last Mod Date: $Date: 2003/08/02 04:11:02 $
 #
 #####################################################################
 
@@ -61,9 +61,8 @@ use Exporter;
 # declare our package globals that we're not exporting
 
 our $usage_string;
-#our CONFIG;
+our *CONFIG;
 our $log_init;
-#our LOG;
 our $lockset = 0;
 
 
@@ -662,9 +661,9 @@ sub find_arg {
   $i = 0;
   $localword = "";
 
-  while ($args[$i] =~ /^-(.*)$/) {
+  while ($i <= $#args && $args[$i] =~ /^-(.*)$/) {
     $word=$1;
-    $i = $i + 1;
+    $i++;
 
     if ($word =~ /^$token/) {
       # redefine config file location
@@ -703,9 +702,16 @@ sub read_switches {
   $i = 0;
   $localword = "";
 
-  while ($args[$i] =~ /^-(.*)$/) {
+  while ($i <= $#args && $args[$i] =~ /^-(.*)$/) {
     $word=$1;
-    $i = $i + 1;
+    $i++;
+
+    if ($word =~ /^[fdlb]/) {
+      if (length($word)==1) {
+	$i++;
+      }
+      next;
+    }
 
     if ($word =~ /(^[$switchlist]+)$/) {
       @switches= split (//, $1);
