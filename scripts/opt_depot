@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.36 $
-# Last Mod Date: $Date: 2003/08/18 21:48:14 $
+# Version: $Revision: 1.37 $
+# Last Mod Date: $Date: 2003/08/18 21:58:52 $
 #
 #####################################################################
 
@@ -851,9 +851,11 @@ sub depth_first {
     $all_dirs[0] = $new_pack_root;
   }
 
-  print "\nentering depth_first\n--------------------\n";
+  print "\nentering depth_first\n--------------------\n\@all_dirs = ";
   printwrap(join(', ', @all_dirs));
-  print "\n";
+  print "\n\$new_pack_root = $new_pack_root\n";
+  print "\$old_pack_root = $old_pack_root\n";
+  print "\$opt_directory = $opt_directory\n";
 
   # Now we continue with our depth-first traversal.  What we want to
   # do is to visit all subdirectories of $depot/$new_pack_root in
