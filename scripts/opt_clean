@@ -42,6 +42,11 @@
 # A -b option must now be given with the destination (or base) directory
 # Erik Grostic 10 July 1997
 #
+#
+# Release: $Name:  $
+# Version: $Revision: 1.4 $
+# Last Mod Date: $Date: 2003/07/19 00:59:57 $
+#
 #########################################################################
 
 use English;
@@ -67,9 +72,19 @@ $opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
                                   # when it makes a directory. only these
                                   # directories may be removed or collapsed
 
+
 ##########################################################################
 #
-#                                                           get_vars
+#                                                              print_usage
+#
+##########################################################################
+sub print_usage {
+  print "Usage:  opt_clean [-vqr] [-f\"config file\"] [-d\"depot dir\"] [-l\"log directory\"] [\b\"base directory\"]\n";
+}
+
+##########################################################################
+#
+#                                                                 get_vars
 # input: none
 #
 # output: uses the opt_config.serv file to gain the values of the
@@ -78,6 +93,42 @@ $opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
 ##########################################################################
 
 sub get_vars {
+  my($i, $word, $localword, $check_local);
+
+  # we'll want to check for a local (dest relative) config file,
+  # unless we find a -f option
+
+  $check_local = 1;
+
+  # scan through our command line parameters to find the -f parameter,
+  # if it exists
+
+  $i = 0;
+
+  while ($ARGV[$i] =~ /^-(.*)$/) {
+    $word=$1;
+    $i = $i + 1;
+
+    if ($word =~ /^f/) {
+      # redefine config file location
+
+      if (length($word)==1) {	
+	$localword = $ARGV[$i];
+	$i = $i + 1;
+      } else {
+	$word =~ /^f(.*)$/;	
+	$localword = $1;
+      }
+
+      if (-r $localword) {
+	$config_file = $localword;
+	$check_local = 0;
+      } else {
+	die "Can't find/read $localword";
+      }
+    }
+  }
+
   open(CONFIG,"$config_file") || die "Could not open $config_file\n";
 
   while (<CONFIG>) {
@@ -102,11 +153,11 @@ sub get_vars {
 
   close(CONFIG);
 
-# The following lines are there in case a client has a local copy of the
-# configuration file. This file should be placed into the $dest directory,
-# and will override the file on the server.
+  # The following lines are there in case a client has a local copy of the
+  # configuration file. This file should be placed into the $dest directory,
+  # and will override the file on the server.
 
-  if (-e "$dest/opt.config") {
+  if ($check_local && -e "$dest/opt.config") {
     open(CONFIG,"$dest/opt.config") || die "Could Not open $dest/opt.config";
 
     while (<CONFIG>) {
@@ -224,7 +275,7 @@ sub procargs {
 	}
       } else {
 	print "\"$word\" is an invalid command entry!\n";
-	print "Usage:  opt_clean [-vqr] [-d\"depot dir\"] [-l\"log directory\"] [base directory]\n";
+	&print_usage();
 	exit 0;
       }
     }
@@ -233,7 +284,7 @@ sub procargs {
 
   if ($#ARGV>0) {
     print "Too many arguments!\n";
-    print "Usage:  opt_clean [-vqr] [-d\"depot dir\"] [-l\"log directory\"][-b\"base directory\"]\n";
+    &print_usage();
     exit (0);
   }
 }
@@ -729,8 +780,8 @@ sub rmdirs{
 ################################################################################
 
 &get_vars();
-$exclude = "$dest/.exclude"; # Name of the .exclude file
 &procargs();
+$exclude = "$dest/.exclude"; # Name of the .exclude file
 &initlog();
 &read_exfile($exclude);
 &read_pack_ex($pack_ex);
