@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.12 $
-# Last Mod Date: $Date: 2003/08/08 01:55:34 $
+# Version: $Revision: 1.13 $
+# Last Mod Date: $Date: 2003/08/08 19:56:59 $
 #
 #####################################################################
 
@@ -48,6 +48,10 @@ use Text::ParseWords qw(quotewords);
 
 use Text::Wrap qw($columns &wrap);
 $columns = 70;
+
+# and a module for recursive file operations
+
+use File::Path qw(&rmtree);
 
 # and get everything set up for export
 
