@@ -61,8 +61,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.57 $
-# Last Mod Date: $Date: 2003/10/14 23:35:08 $
+# Version: $Revision: 1.58 $
+# Last Mod Date: $Date: 2003/10/23 06:48:27 $
 #
 #####################################################################
 
@@ -208,7 +208,7 @@ sub read_exfile {
 	# exclusions from a particular site volume.. that's for
 	# opt_link.
 
-	if (!/(?:\\.|[^:])*$/){	
+	if (!/^(?:\\.|[^:])*$/){	
 	  next;
 	}
 
@@ -231,11 +231,18 @@ sub read_exfile {
 	}
       } else {
 
-	# no quotations, so we'll use the older, simpler parse logic
+	# if we have an unescaped :, treat that as a label separator,
+	# and skip this entry.. we (opt_depot) don't care about
+	# exclusions from a particular site volume.. that's for
+	# opt_link.
 
-	if (/:/){	
-	  next; # a labelled exclusion. Forget about it.
+	if (!/^(?:\\.|[^:])*$/){	
+	  next;
 	}
+
+	# now take out escapes
+
+	s/\\(.)/$1/g;
 
 	if (/^\s*(\/\S+)/) {
 	  # leading slash -- take this as an absolute path name

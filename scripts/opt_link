@@ -53,8 +53,8 @@
 # Jonathan Abbey 14 October 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.23 $
-# Last Mod Date: $Date: 2003/10/15 03:56:12 $
+# Version: $Revision: 1.24 $
+# Last Mod Date: $Date: 2003/10/23 06:48:27 $
 #
 #####################################################################
 
@@ -101,30 +101,50 @@ sub read_exfile {
 
   while (<EXCLUDEFILE>) {
     s/\s+$//;			# cut off trailing whitespace
+    s/^\s+//;			# cut off leading whitespace
 
     if (/^$/ || /^\s*#/) {
       next;
     }
 
-    if (/^\s*\'/ || /^\s*\"/) {
+    if (/^\'/ || /^\"/) {
       $_ = parsequoted($_,0);	# leave in escapes
 
-      # if we have an unescaped :, treat that as a label separator,
-      # and skip this entry
+      if (!/^(?:\\.|[^:])*$/) {
+	# aha, we've got an unescaped colon.. assume it's
+	# the first one and use it to split the string
 
-      if (!/(?:\\.|[^:])*$/) {	
-	next;
+	if (/^([^:]+):(.*)/) {
+	  $label = $1;
+	  $pathname = $2;
+
+	  $pathname =~ s/\\(.)/$1/g; # take out backslash escapes
+
+	  $temp = $depot;
+	  $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
+	  $pathname =~ s/^$temp\/(.*)/$1/;	# strip off leading depot path, if found
+
+	  $_ = "$label:$pathname";
+	}
       }
-
-      # now take out escapes
-
-      s/\\(.)/$1/g;
     } else {
-      # no quotations, so we'll use the older, simpler parse logic
+      if (/^([^:]+):(.*)/) {
+	$label = $1;
+	$pathname = $2;
 
-      if (/:/) {	
-	next; # a labelled exclusion. Forget about it.
+	if ($pathname =~ /^\s*\'/ || /^\s*\"/) {
+	  $pathname = parsequoted($pathname, 1); # process quoted escapes
+	} else {
+	  $pathname =~ s/\\(.)/$1/g; # take out backslash escapes
+	}
+
+	$temp = $depot;
+	$temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
+	$pathname =~ s/^$temp\/(.*)/$1/;	# strip off leading depot path, if found
+
+	$_ = "$label:$pathname";
       }
+      s/\\(.)/$1/g;		# process escapes
     }
 
     if (/\//) {

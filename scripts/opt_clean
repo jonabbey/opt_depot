@@ -54,8 +54,8 @@
 # Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.25 $
-# Last Mod Date: $Date: 2003/10/07 21:26:10 $
+# Version: $Revision: 1.26 $
+# Last Mod Date: $Date: 2003/10/23 06:48:27 $
 #
 #########################################################################
 
@@ -108,9 +108,19 @@ sub read_exfile {
       }
 
       # if the string is quoted, pre-process the quotes
-
+      
       if (/^\s*\"/ || /^\s*\'/) {
-	$_ = parsequoted($_, 1); # process escapes
+	$tmpstr = parsequoted($_, 0); # leave in escapes for the moment
+
+	# if we have an unescaped :, treat that as a label separator,
+	# and skip this entry, since we leave labeled exclusions for
+	# opt_link to process
+	
+	if ($tmpstr !~ /^(?:\\.|[^:])*$/) {
+	  next;
+	}
+
+	$_ = parsequoted($_, 1); # now process the escapes
 
 	if (/^(\/.+)$/) {
 	  # leading slash -- take this as an absolute path name
@@ -136,6 +146,19 @@ sub read_exfile {
       } else {
 	# We didn't have a quoted string, assume that whitespace
 	# will terminate
+
+	# of course, if we have an unescaped colon we have to assume
+	# it's intended to be a site label, and we have to skip it,
+	# since only opt_link knows enough to worry about site
+	# excludes
+
+	if (!/^(?:\\.|[^:])*$/) {
+	  next;
+	}
+
+	# remove any backslash escape characters
+
+	s/\\(.)/$1/g;
 
 	if (/^\s*(\/\S+)$/) {
 	  # leading slash -- take this as an absolute path name

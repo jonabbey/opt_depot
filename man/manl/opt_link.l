@@ -35,8 +35,8 @@
 .\" University of Texas at Austin  opt-depot@arlut.utexas.edu
 .\"
 .\" Release: $Name:  $
-.\" Version: $Revision: 1.7 $
-.\" Last Mod Date: $Date: 2003/10/22 23:13:04 $
+.\" Version: $Revision: 1.8 $
+.\" Last Mod Date: $Date: 2003/10/23 06:48:26 $
 .TH OPT_LINK l "22 October 2003" "ARL:UT/CSD"
 .SH NAME
 opt_link 3.0 \- creates and manages links from a system depot directory to packages located in one or more central package archive directories.
@@ -44,7 +44,7 @@ opt_link 3.0 \- creates and manages links from a system depot directory to packa
 \fBopt_link\fR [\fB-asqvng\fR] [\fB-f\f(BI config file\fR] [\fB-d\f(BI directory\fR] [\fB-l\f(BI path\fR] [\fB-b\f(BI directory\fR]
 .SH ARGUMENTS
 .TP
-\fB-a\fR add only
+\fB-a\fR add only mode.
 If set, \fBopt_link\fR will only add, not remove, links from the depot directory to site volume packages.
 .TP
 \fB-s\fR inhibits lock creation.
@@ -58,7 +58,7 @@ Disables logging to disk.  Only necessary if a log file/directory is specified i
 \fB-n\fR test mode.
 When \fB-n\fR is set, \fBopt_link\fR will print out a list of actions that it would take if \fB-n\fR had not been set, without actually performing them.
 .TP
-\fB-g\fR get_most_recent
+\fB-g\fR get_most_recent mode.
 When this option is selected, \fBopt_link\fR will allow exclusions to
 occur regardless of the priority of the archive where a package is
 located. For example, a version of emacs-19.33 which excludes
@@ -78,7 +78,7 @@ the \fBopt_depot\fR and \fBopt_clean\fR scripts are concerned with the
 creation and deletion of symbolic links under a set of deployment
 directories (\fI__BASEDIR__/bin\fR, \fI__BASEDIR__/lib\fR, and etc.),
 \fBopt_link\fR is responsible for linking packages into the system
-depot directory (\fI__DEPOTDIR__\fR) from one or more potentially
+\fBdepot\fR directory (\fI__DEPOTDIR__\fR) from one or more potentially
 remote package archives.
 .sp
 \fBopt_link\fR makes it possible for a set of client systems to
@@ -86,15 +86,15 @@ automatically update themselves with new packages published on one or
 more centralized NFS file servers.  When \fBopt_link\fR runs, it
 consults a \fBsites\fR file which provides an ordered list of package
 archives and the filesystem path where each is located.
-\fBopt_link\fR then scans the archives for package directories and links them into the
-system depot directory, making the contents of the packages
-available for the \fBopt_depot\fR script to link.
+\fBopt_link\fR then scans the archives for package directories and
+links them into the system \fBdepot\fR directory, making the contents
+of the packages available for the \fBopt_depot\fR script to link.
 .sp
 The key to this process is that all packages compiled for use with the
-\fBopt_depot\fR suite are configured to be installed under the system
-depot directory.  If a package in a package archive directory is named
+\fBopt_depot\fR suite are configured to be installed under a
+\fBdepot\fR directory.  If a package in a package archive directory is named
 \fIemacs-19.35\fR, for instance, it should have been configured to run
-under the standard depot directory (\fI__DEPOTDIR__/emacs-19.35\fR).  This
+under the standard \fBdepot\fR directory (\fI__DEPOTDIR__/emacs-19.35\fR).  This
 property of the package makes it position indepdent, so long as a symlink
 exists from the canonical location to the physical location of the package.
 Managing those symlinks is what \fBopt_link\fR is for.
@@ -104,7 +104,10 @@ not to interfere with local choices or with physically installed software
 packages.
 As such, \fBopt_link\fR will never attempt to remove or replace
 package directories that have been physically installed under the
-configured depot directory.
+configured \fBdepot\fR directory.
+Nor will \fBopt_link\fR ever attempt to remove or replace symbolic
+links from the configured \fBdepot\fR directory to extent packages or files
+not located in a site volume defined in the \fBsites\fR file.
 .SH SITES DEFINITIONS
 \fBopt_link\fR uses a file called 'sites' to determine the directories
 that will serve as the archive directories.
@@ -184,7 +187,7 @@ emacs-19.27
 .br
 CSDSITE:netscape-4.78
 .br
-"CSDSITE:a package"
+CSDSITE:"a package"
 .br
 "package\\: with a colon and whitespace"
 .RE
@@ -199,7 +202,7 @@ Finally, the last line shows how to exclude a package that contains
 both a colon and whitespace, from any site volume listed in the
 \fIsites\fR file.
 .sp
-Note that \fBopt_link\fR will never remove or replace symbolic links
+Note that \fBopt_link\fR will never remove (or replace) symbolic links
 from the \fI__DEPOTDIR__\fR directory to extent directories (or files)
 that are not located immediately under a volume defined in the
 \fIsites\fR file, whatever any \fI.exclude\fR file says.
