@@ -53,8 +53,8 @@
 # Jonathan Abbey 29 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.13 $
-# Last Mod Date: $Date: 2003/08/13 23:00:00 $
+# Version: $Revision: 1.14 $
+# Last Mod Date: $Date: 2003/08/14 02:17:15 $
 #
 #####################################################################
 
@@ -676,7 +676,6 @@ sub print_header {
 #                                MAIN                                    #
 #                                                                        #
 ##########################################################################
-
 
 $usage_string =<<'ENDUSAGE';
 Usage:  opt_link [-sqvng] [-f\"config file\"] [-d\"depot dir\"]
