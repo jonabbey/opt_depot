@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.41 $
-# Last Mod Date: $Date: 2003/10/13 23:22:05 $
+# Version: $Revision: 1.42 $
+# Last Mod Date: $Date: 2003/10/14 22:51:22 $
 #
 #####################################################################
 
@@ -432,7 +432,7 @@ ENDSITES3
 	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
 		      'lib/perl5/',
 		      'lib/perl5/.made_by_opt_depot',
-		      'lib/perl5/x.pm->depot/packC/lib/perl5/x.pm',
+		      'lib/perl5/x.pm->depot/packB/lib/perl5/x.pm',
 		      'lib/perl5/y.pm->depot/packB/lib/perl5/y.pm',
 		      'lib/perl5/a.pm->depot/packB/lib/perl5/a.pm',
 		      'lib/perl5/z.pm->depot/packC/lib/perl5/z.pm'],
