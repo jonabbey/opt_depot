@@ -14,20 +14,60 @@
 #
 # Erik Grostic
 # Modified 2 June 1997
+#
+#************************************************************************
+#
+# Copyright (C) 1996-2003  The University of Texas at Austin.
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+#    02111-1307, USA
+#
+#    Written by: Computer Science Division, Applied Research Laboratories,
+#    University of Texas at Austin  opt-depot@arlut.utexas.edu
+#
+#***********************************************************************
+# Written by Jonathan Abbey, Erik Grostic
+#
+# v3.0
+# Made fixperms abort if a directory is not explicitly specified on
+# the command line.. no more fixperming '.' if no directory is given.
+# Added a safety check on the uid and gid lookup.
+#
+# Slight tweaks to bring up to modern Perl usage.  Bundled with v3.0
+# of the opt_depot suite.
+#
+# Jonathan Abbey 7 August 2003
+#
+# Release: $Name:  $
+# Version: $Revision: 1.3 $
+# Last Mod Date: $Date: 2003/08/07 19:09:49 $
+#
+#####################################################################
 
 use Getopt::Std; # Used to get command line arguments
 
 getopt('og'); # the -o option changes the ownership variable, whereas
               # -g changes the name used fo the group.
 
-
-if (!defined $opt_o){
+if (!defined $opt_o) {
     $owner = "root";
 } else {
     $owner = $opt_o;
 }
 
-if (!defined $opt_g){
+if (!defined $opt_g) {
     $group = "other";
 } else {
     $group = $opt_g;
@@ -36,13 +76,21 @@ if (!defined $opt_g){
 $uid = (getpwnam($owner))[2];
 $gid = (getgrnam($group))[2];
 
+if (!defined $uid) {
+  die "Couldn't find uid for user $owner\n";
+}
+
+if (!defined $gid) {
+  die "Couldn't find gid for user $group\n";
+}
+
 if ($#ARGV >= 0) {
   $directory = $ARGV[0];
 } else {
   die "No directory specified";
 }
 
-&fixdir($directory, 1);
+fixdir($directory, 1);
 exit;
 
 #########################################################################
@@ -55,70 +103,62 @@ exit;
 #
 #########################################################################
 sub fixdir {
-    local($dir, $toplevel) = @_;
+  my($dir, $toplevel) = @_;
+  my(@allfiles, $file, $filename, $mode);
 
-    local(@allfiles, $mode);
+  # print "entering $dir\n";
 
-    # print "entering $dir\n";
+  opendir(THISDIR, $dir);
+  @allfiles = readdir(THISDIR);
+  closedir(THISDIR);
 
-    opendir(THISDIR, $dir);
+  for $file (@allfiles) {
+    # print "testing $dir/$file\n";
 
-    @allfiles = readdir(THISDIR);
-
-    closedir(THISDIR);
-
-    for (@allfiles) {
-
-	# print "testing $dir/$_\n";
-
-	if (($_ eq "..") || (($toplevel == 0) && ($_ eq ".")) || (-l "$dir/$_")) {
-	     # print "skipping $_\n";
-	    next;
-	}
-
-	$filename = "$dir/$_";
-	$mode = (stat($filename))[2];
-
-	# _ is a special character, referring to the last stat target..
-	# this makes things go faster
-
-	if (-f _ && ((-u _) ||(-g _))) {
-	    # um, got a setuid program.
-	    # watch it.
-
-	    print "*** Warning: $filename is a setuid and/or setgid program. Not changing perms.\n"; 
-	    next;
-	}
-
-	if ($mode & 0100) {
-	    chmod ($mode | 0055,$filename);
-	    print "$filename\n";
-	} elsif ($mode & 0400) {
-	    chmod ($mode | 0044, $filename);
-	    print "$filename\n";
-	}
-
-	if (($> == 0) || ($< == 0)) {
-	    # we're root, chown to the proper ownership
-	    chown $uid, $gid, $filename;
-	}
+    if (($file eq "..") || (($toplevel == 0) && ($file eq ".")) || (-l "$dir/$file")) {
+      # print "skipping $file\n";
+      next;
     }
 
-    for (@allfiles) {
+    $filename = "$dir/$file";
+    $mode = (stat($filename))[2];
 
-	if (($_ eq ".") || ($_ eq "..") || (-l "$dir/$_")) {
-	    # print "skipping $_\n";
-	    next;
-	}
-	
-	$filename = "$dir/$_";
-	
-	if (-d $filename) {
-	    # print "recursing on $filename\n";
-	    &fixdir($filename, 0);
-	}
+    # _ is a special character, referring to the last stat target..
+    # this makes things go faster
+
+    if (-f _ && ((-u _) ||(-g _))) {
+      # um, got a setuid program.
+      # watch it.
+
+      print "*** Warning: $filename is a setuid and/or setgid program. Not changing perms.\n";
+      next;
     }
 
-    # print "returning from $dir\n";
+    if ($mode & 0100) {
+      chmod ($mode | 0055,$filename);
+      print "$filename\n";
+    } elsif ($mode & 0400) {
+      chmod ($mode | 0044, $filename);
+      print "$filename\n";
+    }
+
+    if (($> == 0) || ($< == 0)) {
+      # we're root, chown to the proper ownership
+      chown $uid, $gid, $filename;
+    }
+  }
+
+  for $file (@allfiles) {
+    if (($file eq ".") || ($file eq "..") || (-l "$dir/$file")) {
+      # print "skipping $file\n";
+      next;
+    }
+	
+    $filename = "$dir/$file";
+	
+    if (-d $filename) {
+      # print "recursing on $filename\n";
+      fixdir($filename, 0);
+    }
+  }
 }
-
