@@ -45,8 +45,8 @@
 # Jonathan Abbey 17 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.6 $
-# Last Mod Date: $Date: 2003/09/17 21:47:29 $
+# Version: $Revision: 1.7 $
+# Last Mod Date: $Date: 2003/09/18 01:01:59 $
 #
 ###############################################################################
 
@@ -82,7 +82,6 @@ EOF
     echo "###########################################################"
     $_perl_loc -v   # this call to perl prints out the version info needed
     echo "###########################################################"
-    echo
     echo
     echo "Do you wish to use $_perl_loc?"
     prompt "[Yes]> "
