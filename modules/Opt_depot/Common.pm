@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.33 $
-# Last Mod Date: $Date: 2003/10/06 23:38:17 $
+# Version: $Revision: 1.34 $
+# Last Mod Date: $Date: 2003/10/07 20:45:39 $
 #
 #####################################################################
 
@@ -688,7 +688,7 @@ sub removelastslash {
 #
 # This function is used to determine if $file is contained under any
 # directory listed in the keys of %assoc.  The keys of %assoc should
-# map to integer values, in which the lowest positive number is taken
+# map to integer values, in which the highest positive number is taken
 # to be the best priority, if we're dealing with a priority hash.  If
 # we're dealing with an exclusion hash, then all values in the exclusion
 # hash will be positive numbers, so if we find any of them we'll wind
@@ -716,12 +716,12 @@ sub pathcheck ($\%) {
 
   @components = split(/\//, $file);
 
-  my ($t_pri, $temp, $low_pri);
+  my ($t_pri, $temp, $hi_pri);
 
-  # we want to find the best (lowest numerical value) priority
+  # we want to find the best (highest numerical value) priority
   # that pertains to $file
 
-  $low_pri = 9999;
+  $hi_pri = 0;
   $temp = "";
 
   # now loop over the path, from top down.  Since we're splitting on
@@ -740,8 +740,8 @@ sub pathcheck ($\%) {
 	exit(1);
       }
 
-      if ($t_pri < $low_pri) {
-	$low_pri = $t_pri;
+      if ($t_pri > $hi_pri) {
+	$hi_pri = $t_pri;
       }
     }
 
@@ -759,17 +759,13 @@ sub pathcheck ($\%) {
 	exit(1);
       }
 
-      if ($t_pri < $low_pri) {
-	$low_pri = $t_pri;
+      if ($t_pri > $hi_pri) {
+	$hi_pri = $t_pri;
       }
     }
   }
 
-  if ($low_pri == 9999) {
-    return 0;
-  }
-
-  return $low_pri;
+  return $hi_pri;
 }
 
 #########################################################################
@@ -784,7 +780,7 @@ sub pathcheck ($\%) {
 # Like pathcheck, subpathcheck uses the %assoc hash to look up
 # priority values, if $path is a superdirectory of any path elements
 # contained in the keys of %assoc.  The keys of %assoc should map to
-# integer values, in which the lowest positive number is taken to be
+# integer values, in which the highest positive number is taken to be
 # the best priority, if we're dealing with a priority hash.
 #
 # And, really, this subroutine's function only makes sense with the
@@ -809,7 +805,7 @@ sub pathcheck ($\%) {
 sub subpathcheck ($$\%) {
   my ($path, $assoc_ref) = @_;
   my %assoc = %$assoc_ref;
-  my ($t_pri, $low_pri);
+  my ($t_pri, $hi_pri);
 
   # we only work if we're given a directory element, of course,
   # otherwise there's no point trying to imagine subcomponent
@@ -829,12 +825,12 @@ sub subpathcheck ($$\%) {
   # loop over all keys in the hash and see if any of them start with
   # $path/.
 
-  $low_pri = 9999;
+  $hi_pri = 0;
 
   if (defined $assoc{$path}) {
-    $low_pri = $assoc{$path};
+    $hi_pri = $assoc{$path};
 
-    if ($low_pri == 0) {
+    if ($hi_pri == 0) {
       logprint("Subpathcheck ASSERT ERROR: 0 value item $path in hash\n", 1);
       exit(1);
     }
@@ -857,18 +853,14 @@ sub subpathcheck ($$\%) {
 	  exit(1);
 	}
 
-	if ($t_pri < $low_pri) {
-	  $low_pri = $t_pri;
+	if ($t_pri > $hi_pri) {
+	  $hi_pri = $t_pri;
 	}
       }
     }
   }
 
-  if ($low_pri == 9999) {
-    return 0;
-  }
-
-  return $low_pri;
+  return $hi_pri;
 }
 
 #########################################################################
@@ -883,13 +875,12 @@ sub subpathcheck ($$\%) {
 # Like pathcheck and subpathcheck, totalpriority uses the %assoc hash
 # to look up priority values, if $path is a superdirectory of any path
 # elements contained in the keys of %assoc.  The keys of %assoc should
-# map to integer values, in which the lowest positive number is taken
+# map to integer values, in which the highest positive number is taken
 # to be the best priority.
 #
 # Note that the subpathcheck algorithm really only applies to priority
 # checks, as excluding a subcomponent should have no necessary effect on
 # exclusion of the container.
-#
 #
 # input: $path - a fully qualified directory path
 #        $assoc_ref - a reference to an associative array (priority)
@@ -908,9 +899,16 @@ sub totalpriority ($\%) {
   my ($pri1, $pri2);
 
   $pri1 = pathcheck($path, %assoc);
+
+  removelastslash($path);
+
+  if (!-d $path || -l _) {
+    return $pri1;
+  }
+
   $pri2 = subpathcheck($path, %assoc);
 
-  if ($pri1 < $pri2) {
+  if ($pri1 > $pri2) {
     return $pri1;
   } else {
     return $pri2;
