@@ -7,7 +7,7 @@
 #
 #***********************************************************************
 #
-# Copyright (C) 1997  The University of Texas at Austin.
+# Copyright (C) 1993-2003  The University of Texas at Austin.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -21,7 +21,8 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program; if not, write to the Free Software
-#    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+#    02111-1307, USA
 #
 #    Written by: Computer Science Division, Applied Research Laboratories,
 #    University of Texas at Austin  opt-depot@arlut.utexas.edu
@@ -46,14 +47,15 @@
 # Erik Grostic 17 July 1997
 #
 # Release: $Name:  $
-# Version: $Revision: 1.2 $
-# Last Mod Date: $Date: 2003/06/21 00:57:00 $
+# Version: $Revision: 1.3 $
+# Last Mod Date: $Date: 2003/06/25 21:09:39 $
 #
 #####################################################################
 
 # opt_link v2.0
 
 use Getopt::Std; # Used to get command line arguments
+use English;
 
 $version = "2.02";
 
@@ -198,7 +200,7 @@ sub resolve{
 	$d=shift(@linkp);
     }
 
-    $"='/';
+    $LIST_SEPARATOR='/';
 
     # perl functions return the value of the last expression
     # in the subroutine
@@ -277,14 +279,14 @@ sub read_site_file {
 
 #####################################################################
 #
-#                                                        scan_depot      
+#                                                          scan_depot
 # input: * the depot directory
 #
 # uses:  * @sites array
 #        * %priority array
-#        
+#
 # output: * %installed - contains a listing of all the packages currently
-#           installed in the $depot directory. Physically installed 
+#           installed in the $depot directory. Physically installed
 #           packages (ie non-symbolic links) have priority over all others
 #
 #
@@ -454,7 +456,7 @@ sub chk_pack_ex{
 
 #####################################################################
 #
-#                                                        link_me
+#                                                             link_me
 # input: none
 #
 # uses:  * @sites array
@@ -481,13 +483,13 @@ sub link_me {
 	$link = "$depot/$pack";
 	$link =~ /(.*)\/[^\/]*$/; # don't mess with this, it works
 	$directory = $1;
-	$oldlink=&resolve($directory, $rwhere); 
+	$oldlink=&resolve($directory, $rwhere);
 	# absolute name of existing site
 	
 	@temp_pack = split(/\//,$oldlink);
 	pop (@temp_pack);
 	$oldlink = join('/',@temp_pack);
-	if ($oldlink ne $newlink){ # remove oldlink and make new one 
+	if ($oldlink ne $newlink){ # remove oldlink and make new one
 	  # if the old one isn't in installed
 	  $oldlabel = $sitedirs{$oldlink};
 	  $old_priority = $priority{$oldlabel};
@@ -495,7 +497,7 @@ sub link_me {
 	    # if the link is not from the site it's supposed to be from
 	    # then remove it and replace with the correct link
 	    if (!$test){
-	      unlink "$depot/$pack" || print"Could not unlink $oldlink/$pack\n"; 
+	      unlink "$depot/$pack" || print"Could not unlink $oldlink/$pack\n";
 	      symlink ("$newlink/$pack","$depot/$pack") || print "Could not link $newlink/$pack to $depot/$pack\n";
 	    } # !$test
 	    $activity = 1; # yes, we've actually done something
@@ -513,7 +515,7 @@ sub link_me {
 
 #####################################################################
 #
-#                                                        exclude_me
+#                                                          exclude_me
 # input: none
 #
 # uses:  * @sites array
@@ -529,7 +531,7 @@ sub exclude_me {
   my($link,$directory);
 
   foreach $ex_pack (keys %excluded){
-    if ($ex_pack =~ /^\s*([^\s]+):([^\s]+)/){
+    if ($ex_pack =~ /^\s*(\S+):(\S+)/){
       # exclusion is in the form of <label>:<package>
       $label = $1;
       $ex_pack = $2;
@@ -714,10 +716,12 @@ sub init_log {
 
   @dest= split (/\//, $dest);           # naming log file
   shift(@dest);
-  $"=':';
+
+  $LIST_SEPARATOR=':';
   $log= "$logdir/@dest";
-  $"=' ';
-  if ($logging && !$test){
+  $LIST_SEPARATOR=' ';
+
+  if ($logging && !$test) {
     open(LOG,">>$log") || print "Could not open file $log\n";
     print LOG "\n\t**opt_link**  ".`date`."\n";
   }

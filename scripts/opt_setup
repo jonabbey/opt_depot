@@ -1,4 +1,4 @@
-# opt_setup v2.01
+# opt_setup v2.01 -*- Perl -*-
 #
 # this will run all the scripts necessary to set up
 # the opt directory (opt_link, clean_it, and opt_depot).
