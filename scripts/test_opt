@@ -30,8 +30,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.3 $
-# Last Mod Date: $Date: 2003/09/11 00:21:08 $
+# Version: $Revision: 1.4 $
+# Last Mod Date: $Date: 2003/09/12 01:50:12 $
 #
 #####################################################################
 
@@ -51,7 +51,7 @@ $test_etc = "/tmp/opt_suite/etc";
 
 #####################################################################
 
-$testconfA << "ENDTESTCONF1";
+$testconfA =<< "ENDTESTCONF1";
 Base: $test_dir
 Depot: $test_dir/depot
 Log: $test_logdir/opt_depot.log
@@ -61,7 +61,7 @@ AlwaysRecurse: No
 Recurse: include,lib,info
 ENDTESTCONF1
 
-$testsitesA << "ENDSITES1";
+$testsitesA =<< "ENDSITES1";
 ENDSITES1
 
 %test0 = (label => 'Simple single-package link test',
@@ -76,7 +76,8 @@ ENDSITES1
 		    'include/test.h->depot/packA/include/test.h',
 		    'man/manl/test.l->depot/packA/man/manl/test.l'],
 	  conf   => $testconfA,
-	  sites  => $testsitesA);
+	  sites  => $testsitesA,
+	  action => 'opt_depot');
 
 %test1 = (label => 'Elementary recursion test',
 	  root  => $test_dir,
@@ -92,9 +93,60 @@ ENDSITES1
 		    'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
 		    'include/test.h->depot/packB/include/test.h'],
 	  conf   => $testconfA,
-	  sites  => $testsitesA);
+	  sites  => $testsitesA,
+	  action => 'opt_depot');
 
 @tests = (\%test0, \%test1);
+
+#####################################################################
+
+#########################################################################
+#
+#                                                              setup_test
+#
+# input: a reference to one of our test descriptions
+#
+# setup_test does everything required to create a test environment for
+# a given test, including creating a fresh directory structure.
+#
+#########################################################################
+
+sub setup_test {
+  my ($href) = @_;
+
+  my ($label, $rootdir, $startary, $label, $element, $newpath);
+
+  $label = $href->{'label'};
+  $rootdir = $href->{'root'};
+  $startary = $href->{'start'};
+
+  print "Setting up \"$label\" at $rootdir\n";
+
+  killdir($rootdir);
+  
+  foreach $element (@$startary) {
+
+    if ($rootdir =~ /\/$/) {
+      $newpath = $rootdir . $element;
+    } else {
+      $newpath = $rootdir . "/" . $element;
+    }
+
+    if ($newpath =~ /\/$/) {
+      if (!create_dir($newpath)) {
+	return 0;
+      }
+    } else {
+      if (!create_dir(extractdir($newpath))) {
+	return 0;
+      }
+
+      touch($newpath);
+    }
+  }
+  
+  return 1;
+}
 
 #####################################################################
 #
@@ -106,6 +158,8 @@ ENDSITES1
 # test
 #####################################################################
 
-create_dir($test_dir);
-create_dir($test_logdir);
-create_dir($test_etc);
+#create_dir($test_dir);
+#create_dir($test_logdir);
+#create_dir($test_etc);
+
+setup_test(\%test1);
