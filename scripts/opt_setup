@@ -51,8 +51,8 @@
 # Jonathan Abbey 31 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.9 $
-# Last Mod Date: $Date: 2003/08/11 21:48:15 $
+# Version: $Revision: 1.10 $
+# Last Mod Date: $Date: 2003/08/13 22:59:42 $
 #
 ##########################################################################
 
@@ -82,9 +82,7 @@ Usage:  opt_setup [-vqgmnrR] [-f\"config file\"] [-d\"depot dir\"]
 ENDUSAGE
 
 read_prefs($usage_string, $config_file, "gvqmnrR", @ARGV);
-init_log("opt_setup $version");
-
-logprint("\nopt_setup $version\n\n", 1);
+init_log("opt_setup" $version);
 
 $localpath = "$RealBin";
 removelastslash($localpath);

@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.26 $
-# Last Mod Date: $Date: 2003/08/12 07:05:23 $
+# Version: $Revision: 1.27 $
+# Last Mod Date: $Date: 2003/08/13 22:59:47 $
 #
 #####################################################################
 
@@ -1224,9 +1224,7 @@ Usage:  opt_depot [-svnqmrR] [-f\"config file\"] [-d\"depot dir\"]
 ENDUSAGE
 
 read_prefs($usage_string, $config_file, "svnqmrR", @ARGV);
-init_log("opt_depot");
-
-logprint("\nopt_depot $version\n\n", 1);
+init_log("opt_depot", $version);
 
 if (!check_lock("opt_depot")) {
   logprint("Can't create lockfile, aborting\n", 1);

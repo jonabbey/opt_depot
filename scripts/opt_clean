@@ -54,8 +54,8 @@
 # Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.20 $
-# Last Mod Date: $Date: 2003/08/12 19:18:28 $
+# Version: $Revision: 1.21 $
+# Last Mod Date: $Date: 2003/08/13 22:59:54 $
 #
 #########################################################################
 
@@ -438,9 +438,7 @@ Usage:  opt_clean [-svqrR] [-f\"config file\"] [-d\"depot dir\"]
 ENDUSAGE
 
 read_prefs($usage_string, $config_file, "svqrR", @ARGV);
-init_log("opt_clean $version");
-
-logprint("\nopt_clean $version\n\n", 1);
+init_log("opt_clean", $version);
 
 if (!check_lock("opt_clean")) {
   logprint("Can't create lockfile, aborting\n", 1);
