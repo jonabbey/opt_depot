@@ -55,8 +55,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.16 $
-# Last Mod Date: $Date: 2003/07/26 02:31:51 $
+# Version: $Revision: 1.17 $
+# Last Mod Date: $Date: 2003/08/01 01:23:56 $
 #
 #####################################################################
 
@@ -1206,54 +1206,6 @@ sub link_me {
   }
 } #link_me
 
-
-#########################################################################
-#
-#                                                              check_lock
-#
-# input: none
-#
-# uses: $log LOCK $dest %switches
-#
-# output: generates lock file if lock file does not previously exist
-#         if the lock file could not be created (already existed),
-#         check_lock will die.
-#
-#########################################################################
-sub check_lock {
-
-  my ($buf, @dest);
-
-  # read lock and die if found
-
-  if (-e "$dest/lock.optdepot") {
-    open (LOCK, "<$dest/lock.optdepot");
-    read (LOCK, $buf, 1024);
-    die "\"$buf\" may still be using depot.\n";
-  }
-
-  # create a lock
-
-  open (LOCK, ">$dest/lock.optdepot")|| die "Could not create lock";
-  print (LOCK "$ENV{'USER'}");
-  close (LOCK);
-}
-
-#########################################################################
-#
-#                                                              clear_lock
-#
-# input: none
-#
-# uses: $log LOCK $dest %switches
-#
-# output: clears the lock file established by check_lock()
-#
-#########################################################################
-sub clear_lock {
-  unlink("$dest/lock.optdepot") || logprint("Could not remove lock!", 1);
-}
-
 ################################################################################
 #                                                                              #
 #                                     MAIN                                     #
@@ -1261,16 +1213,19 @@ sub clear_lock {
 ################################################################################
 
 $usage_string =<<'ENDUSAGE';
-Usage:  opt_depot [-vnqmrR] [-f\"config file\"] [-d\"depot dir\"]
+Usage:  opt_depot [-svnqmrR] [-f\"config file\"] [-d\"depot dir\"]
                   [-l\"log dir\"] [-b\"software base dir\"]
 ENDUSAGE
 
-read_prefs($usage_string, $config_file, "vnqmrR", @ARGV);
+read_prefs($usage_string, $config_file, "svnqmrR", @ARGV);
 init_log("opt_depot");
 
-check_lock();
+logprint("\nopt_depot $version\n\n", 1);
 
-logprint("\nopt_depot $version\n\n", 0);
+if (!check_lock("opt_depot")) {
+  logprint("Can't create lockfile, aborting\n", 1);
+  exit(1);
+}
 
 read_exfile("$dest/.exclude");	# initialize exclude hash from primary file
 read_pack_ex();			# add per-package exclusions to exclude hash
