@@ -44,8 +44,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.5 $
-# Last Mod Date: $Date: 2003/07/26 02:17:29 $
+# Version: $Revision: 1.6 $
+# Last Mod Date: $Date: 2003/08/01 01:22:16 $
 #
 #########################################################################
 
@@ -423,12 +423,18 @@ sub rmdirs{
 ################################################################################
 
 $usage_string =<<'ENDUSAGE';
-Usage:  opt_clean [-vqr] [-f\"config file\"] [-d\"depot dir\"]
+Usage:  opt_clean [-svqr] [-f\"config file\"] [-d\"depot dir\"]
                   [-l\"log directory\"] [\b\"base directory\"]
 ENDUSAGE
 
-read_prefs($usage_string, $config_file, "vqr", @ARGV);
+read_prefs($usage_string, $config_file, "svqr", @ARGV);
 init_log("opt_clean $version");
+
+if (!check_lock("opt_clean")) {
+  logprint("Can't create lockfile, aborting\n", 1);
+  close_log();
+  exit(1);
+}
 
 $exclude = "$dest/.exclude"; # Name of the .exclude file
 
@@ -440,4 +446,5 @@ foreach $subdir (@subdirs) {
   rmdirs("$dest/$subdir");
 }
 
+clear_lock();
 close_log();
