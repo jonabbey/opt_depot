@@ -54,8 +54,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.8 $
-# Last Mod Date: $Date: 2003/07/02 01:17:08 $
+# Version: $Revision: 1.9 $
+# Last Mod Date: $Date: 2003/07/03 04:33:45 $
 #
 #####################################################################
 
@@ -188,6 +188,27 @@ sub needs_unify {
   }
 
   return 0;
+}
+
+#########################################################################
+#
+#                                                              extractdir
+#
+# input: $filepath, a string containing a fully qualified path, terminating
+#        in a filename
+#
+# output: a string containing just the directory from $filepath
+#
+#########################################################################
+sub extractdir {
+  my ($filepath) = @_;
+
+  my (@comps);
+
+  @comps =split(/\//, $filepath);
+  pop @comps;
+
+  return join('/', @comps);
 }
 
 ##########################################################################
@@ -511,7 +532,7 @@ sub makedir {
 sub resolve {
   my($dir, $link) = @_;
 
-  my(@alinkp, $d, $alinkp, $save);
+  my(@alinkp, $d, $alinkp);
 
   # make array representations of
   # the current directory and symbolic link
@@ -553,11 +574,7 @@ sub resolve {
     $d=shift(@linkp);
   }
 
-  $save = $LIST_SEPARATOR;
-
-  $LIST_SEPARATOR ='/';
-  $alinkp = "/@alinkp";
-  $LIST_SEPARATOR = $save;
+  $alinkp = "/".join('/',@alinkp);
 
   return $alinkp;
 }
@@ -676,8 +693,7 @@ sub link {
       # extract the directory containing the file
       # referenced in $link
 
-      $link =~ /(.*)\/[^\/]*$/; # don't mess with this, it works
-      $directory = $1;
+      $directory = &extractdir($link);
 
       # find what the link's absolute target is.
 
@@ -1237,14 +1253,11 @@ sub handleinit {
   print (LOCK "$ENV{'USER'}");
   close (LOCK);
 
-  # name log file
+  # name log file, with colons separating the path of the log target
 
-  @dest= split (/\//, $dest);           # naming log file
+  @dest= split (/\//, $dest);
   shift(@dest);
-
-  $LIST_SEPARATOR=':';
-  $log= "$logdir/@dest";
-  $LIST_SEPARATOR=' ';
+  $log = "$logdir/" . join(':',@dest)
 
   # open log file and time stamp entry
 
@@ -1645,8 +1658,6 @@ if ($man_is_there) {
 #
 # list uncreated links
 #
-
-$LIST_SEPARATOR='';
 
 if ($conflicts[0]) {
   if (!($switches{'q'})) {
