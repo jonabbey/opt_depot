@@ -1,11 +1,11 @@
-# opt_copy v2.02 -*- Perl -*-
+# opt_copy v3.0 -*- Perl -*-
 #
 # This script copies the opt_depot scripts along with the perl directory
 # given by the user into the installation directory, also given by the user.
 #
 #############################################################################
 
-$version = "2.02";
+$version = "3.0";
 
 @opt_scripts = ("opt_depot",
 		"opt_nuke",
@@ -58,7 +58,8 @@ sub create_dir {
 
     if (! -d $temp && ($temp ne "")) {
       mkdir($temp, 0777) || print "Could not make dir $temp\n";
-    }	
+    }
+
     $temp .= "/";  # add trailing /
   }
 }
@@ -84,7 +85,8 @@ sub dircheck {
     unless ($ans =~ /^y/i) {
       die "Installation process aborted\n";
     }
-    &create_dir($dir);
+
+    create_dir($dir);
   }
 } # dircheck
 
@@ -110,7 +112,7 @@ sub dircheck {
 sub add_line {
   my ($line, $script) = @_;
 
-  my($new_script);
+  my ($new_script);
 
   open (OUT, ">scripts/$script.new") || die "could not open file scripts/$script.new";
   print OUT "#!$line\n";
@@ -121,7 +123,6 @@ sub add_line {
   open (OUT, ">>scripts/$script.new") || die "could not open file scripts/$script.new";
   open (IN,"scripts/$script") || die "could not open file scripts/$script";
   while (<IN>) {
-    s/<<INSTALL-DIR>>/$dir/;	
     print OUT; # copies the lines of old depot script to new one
   }
   close (IN);
@@ -193,7 +194,7 @@ print"Please enter the directory where you want the opt_depot package installed\
 print"----> ";
 $dir = <STDIN>;
 chop($dir);
-&removelastslash($dir);
+removelastslash($dir);
 
 if ($dir !~ /^\//) {
   # the following lines of code are used in case a relative pathname is
@@ -204,7 +205,7 @@ if ($dir !~ /^\//) {
   $dir = "$temp/$dir";
 }
 
-&dircheck($dir);
+dircheck($dir);
 mkdir "$dir/bin", 0777;
 mkdir "$dir/man", 0777;
 mkdir "$dir/etc",0777;
@@ -213,7 +214,7 @@ mkdir "$dir/man/manl",0777;
 
 foreach $script (@opt_scripts) {
   if (-e "scripts/$script") {
-    &add_line($new_line, $script);
+    add_line($new_line, $script);
     system "cp scripts/$script.new $dir/bin/$script";
     chmod 0755, "$dir/bin/$script";
     unlink "scripts/$script.new";
@@ -238,6 +239,7 @@ foreach $manual (@mans) {
   }
 }
 
-&fix_perms; # see if the installer wants to run the fixperms program
-            # on the opt_depot package directory
+fix_perms(); # see if the installer wants to run the fixperms program
+             # on the opt_depot package directory
+
 print"\n## Opt_depot installation process complete ##\n";
