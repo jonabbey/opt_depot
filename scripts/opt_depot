@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.31 $
-# Last Mod Date: $Date: 2003/08/15 03:04:17 $
+# Version: $Revision: 1.32 $
+# Last Mod Date: $Date: 2003/08/15 03:09:04 $
 #
 #####################################################################
 
@@ -621,6 +621,18 @@ sub fablink {
   my ($newlink, $target) = @_;
 
   # if we're in test mode, just show the action to take
+
+  if (-l $newlink) {
+    if ($switches{'n'}) {
+      print ("  unlink:   $newlink ->\n");
+      print ("            $target\n");
+    } else {
+      if (!unlink($newlink)) {
+	logprint("  ERROR:  Could not remove $newlink", 1);
+	return 0;
+      }
+    }
+  }
 
   if ($switches{'n'}) {
     print ("  link:   $newlink ->\n");
