@@ -61,8 +61,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.51 $
-# Last Mod Date: $Date: 2003/10/13 09:41:33 $
+# Version: $Revision: 1.52 $
+# Last Mod Date: $Date: 2003/10/13 23:34:05 $
 #
 #####################################################################
 
@@ -1031,11 +1031,6 @@ sub depth_first {
 
   if (!-d $old_path || !-d $new_path) {
     logprint("Ditching depth_first entry because one of $old_path and $new_path aren't directories\n", -1);
-    return;
-  }
-
-  if (pathcheck("$depot/$old_path", %priority) || pathcheck("$depot/$new_path", %priority)) {
-    logprint("Ditching depth_first entry because one of $old_path and $new_path are prioritized\n", -1);
     return;
   }
 
