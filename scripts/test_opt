@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.38 $
-# Last Mod Date: $Date: 2003/10/13 06:50:45 $
+# Version: $Revision: 1.39 $
+# Last Mod Date: $Date: 2003/10/13 06:52:31 $
 #
 #####################################################################
 
@@ -442,6 +442,11 @@ ENDSITES3
 	   action => 'opt_depot',
 	   priority => "packC/lib/perl5/z.pm",
 	   error_count => 0);
+
+# This test is as the last one, except we go beyond having to unify
+# only a pair of directories, and we verify that the recursive part of
+# the recursive unification logic works properly by supporting merging
+# of a common spam subdirectory down deep.
 
 %test4f = (label  => 'Greater than pairwise directory unification test',
 	   root   => $test_dir,
