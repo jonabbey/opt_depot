@@ -48,12 +48,13 @@
 #
 # v3.0
 # Reworked a lot of code to use the new perl 5 features, and the
-# Opt_depot::Common module.
-# Jonathan Abbey 29 July 2003
+# Opt_depot::Common module.  Added support for the -a command line
+# flag to inhibit depot link removal.
+# Jonathan Abbey 14 October 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.21 $
-# Last Mod Date: $Date: 2003/10/13 08:33:57 $
+# Version: $Revision: 1.22 $
+# Last Mod Date: $Date: 2003/10/15 03:35:58 $
 #
 #####################################################################
 
@@ -564,7 +565,7 @@ sub exclude_me {
 	$link_site = extractdir(resolve($depot, readlink("$depot/$ex_pack")));
 
 	if (defined $sitedirs{$link_site}) {
-	  if (!$test) {
+	  if (!$test && !$add_only) {
 	    unlink ("$depot/$ex_pack");
 	  }
 
@@ -583,7 +584,7 @@ sub exclude_me {
 	  # be the same if the link is to be removed. If it's not
 	  # labeled at all then we kill it.
 
-	  if (!$test) { # get out the axe
+	  if (!$test && !$add_only) { # get out the axe
 	    if (unlink ("$depot/$ex_pack")) { # My eyes!!!!
 	      $activity = 1; # Yesss!
 	    } else {
@@ -696,11 +697,11 @@ sub print_header {
 ##########################################################################
 
 $usage_string =<<'ENDUSAGE';
-Usage:  opt_link [-sqvng] [-f\"config file\"] [-d\"depot dir\"]
-                 [-l\"log directory\"] [-b\"base directory\"]
+Usage:  opt_link [-asqvng] [-f\"config file\"] [-d\"depot dir\"]
+                 [-l\"log file/directory\"] [-b\"base directory\"]
 ENDUSAGE
 
-read_prefs($usage_string, $local_config_file, "sqvng", @ARGV);
+read_prefs($usage_string, $local_config_file, "asqvng", @ARGV);
 init_log("opt_link", $version);
 
 if (!check_lock("opt_link")) {
@@ -712,6 +713,7 @@ if (!check_lock("opt_link")) {
 if (defined $switches{'v'}) {$verbose = 1;}
 if (defined $switches{'n'}) {$test = 1;}
 if (defined $switches{'g'}) {$get_most_recent = 1;}
+if (defined $switches{'a'}) {$add_only = 1;}
 
 # File containing all the manually entered exclusion information
 
