@@ -48,8 +48,8 @@
 # Jonathan Abbey 8 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.13 $
-# Last Mod Date: $Date: 2003/08/08 21:49:28 $
+# Version: $Revision: 1.14 $
+# Last Mod Date: $Date: 2003/09/17 21:47:22 $
 #
 ###############################################################################
 
@@ -170,4 +170,5 @@ echo "The following line will be added to the opt_depot scripts:"
 echo "#!$perl_loc"
 echo
 
-$perl_loc scripts/opt_install $perl_loc
+base_loc=`dirname $0`
+$perl_loc "$base_loc/scripts/opt_install" $perl_loc
