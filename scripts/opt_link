@@ -47,13 +47,13 @@
 # Erik Grostic 17 July 1997
 #
 # v3.0
-# Reworked a lot of code to use the new perl 5 features, and the Opt_depot::Common
-# module.
+# Reworked a lot of code to use the new perl 5 features, and the
+# Opt_depot::Common module.
 # Jonathan Abbey 29 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.7 $
-# Last Mod Date: $Date: 2003/08/01 01:24:42 $
+# Version: $Revision: 1.8 $
+# Last Mod Date: $Date: 2003/08/01 01:41:44 $
 #
 #####################################################################
 
@@ -85,7 +85,7 @@ $test = 0;
 
 #####################################################################
 #
-#                                                        read_exfile
+#                                                         read_exfile
 # input: * $exfile - file containing exclusion information
 #
 # output:* %excluded - contains the manually excluded packages
@@ -149,7 +149,7 @@ sub read_exfile {
 
 #####################################################################
 #
-#                                                     read_site_file
+#                                                      read_site_file
 #
 # input:  * $site_file - file containing site/label information
 #
@@ -326,7 +326,7 @@ sub process_sites {
 
 #####################################################################
 #
-#                                                        chk_pack_ex
+#                                                         chk_pack_ex
 # input: $packname - name of the package to be added
 #                    to %installed
 #        $packex - the name of the package's exclusion file
@@ -578,10 +578,9 @@ sub exclude_me {
   }
 } #exclude_me
 
-
 #######################################################################
 #
-#                                                         print_info
+#                                                            print_info
 # input: none
 #
 # uses: %excluded
