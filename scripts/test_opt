@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.31 $
-# Last Mod Date: $Date: 2003/09/21 07:18:18 $
+# Version: $Revision: 1.32 $
+# Last Mod Date: $Date: 2003/09/21 07:42:44 $
 #
 #####################################################################
 
@@ -85,8 +85,8 @@ LOCAL $test_root/sites/local
 ENDSITES2
 
 $testsitesC =<< "ENDSITES3";
+LOCALB $test_root/sites/localB
 LOCAL $test_root/sites/local
-LOCALB $test_root/sites/localb
 ENDSITES3
 
 %siteA = (label => 'local',
@@ -412,9 +412,29 @@ ENDSITES3
 	   action => 'opt_link',
 	   error_count => 0);
 
+%test12 = (label  => 'Multiple site volume test',
+	   root   => $test_dir,
+	   start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/',
+		      "depot/packA-2.0->".$siteB{'path'}."/packA-2.0",
+		      "depot/packB-2.0->".$siteB{'path'}."/packB-2.0",
+		      "depot/packC-2.0->".$siteB{'path'}."/packC-2.0",
+		      "depot/packX-1.2->".$siteA{'path'}."/packX-1.2",
+		      "depot/packY-4.51->".$siteB{'path'}."/packY-4.51"],
+	   endex  => ['^\.priority$', '^\.exclude$'],
+	   conf   => $testconfA,
+	   sites  => $testsitesC,
+	   sitedefs => [\%siteA, \%siteB],
+	   exclude => 'packA-1.0',
+	   action => 'opt_link',
+	   error_count => 0);
+
 @tests = (\%test0, \%test1, \%test2, \%test3,
 	  \%test4, \%test5, \%test6, \%test7,
-	  \%test8, \%test9, \%test10, \%test11);
+	  \%test8, \%test9, \%test10, \%test11,
+	  \%test12);
 
 #####################################################################
 
