@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.32 $
-# Last Mod Date: $Date: 2003/08/15 03:09:04 $
+# Version: $Revision: 1.33 $
+# Last Mod Date: $Date: 2003/08/15 03:13:13 $
 #
 #####################################################################
 
@@ -522,12 +522,14 @@ sub smartlink {
     goto go_man_go;
   }
 
+  # --
   #
   # okay, from here on out, we're just interested in the relative
   # priority of the old and new targets.  We'll first check for
   # an explicit record of the given file.. we always give explicitly
   # listed files priority over directory paths.
   #
+  # --
 
   # if the new link target has explicit priority and the old one
   # doesn't, retarget the link
@@ -553,7 +555,7 @@ sub smartlink {
   # bother to do any more tests
 
   if ($priority{$target} && $priority{$oldtarget}) {
-    if ($priority{$target} < $priority{$oldtarget}) {
+    if ($priority{$target} > $priority{$oldtarget}) {
       $replace_it = 1;
     } else {
       $replace_it = 0;
@@ -567,12 +569,12 @@ sub smartlink {
   # the old link is not, and we have not previously seen any
   # decisive reason to keep the old link, retarget the link
 
-  if (pathcheck($oldtarget, *priority) && !pathcheck($target, *priority)) {
+  if (!pathcheck($oldtarget, *priority) && pathcheck($target, *priority)) {
     $replace_it = 1;
     goto go_man_go;
   }
 
-  if (!pathcheck($oldtarget, *priority) && pathcheck($target, *priority)) {
+  if (pathcheck($oldtarget, *priority) && !pathcheck($target, *priority)) {
     $replace_it = 0;
     $reason = "priority";
     goto go_man_go;
@@ -582,7 +584,7 @@ sub smartlink {
   # non-zero priority value than the old link, retarget the link.
 
   if (pathcheck($oldtarget, *priority) && pathcheck($target, *priority)) {
-    if (pathcheck($target, *priority) < pathcheck($oldtarget, *priority)) {
+    if (pathcheck($target, *priority) > pathcheck($oldtarget, *priority)) {
       $replace_it = 1;
     } else {
       $replace_it = 0;
