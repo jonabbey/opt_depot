@@ -262,9 +262,7 @@ sub initlog {
   @dest=split(/\//, $dest);
   shift(@dest);
 
-  $LIST_SEPARATOR=':';
-  $log="$logdir/@dest";
-  $LIST_SEPARATOR=' ';
+  $log = "$logdir/".join(':', @dest);
 
   if (!($switches{'q'})) {
     # open log file and time stamp entry
@@ -477,63 +475,98 @@ sub resolve {
     $d=shift(@linkp);
   }
 
-  $LIST_SEPARATOR='/';
-
   # perl functions return the value of the last expression
   # in the subroutine
 
-  $alinkp = "/@alinkp";
+  $alinkp = "/".join('/', @alinkp);
+}
+
+#########################################################################
+#
+#                                                              extractdir
+#
+# input: $filepath, a string containing a fully qualified path, terminating
+#        in a filename
+#
+# output: a string containing just the directory from $filepath
+#
+#########################################################################
+sub extractdir {
+  my ($filepath) = @_;
+
+  my (@comps);
+
+  @comps =split(/\//, $filepath);
+  pop @comps;
+
+  return join('/', @comps);
 }
 
 #########################################################################
 #
 #                                                               pathcheck
 #
-# This function is used to determine if $file is contained in any
-# directory listed in the keys of %assoc.
+# This function is used to determine if $file is contained under any
+# directory listed in the keys of %assoc.  The keys of %assoc should
+# map to integer values, in which the lowest positive number is taken
+# to be the best priority, if we're dealing with a priority hash.  If
+# we're dealing with an exclusion hash, then all values in the exclusion
+# hash will be positive numbers, so if we find any of them we'll wind
+# up returning a positive (true) integer value.
+#
+# In other words, when used on the global %priority hash, we'll return an
+# integer that can be compared to determine relative priority.  When
+# used on the global %exclude hash, we'll effectively return a boolean
+# value.
 #
 # input: $file - a fully qualified filepath
 #        *assoc - a name for an associative array (exclude or priority)
 #
-# output: returns the value of a matching key in *assoc when
-#         $file is contained in a directory that is listed in the keys of
-#         the %assoc associative array.
+# output: as above.
+#
 #########################################################################
-sub pathcheck{
-  local($file, *assoc) = @_;
+sub pathcheck {
+  local ($file, *assoc) = @_;
 
   @components = split(/\//, $file);
 
-  my($low_pri);
+  my ($t_pri, $temp, $low_pri);
 
   # we want to find the best (lowest numerical value) priority
   # that pertains to $file
 
   $low_pri = 9999;
-
   $temp = "";
 
+  # now loop over the path, from top down.  Since we're splitting on
+  # /, if $file began with a slash, our first component will be the
+  # empty string, and we'll start adding non-empty strings after we've
+  # appended the first slash in the second clause of the loop
+
   foreach $comp (@components) {
-    $temp .= "$comp/";
+    $temp .= "$comp";
 
-    if ($assoc{$temp}) {
+    if (exists $assoc{$temp}) {
       $t_pri = $assoc{$temp};
-      if ($t_pri < $low_pri) {
+
+      if ($t_pri && $t_pri < $low_pri) {
 	$low_pri = $t_pri;
       }
     }
 
-    chop($temp); # cut off the trailing /
+    # add a trailing /, in case the trailing slash was present in the
+    # hash, and check again.  Adding the trailing slash here will
+    # also prep us to add the next component.
 
-    if ($assoc{$temp}) {
+    $temp .= "/";
+
+    if (exists $assoc{$temp}) {
       $t_pri = $assoc{$temp};
 
-      if ($t_pri < $low_pri) {
+      if ($t_pri && $t_pri < $low_pri) {
 	$low_pri = $t_pri;
       }
     }
-
-    $temp .= "/";  # return trailing /
   }
 
   if ($low_pri != 9999) {
@@ -567,7 +600,7 @@ sub rmdirs{
   @real_files = grep (("$dir/$_" !~/\/\./), @contents);
   closedir(DIR);
 
-  if (@real_files == ""){ # directory is empty -- anihilate it
+  if ($#real_files<0){ # directory is empty -- annihilate it
 
     # but only if the -r option is not in effect and the dir
     # contains an $opt_file
@@ -578,7 +611,6 @@ sub rmdirs{
       return "** empty **"; # let's blow this popsicle stand...
     }
   }
-
 
   # get all links
 
@@ -596,33 +628,20 @@ sub rmdirs{
 
   # 2.0 - and test to see if all the links point to a single package.
 
-  if (! (@dirs == "")) {
+  if ($#dirs>=0)) {
     $all_same = 0;
   } elsif (defined @links) {
     $all_same = 1;		# all_same is true if all the links point to the
 				# same package. Assume true until proven otherwise.
 
-    $first = readlink("$dir/@links[0]"); # get location of first package as
-    # a comparison value.
-    $first =~ s/(\+|\*)/\\$1/g;
-    @links[0] =~ s/(\+|\*)/\\$1/g;
-    $first =~ s/@links[0]//; # remove file name...just compare directory
-    $first =~ s/\\(\+|\*)/$1/g;
-    @links[0] =~ s/\\(\+|\*)/$1/g;
-    &removelastslash($first); # remove trailing slash
+    # get location of first package as a comparison value.
+
+    $first = &extractdir(readlink("$dir/@links[0]"));
+    &removelastslash($first);
 
     foreach $link (@links) {
-      $second = readlink ("$dir/$link");
-      $second =~ s/(\+|\*)/\\$1/g;
-      $link =~ s/(\+|\*)/\\$1/g;
-      $second =~ s/$link//; # remove file name...just compare directory
-      $second =~ s/\\(\+|\*)/$1/g;
-      $link =~ s/\\(\+|\*)/$1/g;
-      &removelastslash($second); # remove trailing slash
-
-      # The regex stuff above is meant to remove any '*' or '+'
-      # characters from $first, $second, and $link before running them
-      # through the substitute function.
+      $second = &extractdir(readlink("$dir/$link"));
+      &removelastslash($second);
 
       if ($first ne $second) {
 	$all_same = 0; # links do not all point to same place...
