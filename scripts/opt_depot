@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.19 $
-# Last Mod Date: $Date: 2003/08/02 03:47:02 $
+# Version: $Revision: 1.20 $
+# Last Mod Date: $Date: 2003/08/07 03:04:24 $
 #
 #####################################################################
 
@@ -917,17 +917,18 @@ sub prepdirs {
 
 #########################################################################
 #
-#                                                              create_dir
+#                                                          synthesize_dir
 # input: a pathname
 #
 # uses: opt_file global variable name
 #
 # output: makes sure the specified directory exists. If it doesn't
-#         then check_dirs makes it (along with any super-directories)
+#         then synthesize_dir makes it (along with any super-directories),
+#         and places a .made_by_opt_depot tag in it.
 #
 #
 #########################################################################
-sub create_dir {
+sub synthesize_dir {
   my ($file) = @_;
 
   my ($temp, @components);
@@ -1141,7 +1142,7 @@ sub link_me {
 		  unlink("$dest/$common_dir"); # remove old symlink
 
 		  foreach $dir (keys %merge_list) {
-		    create_dir($dir);
+		    synthesize_dir($dir);
 		  }
 
 		  next; # we've made directories, we'll do the linking through recursion
