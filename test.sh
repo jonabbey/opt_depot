@@ -47,8 +47,8 @@
 # Jonathan Abbey 17 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.2 $
-# Last Mod Date: $Date: 2003/09/17 05:15:18 $
+# Version: $Revision: 1.3 $
+# Last Mod Date: $Date: 2003/09/17 05:18:15 $
 #
 ###############################################################################
 
@@ -165,8 +165,8 @@ while [ "$perlok" = "n" ]; do
 done
 
 #
-# We need to set a couple of environment variables so that the test
-# script can run along on its own
+# We need to set an environment variable so that the test
+# script (and opt_setup in turn) can run along on its own
 #
 
 export PERLLOC=$perl_loc
