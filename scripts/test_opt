@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.19 $
-# Last Mod Date: $Date: 2003/09/17 06:31:51 $
+# Version: $Revision: 1.20 $
+# Last Mod Date: $Date: 2003/09/18 18:43:24 $
 #
 #####################################################################
 
@@ -334,7 +334,7 @@ sub setup_test {
   killdir($rootdir);
   create_dir($rootdir);
   chdir($rootdir);
-  
+
   foreach $element (@$startary) {
 
     if ($rootdir =~ /\/$/) {
@@ -416,7 +416,7 @@ sub setup_test {
     print OUT "\n";
     close(OUT);
   }
-  
+
   return 1;
 }
 
@@ -438,7 +438,7 @@ sub setup_test {
 
 sub exclusion_check {
   my ($path, $test_href) = @_;
-  
+
   my (@ary, $element);
 
   @ary = @{$test_href->{'endex'}};
@@ -454,7 +454,7 @@ sub exclusion_check {
 
 #########################################################################
 #
-#                                                           recurse_check
+#                                                        unexpected_check
 #
 # input:
 #	a path string
@@ -465,17 +465,17 @@ sub exclusion_check {
 #	to a target (if they should be links) or to empty string if
 #	they are physical directories and files.
 #
-#
-# recurse_check recurses on the path string, looking at each item found
+# unexpected_check recurses on the path string, looking at each item found
 # and seeing whether it is in the test description's end state.  Any
 # path element listed in the test description's endex end state exclusion
 # list will not be checked.
 #
-# returns 1 on success, 0 on failure
+# returns a count of the number of errors detected during the recursive
+# directory check.
 #
 #########################################################################
 
-sub recurse_check {
+sub unexpected_check {
   my ($path, $test_href, $end_href) = @_;
 
   local(*DIR);
@@ -499,7 +499,7 @@ sub recurse_check {
   if ($path ne "") {
     @elements = map { $path . $_ } @elements;
   }
-  
+
   foreach $element (@elements) {
     if (-d $element && !-l $element) {
       $element = $element . "/";
@@ -513,6 +513,20 @@ sub recurse_check {
       $target = resolve(make_absolute($local_path), readlink($element));
       $target = resolve($test_href->{'root'} . "/" . $local_path, readlink($element));
 
+      if (!defined $end_href->{$element}) {
+	print "Error, found unexpected symlink $element in test " . $test_href->{'label'} . "\n";
+	print "Unexpected symlink points to $target\n\n";
+	$error_count++;
+	next;
+      }
+
+      if ($end_href->{$element} eq "") {
+	print "Error, found unexpected symlink $element in test " . $test_href->{'label'} . "\n";
+	print "Was expecting a file, not a symlink pointing to $target\n\n";
+	$error_count++;
+	next;
+      }
+
       $desired_target = $test_href->{'root'} . "/" . $end_href->{$element};
 
       if ($desired_target =~ /\/$/ && $target !~ /\/$/) {
@@ -522,7 +536,7 @@ sub recurse_check {
       if ($target ne $desired_target) {
 	print "Error, symlink target error in test " . $test_href->{'label'} . "\n";
 	print "symlink $element should point to $desired_target, but instead points to\n";
-	print "$target.\n";
+	print "$target.\n\n";
 
 	if (0) {
 	  print "\$element is $element\n";
@@ -532,10 +546,37 @@ sub recurse_check {
 	}
 
 	$error_count++;
-	next;
       }
-    } elsif (!defined $end_href->{$element}) {
-      print "Error, found unexpected item $element in test " . $test_href->{'label'} . "\n";
+
+      next;
+    }
+
+    # okay, we've handled the symlink case.. now, is this something we
+    # weren't expecting?
+
+    if (!defined $end_href->{$element}) {
+      if ($element =~ /\/$/) {
+	print "Error, found unexpected directory $element in test " . $test_href->{'label'} . "\n\n";
+      } else {
+	print "Error, found unexpected item $element in test " . $test_href->{'label'} . "\n\n";
+      }
+
+      $error_count++;
+      next;
+    }
+
+    # now we've got a file or directory where we expected it.. but
+    # what if what we were expecting really was a symlink?  That
+    # should only happen for files, since if $element is a directory
+    # we'll have suffixed a trailing /, and we don't expect to have
+    # any symlink definitions look like 'dir/name/->target'..
+
+    if ($end_href->{$element} ne "") {
+      $desired_target = $test_href->{'root'} . "/" . $end_href->{$element};
+
+      print "Error, symlink mismatch in test " . $test_href->{'label'} . "\n";
+      print "File $element was expected to be a symlink pointing at $desired_target.\n\n";
+
       $error_count++;
       next;
     }
@@ -545,11 +586,77 @@ sub recurse_check {
 
   foreach $element (@elements) {
     if (-d $element && !-l $element) {
-      
+
       # only recurse if we're not excluding
 
       if (!exclusion_check($element, $test_href)) {
-	$error_count = $error_count + recurse_check($element, $test_href, $end_href, $exclusion_href);
+	$error_count = $error_count + unexpected_check($element, $test_href, $end_href, $exclusion_href);
+      }
+    }
+  }
+
+  return $error_count;
+}
+
+#########################################################################
+#
+#                                                          expected_check
+#
+# input: a reference to one of our test descriptions
+#
+# expected_check iterates over the list of expected results for a
+# test and makes sure that each expected item affirmatively exists.
+#
+# this is a complementary function to the unexpected_check, which makes
+# sure that we don't have anything we didn't expect
+#
+# returns a count of the number of errors found
+#
+#########################################################################
+
+sub expected_check {
+  my ($test_href) = @_;
+
+  my ($error_count, @end_ary, $item, $before, $after, $itempath);
+
+  $error_count = 0;
+
+  @end_ary = @{$test_href->{'end'}};
+
+  foreach $item (@end_ary) {
+    if ($item =~ /->/) {
+      ($before, $after) = split /->/, $item;
+
+      $itempath = $test_href->{'root'} . "/" . $before;
+      $desired_target = $test_href->{'root'} . "/" . $after;
+
+	if (!-e $itempath) {
+	  print "Error, symlink missing in test " . $test_href->{'label'} . "\n";
+	  print "symlink $itempath is supposed to point to $desired_target\n\n";
+	  $error_count++;
+	  next;
+	}
+    } else {
+      $itempath = $test_href->{'root'} . "/" . $item;
+
+      if ($itempath =~ /\/$/) {
+	# directory
+
+	if (!-e $itempath) {
+	  print "Error, directory missing in test " . $test_href->{'label'} . "\n";
+	  print "$itempath was supposed to be a directory, but does not exist.\n";
+	  $error_count++;
+	  next;
+	}
+      } else {
+	# file
+
+	if (!-e $itempath) {
+	  print "Error, file missing in test " . $test_href->{'label'} . "\n";
+	  print "file $itempath does not exist.\n";
+	  $error_count++;
+	  next;
+	}
       }
     }
   }
@@ -572,7 +679,9 @@ sub recurse_check {
 sub run_test {
   my ($href) = @_;
 
-  my ($command, @end_ary, $item, $before, $after, %end_hash);
+  my ($command, @end_ary, $item, $before, $after, %end_hash, $error_count);
+
+  $error_count = 0;
 
   $command = $href->{'action'};
 
@@ -581,7 +690,7 @@ sub run_test {
     return 0;
   };
 
-  # start the recurse_check from our base directory
+  # start the unexpected_check from our base directory
 
   @end_ary = @{$href->{'end'}};
 
@@ -594,10 +703,11 @@ sub run_test {
     }
   }
 
-  $result = recurse_check("", $href, \%end_hash);
+  $error_count = unexpected_check("", $href, \%end_hash);
+  $error_count = $error_count + expected_check($href);
 
-  if ($result != $href->{'error_count'}) {
-    if ($result > $href->{'error_count'}) {
+  if ($error_count != $href->{'error_count'}) {
+    if ($error_count > $href->{'error_count'}) {
       print "\nTest " . $href->{'label'} . " had too many errors.\n";
     } else {
       print "\nTest " . $href->{'label'} . " had too few errors.\n";
