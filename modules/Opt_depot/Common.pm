@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.26 $
-# Last Mod Date: $Date: 2003/09/12 01:55:57 $
+# Version: $Revision: 1.27 $
+# Last Mod Date: $Date: 2003/09/16 23:47:09 $
 #
 #####################################################################
 
@@ -62,7 +62,7 @@ require 5.000;
 
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw($dest $depot $logdir $logfile $sitefile $alwaysrecurse %switches @subdirs @unify_list
+@EXPORT = qw($dest $depot $logdir $logfile $sitefile $alwaysrecurse $config_file %switches @subdirs @unify_list
 	     *LOG
 	     &askyn &askstring &printwrap
 	     &parsequoted &safifystring
@@ -852,8 +852,8 @@ sub make_absolute {
 # load preference data into, and @ARGV should be the command line
 # argument vector.
 #
-# output: the exported $dest, $depot, $logdir, %switches, @subdirs, and
-# @unify_list variables are loaded from the given configuration file (or
+# output: the exported $dest, $depot, $logdir, %switches, @subdirs, $config_file,
+# and @unify_list variables are loaded from the given configuration file (or
 # whatever configuration file is specified using the -f argument in @ARGV)
 #
 ##########################################################################
