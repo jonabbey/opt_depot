@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.21 $
-# Last Mod Date: $Date: 2003/08/14 01:57:30 $
+# Version: $Revision: 1.22 $
+# Last Mod Date: $Date: 2003/08/14 02:07:42 $
 #
 #####################################################################
 
@@ -878,7 +878,7 @@ sub read_prefs ($$$\@) {
     if (-d $logdir) {
       $logfile = "";
     } else {
-      $logfile = $temp;
+      $logfile = $logdir;
     }
   }
 
