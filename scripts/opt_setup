@@ -50,8 +50,8 @@
 # Jonathan Abbey 31 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.16 $
-# Last Mod Date: $Date: 2003/10/13 08:33:17 $
+# Version: $Revision: 1.17 $
+# Last Mod Date: $Date: 2003/10/15 03:34:14 $
 #
 ##########################################################################
 
@@ -107,11 +107,13 @@ $file_string = "-f$config_file -d$depot -l$logfile -b$dest";
 # the -s flags are to specify that the scripts are being run from
 # opt_setup, and so don't need to do their own lock handling
 
+# first run opt_link with the -a option so that we inhibit link removal
+
 if (defined $perlloc) {
-  $link_exec = "$perlloc $localpath/opt_link -s $switches{'g'} $switches{'v'} " .
+  $link_exec = "$perlloc $localpath/opt_link -s -a $switches{'g'} $switches{'v'} " .
     "$switches{'q'} $switches{'n'} $file_string";
 } else {
-  $link_exec = "$localpath/opt_link -s $switches{'g'} $switches{'v'} " .
+  $link_exec = "$localpath/opt_link -s -a $switches{'g'} $switches{'v'} " .
     "$switches{'q'} $switches{'n'} $file_string";
 }
 
@@ -136,6 +138,19 @@ if (defined $perlloc) {
 }
 
 !system($depot_exec) || die "opt_depot failed";
+
+# finally run opt_link without the -a option so that we can remove any
+# depot links, once opt_clean and opt_depot have safely been run.
+
+if (defined $perlloc) {
+  $link_exec = "$perlloc $localpath/opt_link -s $switches{'g'} $switches{'v'} " .
+    "$switches{'q'} $switches{'n'} $file_string";
+} else {
+  $link_exec = "$localpath/opt_link -s $switches{'g'} $switches{'v'} " .
+    "$switches{'q'} $switches{'n'} $file_string";
+}
+
+!system($link_exec) || die "opt_link failed";
 
 clear_lock();
 close_log();
