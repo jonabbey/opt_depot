@@ -35,11 +35,11 @@
 .\" University of Texas at Austin  opt-depot@arlut.utexas.edu
 .\"
 .\" Release: $Name:  $
-.\" Version: $Revision: 1.4 $
-.\" Last Mod Date: $Date: 2003/10/18 01:59:01 $
+.\" Version: $Revision: 1.5 $
+.\" Last Mod Date: $Date: 2003/10/21 00:25:16 $
 .TH OPT_LINK l "15 October 2003" "ARL:UT/CSD"
 .SH NAME
-opt_link 3.0 \- creates links from a single depot directory to packages located in one or more central package archive directories.
+opt_link 3.0 \- creates and manages links from a system depot directory to packages located in one or more central package archive directories.
 .SH SYNOPSIS
 \fBopt_link\fR [\fB-asqvng\fR] [\fB-f\f(BI config file\fR] [\fB-d\f(BI directory\fR] [\fB-l\f(BI path\fR] [\fB-b\f(BI directory\fR]
 .SH ARGUMENTS
@@ -47,7 +47,8 @@ opt_link 3.0 \- creates links from a single depot directory to packages located 
 \fB-a\fR add only
 If set, \fBopt_link\fR will only add, not remove, links from the depot directory to site volume packages.
 .TP
-\fB-s\fR inhibits lock creation. Used to allow \fBopt_setup\fR to handle locking when running several scripts in sequence.
+\fB-s\fR inhibits lock creation.
+Used to allow \fBopt_setup\fR to handle locking when running several scripts in sequence.
 .TP
 \fB-v\fR verbose mode.
 .TP
@@ -86,7 +87,7 @@ more centralized NFS file servers.  When \fBopt_link\fR runs, it
 consults a \fBsites\fR file which provides an ordered list of package
 archives and the filesystem path where each is located.
 \fBopt_link\fR then scans the package archives and links them into the
-system depot directory, making the contents of the package then
+system depot directory, making the contents of the packages
 available for the \fBopt_depot\fR script to link.
 .sp
 The key to this process is that all packages compiled for use with the
@@ -98,13 +99,14 @@ property of the package makes it position indepdent, so long as a symlink
 exists from the canonical location to the physical location of the package.
 This is what \fBopt_link\fR does.
 .sp
-\fBopt_link\fR uses a file called 'sites' to determine the directories that
-will serve as the archive directories. The file is in a plain text
-format, with each line containing a central package archive listing,
-in the form of: <label> <directory>. The directory portion of the
-entry is the aboslute pathname of the archive (i.e. /v/site/packages)
-and the label portion is the name that will be associated with the
-archive (i.e. GLOBAL, Local_packs, fred, etc.).
+\fBopt_link\fR uses a file called 'sites' (as specified in the \fIopt.config\fR file)
+to determine the directories that will serve as the archive directories.
+The file is in a plain text format, with each line containing a
+central package archive listing, in the form of: <label> <directory>.
+The directory portion of the entry is the absolute pathname of the
+archive (i.e. \fI/v/site/packages\fR) and the label portion is the
+name that will be associated with the archive (i.e. \fIGLOBAL\fR,
+\fILocal_packs\fR, \fIfred\fR, etc.).
 .sp
 The order in which the package archives are listed in the sites file
 determines the priority of each package archive, with the archives
@@ -113,6 +115,36 @@ cannot exclude another package that is contained in a higher priority
 archive, although if the -g get_most_recent option is selected then
 any package can exclude any other package, regardless of the priority
 of the archive where it resides.
+.SH MANUAL EXCLUSIONS
+\fBopt_link\fR contains a lot of logic to help control what packages
+are linked into the depot directory.
+Users on individual workstations can specify packages to be excluded
+using the same \fI.exclude\fR file (by default
+\fI__BASEDIR__/.exclude\fR) that the \fBopt_depot\fR and
+\fBopt_clean\fR scripts use.
+The \fI__BASEDIR/.exclude\fR file simply consists of a set of file
+or package names to be excluded, one per line, with empty lines and
+pound comments ignored.
+Any line that does not contain embedded slashes is taken to be a package
+name, and all packages of that name will be excluded from being linked
+into the depot directory.
+In addition, the \fI__BASEDIR__/.exclude\fR file may be used to
+exclude packages from a particular site volume, by prepending the
+package name with the site volume label (as specified in the
+\fIsites\fR file) followed by a colon.
+
+
+
+\fBopt_link\fR can also handle the removal of old and outdated symbolic links
+from the depot directory.
+In this way, \fBopt_link\fR is capable of working with the maintainer of a
+centralized package archive to keep distributed workstations up-to-date with
+centrally installed software.
+.sp
+There are two places that \fBopt_link\fR
+Creating symbolic links from the system depot directory to 
+Like \fBopt_depot\fR and \fBopt_clean\fR, \fBopt_link\fR supports the use
+of certain text files
 .sp
 When specifying an exclusion in the \fI__BASEDIR__/.exclude\fR file, a
 package specific to a particular package archive may be excluded by
@@ -122,18 +154,6 @@ labeled exclusion takes the form of <label>:<package>. An example of a
 site specific exclusion might be GLOBAL:netscape-1.0, which would
 exclude the netscape-1.0 which resides in the archive associated with
 the GLOBAL label only.
-.sp
-Unless the -q option is specified on the command line, \fBopt_link\fR will append
-information to the standard log file detailing actions taken.  This log
-file is named /logs/opt_depot/opt by default.  The directory may be changed
-by using the -l option.  The name of the log file by default is the
-path to the depot directory (/opt/depot by default), with the "/depot"
-part removed.  Any remaining slashes will be replaced with colons.
-.sp
-For instance, if the depot directory were located in /usr/local/depot, the
-default log file would become /logs/opt_depot/usr:local.  If the
--l option specified /usr/local/logs/opt_depot, the log file would then become
-/usr/local/logs/opt_depot/usr:local.
 .sp
 \fBopt_link\fR reads the standard \fBopt_depot\fR .exclude file, as well as 
 individual .exclude files present in the packages themselves.
