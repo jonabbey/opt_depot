@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.35 $
-# Last Mod Date: $Date: 2003/10/07 21:07:00 $
+# Version: $Revision: 1.36 $
+# Last Mod Date: $Date: 2003/10/07 21:24:10 $
 #
 #####################################################################
 
@@ -802,7 +802,7 @@ sub pathcheck ($\%) {
 # output: as above.
 #
 #########################################################################
-sub subpathcheck ($$\%) {
+sub subpathcheck ($\%) {
   my ($path, $assoc_ref) = @_;
   my %assoc = %$assoc_ref;
   my ($t_pri, $hi_pri);
