@@ -49,8 +49,8 @@
 # Jonathan Abbey 31 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.3 $
-# Last Mod Date: $Date: 2003/08/01 00:52:57 $
+# Version: $Revision: 1.4 $
+# Last Mod Date: $Date: 2003/08/01 01:21:51 $
 #
 #####################################################################
 
@@ -85,9 +85,9 @@ $config_file = "$RealBin/../etc/opt.config";
 #########################################################################
 
 sub is_under {
-  my($dir, $link, $test_dir)= @_;
+  my ($dir, $link, $test_dir)= @_;
 
-  my(@alinkp,@dirp,@linkp,$d);
+  my (@alinkp,@dirp,@linkp,$d);
 
   # make array representations of
   # the current directory and symbolic link
@@ -125,6 +125,7 @@ sub is_under {
     elsif ($d ne ".") {
       push(@alinkp, $d);
     }
+
     $d=shift(@linkp);
   }
 
