@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.8 $
-# Last Mod Date: $Date: 2003/08/08 00:11:24 $
+# Version: $Revision: 1.9 $
+# Last Mod Date: $Date: 2003/08/08 00:12:32 $
 #
 #####################################################################
 
@@ -447,7 +447,7 @@ sub testmakedir {
 
   if (!(-d $dir)) {
     print "\n";
-    unless (askyn("$dir does not exist. Do you wish to create it? (y/n)")) {
+    unless (askyn("$dir does not exist. Do you wish to create it?")) {
       die "Installation process aborted\n";
     }
     create_dir($dir);
