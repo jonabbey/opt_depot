@@ -51,8 +51,8 @@
 # Jonathan Abbey 31 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.11 $
-# Last Mod Date: $Date: 2003/08/14 01:55:21 $
+# Version: $Revision: 1.12 $
+# Last Mod Date: $Date: 2003/08/14 01:57:51 $
 #
 ##########################################################################
 
@@ -99,7 +99,7 @@ close_log();
 
 # MAIN PROCESS
 
-$file_string = "-f$config_file -d$depot -l$logdir -b$dest";
+$file_string = "-f$config_file -d$depot -l$logfile -b$dest";
 
 # the -s flags are to specify that the scripts are being run from
 # opt_setup, and so don't need to do their own lock handling
