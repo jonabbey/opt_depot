@@ -53,8 +53,8 @@
 # Jonathan Abbey 14 October 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.22 $
-# Last Mod Date: $Date: 2003/10/15 03:35:58 $
+# Version: $Revision: 1.23 $
+# Last Mod Date: $Date: 2003/10/15 03:56:12 $
 #
 #####################################################################
 
@@ -643,7 +643,7 @@ sub print_info {
 
       if (($prev_installed{$pack} == $pack_priority) &&
 	  ($installed{$pack} != $pack_priority)) {
-	if (!$switches{'q'} && !$test) {
+	if (!$switches{'q'} && !$test && !$add_only) {
 	  print LOG "\tRemoved link: $pack\n";
 
 	  if (defined $excluded_by{$pack}) {
@@ -651,7 +651,7 @@ sub print_info {
 	  }
 	}
 
-	if ($verbose || $test) {
+	if ($verbose || $test && !$add_only) {
 	  print "\tRemoved link: $pack\n";
 
 	  if (defined $excluded_by{$pack}) {
