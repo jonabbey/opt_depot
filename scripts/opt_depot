@@ -55,8 +55,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.42 $
-# Last Mod Date: $Date: 2003/09/17 19:42:40 $
+# Version: $Revision: 1.43 $
+# Last Mod Date: $Date: 2003/10/06 22:07:31 $
 #
 #####################################################################
 
@@ -69,6 +69,9 @@ use Opt_depot::Common;
 $version = "3.0";
 
 ## defaults #########################################################
+
+$debug = 1;
+$force_verbose = 1;
 
 # configuration file containing $dest, $depot and $logdir vars
 
@@ -475,7 +478,8 @@ sub smartlink {
   # if there's nothing in the location of our link target, make the
   # link and get out
 
-  if (!-e $link) {
+  if (!-e $link && !-l $link) {
+    logprint("Smartlink: No $link found, proceeding\n", -1);
     return fablink($link, $target);
   }
 
@@ -494,7 +498,11 @@ sub smartlink {
   # okay, we've got a symlink at $link.  Let's find where it's pointing
   # to.
 
+  logprint("Smartlink found already exists link $link->" . readlink("$link") . "\n", -1);
+
   $oldtarget = resolve(extractdir($link), readlink($link));
+
+  logprint("Smartlink: oldtarget is $oldtarget\n", -1);
 
   # no change?  don't do anything.
 
@@ -822,7 +830,7 @@ sub synthesize_dir {
 #
 #                                                             depth_first
 # input: * Two packages for comparison
-#        * The current directory under /$dest (ie lib, bin, info, include)
+#        * The current directory under $dest (ie lib, bin, info, include)
 #
 # uses: merge_list associative array, global @all_dirs
 #
@@ -851,7 +859,7 @@ sub depth_first {
     $all_dirs[0] = $new_pack_root;
   }
 
-  if (0) {
+  if ($debug) {
     print "\nentering depth_first\n--------------------\n\@all_dirs = ";
     printwrap(join(', ', @all_dirs));
     print "\n\$new_pack_root = $new_pack_root\n";
@@ -903,19 +911,15 @@ sub depth_first {
     $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
     $old_file =~ s/^$temp/$old_pack_root/;
 
-    if (0) {
-      printwrap("\nHey! \$new_file is $new_file, \$old_file is $old_file\n");
-    }
+    logprint("\nHey! \$new_file is $new_file, \$old_file is $old_file\n", -1);
 
     $pack_prefix = first_path_element($new_pack_root);
 
     if ($current_dir =~ /^$pack_prefix\/$opt_directory\/(.*)$/) {
       $merge_target = "$dest/$opt_directory/$1";
-      if (0) {
-	print "\nHey!  \$merge_target is $merge_target\n";
-      }
+      logprint("\nHey!  \$merge_target is $merge_target\n", -1);
     } else {
-      print "Error, couldn't break the '$pack_prefix/$opt_directory' prefix from '$current_dir'\n";
+      logprint("Error, couldn't break the '$pack_prefix/$opt_directory' prefix from '$current_dir'\n", 1);
       next;
     }
 
@@ -989,15 +993,17 @@ sub link_me {
 	if (-l "$dest/$common_dir" ) {
 	  # link already exists in $dest
 
+	  logprint("Found already exists link $dest/$common_dir->" . readlink("$dest/$common_dir") . "\n", -1);
+
 	  $old_target = resolve(extractdir("$dest/$common_dir"),
 				readlink("$dest/$common_dir"));
 
 	  if ($old_target !~ /^$depot\/(.*)/) {
 	    # old link points outside of the depot tree, leave it alone
 	    next;
-	  } else {
-	    $old_pack = $1;
 	  }
+
+	  $old_pack = $1;
 
 	  # $old_pack now has a depot directory-relative path from
 	  # the old link
@@ -1059,6 +1065,8 @@ sub link_me {
       # the current "$dest/$subdir/$file", if any.  if so, we'll
       # unlink the old and link the new.
 
+      logprint("Calling smartlink on ($package, $depot/$package/$common_dir, $dest/$common_dir)\n", -1);
+
       smartlink($package, "$depot/$package/$common_dir", "$dest/$common_dir");
     } # foreach $file
   } # foreach $package
@@ -1104,7 +1112,11 @@ Usage:  opt_depot [-svnqmrR] [-f\"config file\"] [-d\"depot dir\"]
 ENDUSAGE
 
 read_prefs($usage_string, $local_config_file, "svnqmrR", @ARGV);
-init_log("opt_depot", $version);
+init_log("opt_depot", $version, $debug);
+
+if ($force_verbose) {
+  $switches{'v'} = '-v';
+}
 
 if (!check_lock("opt_depot")) {
   logprint("Can't create lockfile, aborting\n", 1);

@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.35 $
-# Last Mod Date: $Date: 2003/09/22 07:15:18 $
+# Version: $Revision: 1.36 $
+# Last Mod Date: $Date: 2003/10/06 22:07:32 $
 #
 #####################################################################
 
@@ -294,6 +294,117 @@ ENDSITES3
 	  action => 'opt_depot',
 	  priority => 'packB',
 	  error_count => 0);
+
+# this test does a bit more with the .priority file.. in particular,
+# we test to make sure that explicit file reference in .priority
+# always overrides alternate file choices that are not in the
+# .priority file, and that a subdirectory priority otherwise wins.
+# Note that we start off with bin/hi pointing to packB's bin/hi, and
+# we want to end with bin/hi pointing to packA's bin/hi..  this lets
+# us test link replacement as well as the subdirectory/file logic.
+
+%test4b = (label  => 'Multi-level priority link subdirectory test',
+	   root   => $test_dir,
+	   start  => ['bin/hi->depot/packB/bin/hi',
+		      'include/test.h->depot/packA/include/test.h',
+		      'lib/perl5->depot/packA/lib/perl5/',
+		      'depot/packA/bin/hi',
+		      'depot/packA/bin/hello',
+		      'depot/packA/lib/perl5/spam/x.pl',
+		      'depot/packA/include/test.h',
+		      'depot/packB/bin/hi',
+		      'depot/packB/bin/hello',
+		      'depot/packB/lib/packB.so',
+		      'depot/packB/lib/perl5/spam/y.pl',
+		      'depot/packB/include/test.h',
+		      'depot/packC/include/test.h',
+		      'depot/packC/lib/perl5/spam/mod/packC.pm'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'bin/hi->depot/packA/bin/hi',
+		      'bin/hello->depot/packB/bin/hello',
+		      'lib/packB.so->depot/packB/lib/packB.so',
+		      'lib/perl5/', 'lib/perl5/.made_by_opt_depot',
+		      'lib/perl5/spam/', 'lib/perl5/spam/.made_by_opt_depot',
+		      'lib/perl5/spam/x.pl->depot/packA/lib/perl5/spam/x.pl',
+		      'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
+		      'lib/perl5/spam/mod->depot/packC/lib/perl5/spam/mod',
+		      'include/test.h->depot/packB/include/test.h'],
+	   endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+	   conf   => $testconfA,
+	   sites  => $testsitesA,
+	   action => 'opt_depot',
+	   priority => "packA/bin\npackB/bin/hello\npackB",
+	   error_count => 0);
+
+# this one is to test the proposition, put forth in the opt_depot man
+# page, that we don't do recursive directory unification if we have
+# priority for a link which can't be recursively unified.  In this
+# case, the interesting question is whether or not opt_depot will
+# properly preserve the link lib/perl5->depot/packA/lib/perl5, whose
+# target is not a directory, and which has been given priority
+
+%test4c = (label  => 'Recursive link maintenance priority test',
+	   root   => $test_dir,
+	   start  => ['bin/hi->depot/packB/bin/hi',
+		      'include/test.h->depot/packA/include/test.h',
+		      'lib/perl5->depot/packA/lib/perl5',
+		      'depot/packA/bin/hi',
+		      'depot/packA/bin/hello',
+		      'depot/packA/lib/perl5',
+		      'depot/packA/include/test.h',
+		      'depot/packB/bin/hi',
+		      'depot/packB/bin/hello',
+		      'depot/packB/lib/packB.so',
+		      'depot/packB/lib/perl5/spam/y.pl',
+		      'depot/packB/include/test.h',
+		      'depot/packC/include/test.h',
+		      'depot/packC/lib/perl5/spam/mod/packC.pm'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'bin/hi->depot/packA/bin/hi',
+		      'bin/hello->depot/packB/bin/hello',
+		      'lib/packB.so->depot/packB/lib/packB.so',
+		      'lib/perl5->depot/packA/lib/perl5',
+		      'include/test.h->depot/packA/include/test.h'],
+	   endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+	   conf   => $testconfA,
+	   sites  => $testsitesA,
+	   action => 'opt_depot',
+	   priority => "packA\npackB/bin/hello\npackB",
+	   error_count => 0);
+
+
+# this is a modification of test4c, designed to verify that we won't
+# do recursive unification on top of a symlink pointing outside the
+# depot tree.
+
+%test4d = (label  => 'Recursive unification conflicting external link test',
+	   root   => $test_dir,
+	   start  => ['bin/hi->depot/packB/bin/hi',
+		      'include/test.h->depot/packA/include/test.h',
+		      'lib/perl5->/external/lib/perl5',
+		      'depot/packA/bin/hi',
+		      'depot/packA/bin/hello',
+		      'depot/packA/lib/perl5',
+		      'depot/packA/include/test.h',
+		      'depot/packB/bin/hi',
+		      'depot/packB/bin/hello',
+		      'depot/packB/lib/packB.so',
+		      'depot/packB/lib/perl5/spam/y.pl',
+		      'depot/packB/include/test.h',
+		      'depot/packC/include/test.h',
+		      'depot/packC/lib/perl5/spam/mod/packC.pm'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'bin/hi->depot/packA/bin/hi',
+		      'bin/hello->depot/packB/bin/hello',
+		      'lib/packB.so->depot/packB/lib/packB.so',
+		      'lib/perl5->/external/lib/perl5',
+		      'include/test.h->depot/packA/include/test.h'],
+	   endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+	   conf   => $testconfA,
+	   sites  => $testsitesA,
+	   action => 'opt_depot',
+	   priority => "packA\npackB/bin/hello\npackB",
+	   error_count => 0);
 
 %test5 = (label  => 'Exclude link replacement test',
 	  root   => $test_dir,
@@ -568,7 +679,8 @@ ENDSITES3
 	   error_count => 0);
 
 @tests = (\%test0, \%test1, \%test2, \%test3,
-	  \%test4, \%test5, \%test6, \%test7,
+	  \%test4, \%test4b, \%test4c, \%test4d,
+	  \%test5, \%test6, \%test7,
 	  \%test8, \%test9, \%test10, \%test11,
 	  \%test12, \%test13, \%test14, \%test15);
 
@@ -994,7 +1106,7 @@ sub expected_check {
       # an inappropriate form, unexpected_check will have caught that
       # and complained.
 
-      if (!-e $itempath) {
+      if (!-e $itempath && !-l $itempath) {
 	print "Error, symlink missing in test " . $test_href->{'label'} . "\n";
 	print "symlink $itempath is supposed to point to $desired_target\n\n";
 	$error_count++;
@@ -1107,8 +1219,17 @@ foreach $test (@tests) {
   print "\n------------------------------------------------------------\n";
   print "Running " . $test->{'action'} . " test '" . $test->{'label'} . "'\n\n";
   setup_test($test);
+
   if (!run_test($test)) {
     $test_failures++;
+
+    print "\n";
+    if (askyn("There were failures encountered.. do you want to stop testing and examine the test tree in $test_root?")) {
+      $tests_run++;
+      print "\n------------------------------------------------------------\n";
+      print "Tests Ran: $tests_run\tTests Succeeded: " . ($tests_run-$test_failures) . "\tTests Failed: " . $test_failures . "\n";
+      exit 1;
+    }
   }
   $tests_run++;
 }
