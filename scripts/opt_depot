@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.37 $
-# Last Mod Date: $Date: 2003/08/18 21:58:52 $
+# Version: $Revision: 1.38 $
+# Last Mod Date: $Date: 2003/08/19 01:24:02 $
 #
 #####################################################################
 
@@ -904,12 +904,6 @@ sub depth_first {
     printwrap("\nHey! \$new_file is $new_file, \$old_file is $old_file\n");
 
     $pack_prefix = first_path_element($new_pack_root);
-
-    if ($pack_prefix ne $new_pack_root) {
-      print "Woah, guess the first_path_element call in depth_first was needed after all..\n";
-      print "\$pack_prefix = $pack_prefix\n";
-      print "\$new_pack_root = $new_pack_root\n";
-    }
 
     if ($current_dir =~ /^$pack_prefix\/$opt_directory\/(.*)$/) {
       $merge_target = "$dest/$opt_directory/$1";
