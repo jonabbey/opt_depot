@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.27 $
-# Last Mod Date: $Date: 2003/08/13 22:59:47 $
+# Version: $Revision: 1.28 $
+# Last Mod Date: $Date: 2003/08/15 02:43:45 $
 #
 #####################################################################
 
@@ -457,287 +457,209 @@ sub makedir {
 
 #########################################################################
 #
-#                                                                 ourlink
+#                                                               smartlink
 #
-# input: $package - name of package containing $file
-#        $file - an absolute filename to possibly generate a link to
+# Check a proposed new link for conflicts, exclusion, and priority.. if
+# the new link should be made, smartlink will call fablink to get the job
+# done.
+#
+# input: $package - name of package containing $target
+#        $target - an absolute filename to possibly generate a link to
 #        $link - the absolute filename of the link to be generated
 #
-# output: potentially generates a symbolic link from $link to $file
+# output: potentially generates a symbolic link from $link to $target
 #         returns 1 if a new link was made, 0 otherwise
 #
-# ourlink() may not generate a link if an existing link has a higher
-# priority, or if $file or the package that $file is under has been
+# smartlink() may not generate a link if an existing link has a higher
+# priority, or if $target or the package that $target is under has been
 # excluded due to a reference in the .exclude file.
 #
-# in general, ourlink() will not overwrite an existing link unless the
+# in general, smartlink() will not overwrite an existing link unless the
 # .priority or .exclude file specifically gives the new link priority
 # over the existing link.
 #
 #########################################################################
-sub ourlink {
-  my ($package, $file, $link) = @_;
+sub smartlink {
+  my ($package, $target, $link) = @_;
 
-  my ($return_value, $where, $oldpackage, $directory, $rwhere);
-
-  $return_value = 0;
+  my ($oldtarget, $replace_it, $reason);
 
   # if we are supposed to exclude this file, skip linking it
 
-  if (!pathcheck($file, *exclude) && !$packexclude{$package}) {
-
-    # if it already exists then do not make link unless the file has
-    # priority..  we'll check this down below if we need to.
-
-    if (-l $link) {
-      $rwhere=readlink($link);
-
-      # extract the directory containing the file
-      # referenced in $link
-
-      $directory = extractdir($link);
-
-      # find what the link's absolute target is.
-
-      $where = resolve($directory, $rwhere);
-
-      # $where is the target of an existing symlink in place
-      # $file is the name of a file that we have been instructed to
-      # link up into the $dest directory structure
-      #
-      # if $where does not equal $file, we need to look to see if we should
-      # replace the existing link with a new link
-      #
-      # note that we never want to touch an existing link that points outside
-      # of our $depot directory.. we'll check both of these conditions
-      # with this if
-
-      if (("$where" ne "$file") && ("$where" =~ /^$depot/)) {
-
-	$where =~ /^$depot\/([^\/]*)/;
-	$oldpackage = $1;
-
-	$do_it = 0;
-	$nope = 0;
-
-	# if the old link points to an explicitly excluded target,
-	# retarget the link
-
-	if ($exclude{$where}) {
-	  $do_it = 1;
-	}
-
-	# if the old link points to a target, in an excluded directory
-	# tree, retarget the link
-
-	if (!$do_it && pathcheck($where, *exclude)) {
-	  $do_it = 1;
-	}
-
-	# if the new link target has priority and the old one doesn't,
-	# retarget the link
-
-	if (!$do_it && $priority{$file} && !$priority{$where}) {
-	  $do_it = 1;
-	}
-
-	if (!$do_it && !$priority{$file} && $priority{$where}) {
-	  $nope = 1;
-	}
-
-	# if the new link's priority is numerically lower than the old
-	# one's, retarget the link
-	#
-	# if the old link's priority is numerically lower, then we
-	# know for sure that we should keep the old link, and we won't
-	# bother to do any more tests
-
-	if (!$do_it && !$nope && $priority{$file} && $priority{$where}) {
-	  if ($priority{$file} < $priority{$where}) {
-	    $do_it = 1;
-	  } else {
-	    $nope = 1;
-	  }
-	}
-
-	# if the new link's package has priority and the old link's
-	# package doesn't, retarget the link
-
-	if (!$nope && !$do_it && $priority{"$depot/$package"} && !$priority{"$depot/$oldpackage"}) {
-	  $do_it = 1;
-	}
-
-	if (!$nope && !$do_it && !$priority{"$depot/$package"} && $priority{"$depot/$oldpackage"}) {
-	  $nope = 1;
-	}
-
-	# if the new link's package is numerically lower than the old
-	# one, retarget the link
-	#
-	# if the old link's package is numerically lower, then we know
-	# for sure that we should keep the old link, and we won't
-	# bother to do any more tests
-		
-	if (!$nope && !$do_it && $priority{"$depot/$package"} && $priority{"$depot/$oldpackage"}) {
-	  if ($priority{"$depot/$package"} < $priority{"$depot/$oldpackage"}) {
-	    $do_it = 1;
-	  } else {
-	    $nope = 1;
-	  }
-	}
-
-	# if the new link is under a directory that has priority and
-	# the old link is not, and we have not previously seen any
-	# decisive reason to keep the old link, retarget the link
-
-	if (!$nope && !$do_it && pathcheck($where, *priority) && !pathcheck($file, *priority)) {
-	  $do_it = 1;
-	}
-
-	if (!$nope && !$do_it && !pathcheck($where, *priority) && pathcheck($file, *priority)) {
-	  $nope = 1;
-	}
-
-	# if the new link's target is under a directory that has a
-	# lower numeric priority value than the old link, retarget the
-	# lin.  if the old link's target is under a directory that has
-	# a lower numeric priority, then we know for sure that we
-	# should keep the old link, and we won't bother to do any more
-	# tests
-
-	if (!$nope && !$do_it && pathcheck($where, *priority) && pathcheck($file, *priority)) {
-	  if (pathcheck($file, *priority) < pathcheck($where, *priority)) {
-	    $do_it = 1;
-	  } else {
-	    $nope = 1;
-	  }
-	}
-
-	if ($do_it) {
-
-	  # yay!  we get to replace the old link with a new link!
-
-	  $rfile=$file;
-
-	  # if we are in test mode, just show what we would do
-
-	  if ($switches{'n'}) {
-	    if ($switches{'v'}) {
-	      print ("  rm:     $link->\n");
-	      print ("          $where\n");
-	      print ("  link:   $link ->\n");
-	      print ("          $rfile\n");
-	    }
-	  } else {
-	    if (!unlink($link)) {
-	      logprint("  ERROR:  Could not remove $file", 0);
-	    } else {
-	      logprint("  rm:     $link->\n", 0);
-	      logprint("          $where\n", 0);
-
-	      push(@conflicts, "  $where (removed for: $file)\n");
-	    }
-
-	    if (!symlink($rfile, $link)) {
-	      print ("  ERROR:  Could not make link to $file");
-	      push(@conflicts, "  $file (link error)\n");
-	    } else {
-	      logprint("  link:   $link ->\n", 0);
-	      logprint("          $rfile\n", 0);
-
-	      $return_value = 1;
-	    }
-	  }
-	} else {
-
-	  # aw!  we don't get to make our link
-
-	  if (pathcheck($where, *priority) || $priority{$oldpackage}) {
-	    if ($switches{'z'}) {
-	      # Hi! You've found the secret debug switch!
-	      print (LOG "  OVERRIDDEN:  Conflict:  $file and \n");
-	      print (LOG "                          $where (file with priority)\n");
-	      print (LOG "               Did not make link to $file\n");
-	    }
-	  } else {
-	    if (!($switches{'q'})) {
-	      print (LOG "  ERROR:  Conflict:  $file and \n");
-	      print (LOG "                     $where\n");
-	      print (LOG "          Did not make link to $file\n");
-	    }
-
-	    if ($switches{'z'}) {
-	      # No one can stop the secret debug switch!
-	      print ("  ERROR:  Conflict:  $file and \n");
-	      print ("                     $where\n");
-	      print ("          Did not make link to $file\n");
-	    }
-	  }
-		
-	  # If this conflict wasn't due to a specific order to override in
-	  # .priority or .exclude, then push it on to our conflicts list.
-
-	  if (!$do_it) {
-	    push(@conflicts,"  $file (conflict: $where)\n");
-	  }
-	}
-      }
-
-      # at this point, we had a link already existing where we wanted
-      # to put one, and it either pointed where we wanted it to point,
-      # or it pointed to a location out of our control.  In either
-      # case, we won't do anything, and we'll end our if-else processing
-      # here
-
-    } else {
-
-      # well, our prospective link-to-be, $link was not a symbolic link.
-      # let's see if it exists at all.  if it exists and is not a symbolic
-      # link, we can't touch it.
-
-      if (-e $link){
-
-	# it exists in some non-symlink fashion.  can't touch it.
-	
-	logprint("  ERROR:  $link already exists and is not a link\n", 0);
-	logprint("          Did not make link to link $file\n", 0);
-
-	push(@conflicts,"  $file (conflict: physical file)\n");
-      } else {
-
-	# okay, there's nothing standing in our way.  make the link.
-
-	# if we're in test mode, just show the action to take
-
-	if ($switches{'n'}) {
-	  if ($switches{'v'}) {
-	    print ("  link:   $link ->\n");
-	    print ("          $file\n");
-	  }
-	} elsif (!symlink($file,$link)) {
-	  logprint("  ERROR: Could not link $file\n", 0);
-	  push (@conflicts, "  $file (link failed)\n");
-	} else {
-	  # yay!
-
-	  logprint("  link:   $link ->\n", 0);
-	  logprint("          $file\n", 0);
-
-	  $return_value = 1;
-	}			
-      }
-    }
-  } elsif ($switches{'v'}) {
-    # $file or $package was excluded.  let the user know if he is interested.
-
-    if ($exclude{$file}) {
-      print "  *** excluding $file\n";
-    }
+  if (pathcheck($target, *exclude) || $packexclude{$package}) {
+    logprint(" *** excluding $target\n", 0);
+    return 0;
   }
 
-  # ta-da!
+  # if there's nothing in the location of our link target, make the
+  # link and get out
 
-  return $return_value;
+  if (!-e $link) {
+    return fablink($link, $target);
+  }
+
+  # if there's something other than a symlink (a physical file,
+  # directory, socket, etc.) report and get out
+
+  if (!-l $link) {
+    logprint("  ERROR:  $link already exists and is not a link\n", 0);
+    logprint("          Did not make link to link $target\n", 0);
+
+    push(@conflicts,"  $target (conflict: physical file/directory)\n");
+
+    return 0;
+  }
+
+  # okay, we've got a symlink at $link.  Let's find were it's pointing
+  # to.
+
+  $oldtarget = resolve(extractdir($link), readlink($link));
+
+  # no change?  don't do anything.
+
+  if ("$oldtarget" eq "$target") {
+    return 0;
+  }
+
+  # if the existing link points out of $depot, we're done
+
+  if ("$oldtarget" !~ /^$depot\//) {
+    return 0;
+  }
+
+  # now, we've got a new link into the depot tree to make, maybe..
+  # let's check out our priority and exclusions for the old target
+  # vs. the new
+
+  $replace_it = 0;
+  $reason = undef;
+
+  # if the old link points to a target, in an excluded directory
+  # tree, retarget the link
+
+  if (pathcheck($oldtarget, *exclude)) {
+    $replace_it = 1;
+    goto go_man_go;
+  }
+
+  #
+  # okay, from here on out, we're just interested in the relative
+  # priority of the old and new targets.  We'll first check for
+  # an explicit record of the given file.. we always give explicitly
+  # listed files priority over directory paths.
+  #
+
+  # if the new link target has explicit priority and the old one
+  # doesn't, retarget the link
+
+  if ($priority{$target} && !$priority{$oldtarget}) {
+    $replace_it = 1;
+    goto go_man_go;
+  }
+
+  # if the oldtarget has explicit priority, abort
+
+  if (!$priority{$target} && $priority{$oldtarget}) {
+    $replace_it = 0;
+    $reason = "priority";
+    goto go_man_go;
+  }
+
+  # if the new link's explicit priority is numerically lower (but non-zero)
+  # than the old one's, retarget the link
+  #
+  # if the old link's explicit priority is numerically lower, then we
+  # know for sure that we should keep the old link, and we won't
+  # bother to do any more tests
+
+  if ($priority{$target} && $priority{$oldtarget}) {
+    if ($priority{$target} < $priority{$oldtarget}) {
+      $replace_it = 1;
+    } else {
+      $replace_it = 0;
+      $reason = "priority";
+    }
+
+    goto go_man_go;
+  }
+
+  # if the new link is under a directory that has priority and
+  # the old link is not, and we have not previously seen any
+  # decisive reason to keep the old link, retarget the link
+
+  if (pathcheck($oldtarget, *priority) && !pathcheck($target, *priority)) {
+    $replace_it = 1;
+    goto go_man_go;
+  }
+
+  if (!pathcheck($oldtarget, *priority) && pathcheck($target, *priority)) {
+    $replace_it = 0;
+    $reason = "priority";
+    goto go_man_go;
+  }
+
+  # if the new link's target is under a directory that has a lower
+  # non-zero priority value than the old link, retarget the link.
+
+  if (pathcheck($oldtarget, *priority) && pathcheck($target, *priority)) {
+    if (pathcheck($target, *priority) < pathcheck($oldtarget, *priority)) {
+      $replace_it = 1;
+    } else {
+      $replace_it = 0;
+      $reason = "priority";
+    }
+
+    goto go_man_go;
+  }
+
+ go_man_go:
+
+  if ($replace_it) {
+    return fablink($link, $target);
+  }
+
+  if ($reason eq "priority") {
+    logprint("  OVERRIDDEN:  Conflict:  $target and \n", -1);
+    logprint("                          $oldtarget (file with priority)\n", -1);
+    logprint("               Did not make link to $target\n", -1);
+  } else {
+    push(@conflicts,"  $target (conflict: $oldtarget)\n");
+  }
+
+  return 0;
+}
+
+#########################################################################
+#
+#                                                                 fablink
+#
+# Actually create a symlink in the filesystem, removing an old one
+# if necessary
+#
+#########################################################################
+sub fablink {
+  my ($newlink, $target) = @_;
+
+  # if we're in test mode, just show the action to take
+
+  if ($switches{'n'}) {
+    print ("  link:   $newlink ->\n");
+    print ("          $target\n");
+
+    return 1;
+  }
+
+  if (!symlink($target,$newlink)) {
+    logprint("  ERROR: Could not link $newlink\n", 0);
+    push (@conflicts, "  $target (link failed)\n");
+
+    return 0;
+  }
+
+  logprint("  link:   $newlink ->\n", 0);
+  logprint("          $target\n", 0);
+
+  return 1;
 }
 
 #########################################################################
@@ -835,7 +757,7 @@ sub manlink {
 	      }
 	    }
 				
-	    if (ourlink($package, "$depot/$package/man/$file/$mfile", "$dest/man/man$newsuf/$mfile")) {
+	    if (smartlink($package, "$depot/$package/man/$file/$mfile", "$dest/man/man$newsuf/$mfile")) {
 	      if ($newsuf ne $suf) {
 		logprint("WARNING: suffix does not match directory for $depot/$package/man/$file/$mfile\n", 0);
 		logprint("         Placed in $dest/man/man$newsuf\n", 0);
@@ -877,7 +799,7 @@ sub manlink {
 	  makedir("$dest/man/cat$1");
 	}
 
-	ourlink($package, "$depot/$package/man/$file", "$dest/man/man$1/$file");
+	smartlink($package, "$depot/$package/man/$file", "$dest/man/man$1/$file");
 	$mademan=1;
       }
     }
@@ -1175,7 +1097,7 @@ sub link_me {
 	# the current "$dest/$subdir/$file", if any.  if so, we'll
 	# unlink the old and link the new.
 
-	ourlink($package, "$depot/$package/$subdir/$file", "$dest/$subdir/$file");
+	smartlink($package, "$depot/$package/$subdir/$file", "$dest/$subdir/$file");
       }
     }
   }
