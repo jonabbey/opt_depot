@@ -212,7 +212,7 @@ mkdir "$dir/man",0777;
 mkdir "$dir/man/manl",0777;
 
 foreach $script (@opt_scripts) {
-  if (-e $script) {
+  if (-e "scripts/$script") {
     &add_line($new_line, $script);
     system "cp scripts/$script.new $dir/bin/$script";
     chmod 0755, "$dir/bin/$script";
