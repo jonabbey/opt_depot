@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.16 $
-# Last Mod Date: $Date: 2003/08/13 22:59:16 $
+# Version: $Revision: 1.17 $
+# Last Mod Date: $Date: 2003/08/13 23:21:38 $
 #
 #####################################################################
 
@@ -81,6 +81,8 @@ our $usage_string;
 our $log_init;
 our $logfile = "";
 our $lockset = 0;
+our $debug = 1;
+our $logdebug = 1;
 
 #########################################################################
 #
@@ -233,7 +235,7 @@ sub safifystring {
 #
 #                                                                init_log
 #
-# input: $appname, $version
+# input: $appname, $version, $dodebug
 #
 # uses: $logdir $dest %switches package globals
 #
@@ -245,24 +247,26 @@ sub safifystring {
 #
 #########################################################################
 sub init_log {
-  my ($appname, $version) = @_;
+  my ($appname, $version, $dodebug) = @_;
 
-  my ($buf, @dest, $log, $temphandle);
+  my ($buf, @dest, $temphandle);
+
+  if ($dodebug) {
+    $debug = 1;
+  }
 
   # name log file, with colons separating the path of the log target
 
   if ($logfile eq "") {
     @dest= split (/\//, $dest);
     shift(@dest);
-    $log = "$logdir/" . join(':',@dest);
-  } else {
-    $log = $logfile;
+    $logfile = "$logdir/" . join(':',@dest);
   }
 
   # open log file and time stamp entry
 
   if (!$switches{'q'}) {
-    open (LOG, ">> $log") || die "Could not open $log";
+    open (LOG, ">> $logfile") || die "Could not open $logfile";
 
     # don't do command buffering on LOG
 
@@ -314,22 +318,24 @@ sub close_log {
 #
 # input: $str - A string to print and/or log
 #        $level - A numeric value.. if 0, print to stdout only on
-#                 -v being set.  If not 0, print regardless of
-#                 the presence or absence of -v
+#                 -v being set.  If less than 0, print to stdout only
+#                 if $debug is set.
+#
+#                 If $level is less than 0, the string will only be logged
+#                 if $logdebug is set.
 #
 ##########################################################################
 sub logprint {
   my ($str,$level) = @_;
 
-  if ($level || $switches{'v'}) {
+  if ($level > 0 || ($level == 0 && $switches{'v'}) || ($level < 0 && $debug)) {
     print $str;
   }
 
-  if ($log_init) {
+  if (($level >= 0 || $logdebug) && $log_init) {
     print LOG $str;
   }
 }
-
 
 ##########################################################################
 #
@@ -340,19 +346,45 @@ sub logprint {
 #
 ##########################################################################
 sub printparams {
-  my ($key, $switch_string, $file_string);
+  my ($key, $switch_string, $file_string, $first);
 
   foreach $key (keys %switches) {
     $switch_string .= "$switches{$key} ";
   }
 
-  $file_string = "-f" . safifystring($config_file) .
-    " -d" . safifystring($depot) . " -l" . safifystring($logdir) .
-      " -b" . safifystring($dest);
+  logprint("Params: ", -1);
+  logprint("$switch_string\n",-1);
+  logprint("        dest: " . safifystring($dest) . "\n", -1);
+  logprint("        depot: " . safifystring($depot) . "\n", -1);
+  logprint("        config: " . safifystring($config_file) . "\n", -1);
+  logprint("        sitefile: " . safifystring($sitefile) . "\n", -1);
+  logprint("        logfile: " . safifystring($logfile) . "\n", -1);
 
-  logprint("Params:", 0);
-  logprint(wrap("","       ",$switch_string, $file_string), 0);
-  logprint("\n\n", 0);
+  logprint("        subdirs: ", -1);
+
+  $first = 1;
+  foreach (@subdirs) {
+    if (!$first) {
+      logprint(", ", -1);
+    }
+    logprint(safifystring($_), -1);
+    $first = 0;
+  }
+
+  if (!defined $switches{'R'} && defined $switches{'r'}) {
+    logprint("        recurse: ", -1);
+
+    $first = 1;
+    foreach (@unify_list) {
+      if (!$first) {
+	logprint(", ", -1);
+      }
+      logprint(safifystring($_), -1);
+      $first = 0;
+    }
+  }
+
+  logprint("\n", -1);
 }
 
 #########################################################################
