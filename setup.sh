@@ -41,9 +41,15 @@
 # Written by: Computer Science Division, Applied Research Laboratories,
 # University of Texas at Austin  opt-depot@arlut.utexas.edu
 #
+# v3.0
+# Rewrote setup.sh to provide a clean, consistent interface on various
+# UNIX systems.
+#
+# Jonathan Abbey 8 August 2003
+#
 # Release: $Name:  $
-# Version: $Revision: 1.11 $
-# Last Mod Date: $Date: 2003/08/08 19:46:38 $
+# Version: $Revision: 1.12 $
+# Last Mod Date: $Date: 2003/08/08 19:48:23 $
 #
 ###############################################################################
 
@@ -162,5 +168,6 @@ done
 echo
 echo "The following line will be added to the opt_depot scripts:"
 echo "#!$perl_loc"
+echo
 
 $perl_loc scripts/opt_install $perl_loc
