@@ -9,7 +9,7 @@
 #
 #************************************************************************
 #
-# Copyright (C) 1997  The University of Texas at Austin.
+# Copyright (C) 1993-2003  The University of Texas at Austin.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,8 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program; if not, write to the Free Software
-#    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+#    02111-1307, USA
 #
 #    Written by: Computer Science Division, Applied Research Laboratories,
 #    University of Texas at Austin  opt-depot@arlut.utexas.edu
@@ -38,11 +39,15 @@
 # and added ability to access directory info from a configuration file
 # Erik Grostic 15 May 1997
 #
-# v2.01 
+# v2.01
 # Fixed a bug in procargs that had to do with the regex matching for
 # re-defining the destination directory by using command line parameters.
 # A -b option must now be given with the destination (or base) directory
 # Erik Grostic 10 July 1997
+#
+# Release: $Name:  $
+# Version: $Revision: 1.2 $
+# Last Mod Date: $Date: 2003/06/23 20:20:57 $
 #
 #####################################################################
 
@@ -55,8 +60,6 @@ $version = "2.01";
 $pack_ex = ".exclude";                  # per-package exclusion file name
 $catman = "catman -w -M $dest/$man";	# command to rebuild the whatis database
                                         # for the man command..
-
-# Note: The definitions for .exclude and .priority can be found under MAIN
 
 $man = "man";			# <-  gets special attention as a subdir
 				# should always be "man" for practical
@@ -124,14 +127,15 @@ $opt_file = ".made_by_opt_depot"; # this file is created by opt_depot
 #
 #####################################################################
 sub is_man_there {
-    my ($subdirectory);
-    
-    $man_is_there = 0;  # assume it ain't there
-    foreach $subdirectory (@subdirs){
-	if ($subdirectory eq "$man"){ 
-	    $man_is_there = 1;
-	}
+  my ($subdirectory);
+
+  $man_is_there = 0;  # assume it ain't there
+
+  foreach $subdirectory (@subdirs) {
+    if ($subdirectory eq "$man") {
+      $man_is_there = 1;
     }
+  }
 }
 
 ##########################################################################
@@ -143,83 +147,90 @@ sub is_man_there {
 #         $dest and $depot variables
 #
 ##########################################################################
-
 sub get_vars {
-    open(CONFIG,"$config_file") || die "Could not open $config_file\n";
-    while (<CONFIG>){
-	if (/^Base:\s*(.*)/){
-	    $dest = $1;
-	}
-	if (/^Depot:\s*(.*)/){
-	    $depot = $1;
-	}
-	if (/^Log:\s*(.*)/){
-	    $logdir = $1;
-	}
-	if (/^Subdirs:\s*(.*)/){
-	    $dirs = $1;
-	    $dirs =~ tr/\s//;
-	    @subdirs = split /,/, $dirs;
-	}
-	if (/^Recurse:\s*(.*)/){
-	    $rdirs = $1;
-	    $rdirs =~ tr/\s//;
-	    @path_list = split /,/, $rdirs;
-	    
-	}
+  open(CONFIG,"$config_file") || die "Could not open $config_file\n";
+
+  while (<CONFIG>){
+    if (/^Base:\s*(.*)/) {
+      $dest = $1;
+    }
+
+    if (/^Depot:\s*(.*)/) {
+      $depot = $1;
+    }
+
+    if (/^Log:\s*(.*)/) {
+      $logdir = $1;
+    }
+
+    if (/^Subdirs:\s*(.*)/) {
+      $dirs = $1;
+      $dirs =~ tr/\s//;
+      @subdirs = split /,/, $dirs;
+    }
+
+    if (/^Recurse:\s*(.*)/) {
+      $rdirs = $1;
+      $rdirs =~ tr/\s//;
+      @path_list = split /,/, $rdirs;
+    }
 	
-    } close(CONFIG);
-    
-    
+  }
+
+  close(CONFIG);
+
 # The following lines are there in case a client has a local copy of the 
 # configuration file. This file should be placed into the $dest directory,
 # and will override the file on the server.
-    
-    if (-e "$dest/opt.config"){
-	open(CONFIG,"$dest/opt.config") || die "Could Not open $dest/opt.config";
-	while (<CONFIG>){
-	    if (/^Base:\s*(.*)/){
-		$dest = $1;
-	    }
-	    if (/^Depot:\s*(.*)/){
-		$depot = $1;
-	    }
-	    if (/^Log:\s*(.*)/){
-		$logdir = $1;
-	    }
-	    if (/^Subdirs:\s*(.*)/){
-		$dirs = $1;
-		$dirs =~ tr/\s//;
-		@subdirs = split /,/, $dirs;
-	    }	
-	    if (/^Recurse:\s*(.*)/){
-		$rdirs = $1;
-		$rdirs =~ tr/\s//;
-		@path_list = split /,/, $rdirs;
-		
-	    }
-	} close(CONFIG);
-    }
+
+  if (-e "$dest/opt.config") {
+    open(CONFIG,"$dest/opt.config") || die "Could Not open $dest/opt.config";
+
+    while (<CONFIG>){
+      if (/^Base:\s*(.*)/) {
+	$dest = $1;
+      }
+
+      if (/^Depot:\s*(.*)/) {
+	$depot = $1;
+      }
+
+      if (/^Log:\s*(.*)/) {
+	$logdir = $1;
+      }
+
+      if (/^Subdirs:\s*(.*)/) {
+	$dirs = $1;
+	$dirs =~ tr/\s//;
+	@subdirs = split /,/, $dirs;
+      }	
+
+      if (/^Recurse:\s*(.*)/) {
+	$rdirs = $1;
+	$rdirs =~ tr/\s//;
+	@path_list = split /,/, $rdirs;
+      }
+    } close(CONFIG);
+  }
 }
 
-######################################################################### 
+#########################################################################
 #
 #                                                         removelastslash
 #
 # input: a pathname to test
 #
-# this function will remove a trailing slash from the directory name 
+# this function will remove a trailing slash from the directory name
 # input
 #
-######################################################################### 
-sub removelastslash{
-    
-    if ($_[0] =~ /\/$/) {
-	chop $_[0];
-    }
+#########################################################################
+sub removelastslash {
+  if ($_[0] =~ /\/$/) {
+    chop $_[0];
+  }
 }
 
-######################################################################### 
+#########################################################################
 #
 #                                                                dircheck
 #
@@ -230,14 +241,15 @@ sub removelastslash{
 #
 #########################################################################
 sub dircheck {
-    my($dir) = @_;
+  my($dir) = @_;
 
-    if (!(-d $dir)){		
-	print "$dir is not a directory";
-	exit(0);
-    }
+  if (!(-d $dir)){		
+    print "$dir is not a directory";
+    exit(0);
+  }
 }
-######################################################################### 
+
+#########################################################################
 #
 #                                                             read_exfile
 #
@@ -249,65 +261,53 @@ sub dircheck {
 #
 # see the definition of %exclude and %packexclude at the top of this file
 #
-######################################################################### 
-sub read_exfile{
-    my($exfile) = @_;
+#########################################################################
+sub read_exfile {
+  my($exfile) = @_;
 
-    if (-e $exfile){
-	open(EXFILE, $exfile) || die "Could not open $exfile";
-	while (<EXFILE>){      
-	    if (/^\s*#/) {
+  if (-e $exfile) {
+    open(EXFILE, $exfile) || die "Could not open $exfile";
 
-		# comment line - skip
+    while (<EXFILE>){
+      if (/^\s*#/) {
+	next; # comment line - skip
+      }
 
-		next;
-	    }
-	    if (/:/){	
+      if (/:/){	
+	next; # a labelled exclusion. Forget about it.
+      }
+
+      if (/^\n/) {
+	next; # blank line - skip
+      } elsif (/^\s*(\/\S*)/) {
+	# leading slash -- take this as an absolute path name
+	# $1 is the complete absolute path/filename
+
+	$exclude{"$1"}=1;
+      } elsif (/^\s*([^\/]+\/\S*)/) {
+	# No leading slash but there are imbedded slashes..
+	# take this as a depot directory relative path
+	# $1 is the complete relative path and filename
 	
-		# a labelled exclusion. Forget about it.
+	$exclude{"$depot/$1"}=1;
+      } elsif (/^\s*([^\/\s]+)/) {
+	# No leading slash and no imbedded slashes
+	# take this as a package name and version num 
+	# if any is included.
+	# $1 is the complete package name 
 
-		next;
-	    }
-	    if (/^\n/) {
-
-		# blank line - skip
-
-		next;
-	    }
- 
-	    elsif (/^\s*(\/\S*)/){
-
-		# leading slash -- take this as an absolute path name
-		# $1 is the complete absolute path/filename
-
-		$exclude{"$1"}=1;
-	    }
-	    elsif (/^\s*([^\/]+\/\S*)/){
-
-		# No leading slash but there are imbedded slashes..
-		# take this as a depot directory relative path
-		# $1 is the complete relative path and filename
-
-		$exclude{"$depot/$1"}=1;
-	    }
-	    elsif (/^\s*([^\/\s]+)/){
-
-		# No leading slash and no imbedded slashes
-		# take this as a package name and version num 
-		# if any is included.
-		# $1 is the complete package name 
-		if ($switches{'z'}) {
-		    # Why can't the secret debug switch ever know rest?
-		    print "excluding [",$1,"]\n";
-		}
-		$packexclude{$1}=1;
-	    }
-	    elsif ($switches{'v'}){
-		print ("  ERROR:  bad entry in .exclude file \"$_\"");
-	    }
+	if ($switches{'z'}) {
+	  # Why can't the secret debug switch ever know rest?
+	  print "excluding [",$1,"]\n";
 	}
-	close(EXFILE);
+
+	$packexclude{$1}=1;
+      } elsif ($switches{'v'}){
+	print ("  ERROR:  bad entry in .exclude file \"$_\"");
+      }
     }
+    close(EXFILE);
+  }
 }
 
 #########################################################################
@@ -324,69 +324,61 @@ sub read_exfile{
 #
 #########################################################################
 sub read_pack_ex {
-    my($exfile) = @_;
-    my(@allfiles,@contents);
-    opendir (IN, $depot) || die "Could not open $depot";
-    @contents = readdir(IN);
-    @allfiles = grep ((-e "$depot/$_") && ("$depot/$_" !~/^\./), @contents);
-    foreach $file (@allfiles) {
-	if (-e "$depot/$file/$exfile"){
-	    open(EXFILE, "$depot/$file/$exfile") || die "Could not open $depot/$file/$exfile";
-	    while (<EXFILE>){      
-		if (/^\s*#/) {
-		    
-		    # comment line - skip
-		    
-		    next;
-		}
-		if (/^\n/) {
-		    
-		    # blank line - skip
-		    
-		    next;
-		}
-		elsif (/^\s*(\/\S*)/){
-		    
-		    # leading slash -- take this as an absolute path name
-		    # $1 is the complete absolute path/filename
-		    
-		    $exclude{"$1"}=1;
-		    if ($switches{'z'}) {
-			print"Excluding $1\n";
-		    }
-		}
-		elsif (/^\s*([^\/]+\/\S*)/){
-		    
-		    # No leading slash but there are imbedded slashes..
-		    # take this as a depot directory relative path
-		    # $1 is the complete relative path and filename
-		    
-		    $exclude{"$depot/$1"}=1;
-		    if ($switches{'z'}) {
-			print"Excluding $depot/$1\n";
-		    }
-		}
-		elsif (/^\s*([^\/\s]+)/){
-		    
-		    # No leading slash and no imbedded slashes
-		    # take this as a package name and version num 
-		    # if any is included.
-		    
-		    # Don't worry about these in per-package exclusions
+  my($exfile) = @_;
 
-		    next;
-		}
-		elsif ($switches{'v'}){
-		    print ("  ERROR:  bad entry in .exclude file \"$_\"");
-		}
-	    }
-	    close(EXFILE);
+  my(@allfiles,@contents);
+
+  opendir (IN, $depot) || die "Could not open $depot";
+  @contents = readdir(IN);
+  closedir (IN);
+
+  @allfiles = grep ((-e "$depot/$_") && ("$depot/$_" !~/^\./), @contents);
+
+  foreach $file (@allfiles) {
+    if (-e "$depot/$file/$exfile") {
+      open(EXFILE, "$depot/$file/$exfile") || die "Could not open $depot/$file/$exfile";
+
+      while (<EXFILE>){
+	if (/^\s*#/) {
+	  next;	  # comment line - skip
 	}
+
+	if (/^\n/) {
+	  next; # blank line - skip
+	} elsif (/^\s*(\/\S*)/) {
+	  # leading slash -- take this as an absolute path name
+	  # $1 is the complete absolute path/filename
+	  $exclude{"$1"}=1;
+
+	  if ($switches{'z'}) {
+	    print"Excluding $1\n";
+	  }
+	} elsif (/^\s*([^\/]+\/\S*)/) {
+	  # No leading slash but there are imbedded slashes..
+	  # take this as a depot directory relative path
+	  # $1 is the complete relative path and filename
+
+	  $exclude{"$depot/$1"}=1;
+
+	  if ($switches{'z'}) {
+	    print"Excluding $depot/$1\n";
+	  }
+	} elsif (/^\s*([^\/\s]+)/) {
+	  # No leading slash and no imbedded slashes
+	  # take this as a package name and version num 
+	  # if any is included.
+	  # Don't worry about these in per-package exclusions
+	  next;
+	} elsif ($switches{'v'}){
+	  print ("  ERROR:  bad entry in .exclude file \"$_\"");
+	}
+      }
+      close(EXFILE);
     }
+  }
 }
 
-
-######################################################################### 
+#########################################################################
 #
 #                                                            read_prifile
 #
@@ -399,51 +391,36 @@ sub read_pack_ex {
 # see the definition of %priority at the top of this file
 #
 ######################################################################### 
-sub read_prifile{
-    my($prifile) = @_;
+sub read_prifile {
+  my($prifile) = @_;
 
-    my($p);
+  my($p);
 
-    if (-e $prifile){
-	open (PRIFILE, $prifile) || die "Could not open $prifile";
-	$p = 1;
-	while (<PRIFILE>) {
+  if (-e $prifile) {
+    open (PRIFILE, $prifile) || die "Could not open $prifile";
+    $p = 1;
 
-	    if (/^\s*#/) {
-
-		# skip comment line
-
-		next;
-	    }
-	    elsif (/^\s*$/){
-		
-		# skip blank line
-		
-		next;
-	    }
-	    elsif (/^\s*\/(.*)/){
-
-		# leading slash - absolute filename
-		# handle priority for individual file
-		# this clause handles absolute pathnames
-
-		$priority{"$1"}= ++$p;
-	    }		       
-	    elsif (/\s*(\S*)\s*/){
-
-		# this clause handles depot relative pathnames
-
-		$priority{"$depot/$1"}= ++$p;
-	    }
-	}
-
-	close(PRIFILE);
+    while (<PRIFILE>) {
+      if (/^\s*#/) {
+	next;			# skip comment line
+      } elsif (/^\s*$/) {
+	next;			# skip blank line
+      } elsif (/^\s*\/(.*)/) {
+	# leading slash - absolute filename
+	# handle priority for individual file
+	# this clause handles absolute pathnames
+	
+	$priority{"$1"}= ++$p;
+      } elsif (/\s*(\S*)\s*/) {
+	# this clause handles depot relative pathnames
+	$priority{"$depot/$1"}= ++$p;
+      }
     }
 
-#    foreach $key (keys %priority) {
-#	print "priority: $key --> $priority{$key}\n";
-#    }
+    close(PRIFILE);
+  }
 }
+
 ######################################################################### 
 #
 #                                                                 makedir
@@ -453,16 +430,18 @@ sub read_prifile{
 # makedir() creates a directory and sets permissions on it to 755
 #
 #########################################################################
-sub makedir{
-    my($dir) = @_;
+sub makedir {
+  my($dir) = @_;
 
-    if (!($switches{'n'})){
-	system("mkdir $dir") && die "Could not make $dir";
-	system("chmod 755 $dir") && die "Could not chmod $dir";
-	print (LOG "  Made:   directory $dir\n") if (!($switches{'q'}));
-    }
-    print ("  Made:   directory $dir\n") if ($switches{'v'});
+  if (!($switches{'n'})){
+    system("mkdir $dir") && die "Could not make $dir";
+    system("chmod 755 $dir") && die "Could not chmod $dir";
+    print (LOG "  Made:   directory $dir\n") if (!($switches{'q'}));
+  }
+
+  print ("  Made:   directory $dir\n") if ($switches{'v'});
 }
+
 #########################################################################
 #
 #                                                                 resolve
@@ -474,54 +453,55 @@ sub makedir{
 # returns: absolute pathname of the target of the symbolic link
 #
 #########################################################################
-sub resolve{
-    my($dir, $link) = @_;
-    my(@alinkp, $d, $alinkp);
+sub resolve {
+  my($dir, $link) = @_;
 
-    # make array representations of
-    # the current directory and symbolic link
+  my(@alinkp, $d, $alinkp, $save);
 
-    # if we have a leading / in our $dir or $link,
-    # we'll need to shift to get rid of the leading
-    # empty array element
-  
-    @dirp=split(/\//, $dir);
-    shift(@dirp) if (!($dirp[0]));
-    @linkp=split(/\//, $link);
-    shift(@linkp) if (!($linkp[0]));
+  # make array representations of
+  # the current directory and symbolic link
 
-    # @alinkp is an array that we will build to contain the absolute link
-    # target pathname.  If the link does not begin with a /, it is a relative link,
-    # and we need to place our current directory into the @alinkp array.  
+  # if we have a leading / in our $dir or $link,
+  # we'll need to shift to get rid of the leading
+  # empty array element
 
-    if ($link !~ /^\//) {
-	@alinkp=@dirp;
+  @dirp=split(/\//, $dir);
+  shift(@dirp) if (!($dirp[0]));
+
+  @linkp=split(/\//, $link);
+  shift(@linkp) if (!($linkp[0]));
+
+  # @alinkp is an array that we will build to contain the absolute link
+  # target pathname.  If the link does not begin with a /, it is a relative link,
+  # and we need to place our current directory into the @alinkp array.  
+
+  if ($link !~ /^\//) {
+    @alinkp=@dirp;
+  }
+
+  # modify the @alinkp array according
+  # to each path component of the @linkp array
+  # (an array representation of the symbolic link
+  # given to us), to arrive at the ultimate absolute
+  # pathname of the symbolic link
+
+  $d = shift(@linkp);
+
+  while ($d) {
+    if ($d eq "..") {
+      pop(@alinkp);
+    } elsif ($d ne ".") {
+      push(@alinkp, $d);
     }
 
-    # modify the @alinkp array according
-    # to each path component of the @linkp array
-    # (an array representation of the symbolic link
-    # given to us), to arrive at the ultimate absolute
-    # pathname of the symbolic link
+    $d=shift(@linkp);
+  }
 
-    $d = shift(@linkp);
+  $save = $";
 
-    while ($d) {
-	if ($d eq "..") {
-	    pop(@alinkp);
-	}
-	elsif ($d ne "."){		       
-	    push(@alinkp, $d);
-	}
-	$d=shift(@linkp);
-    }
+  $" ='/'; $alinkp = "/@alinkp"; $" = $save;
 
-    $"='/';
-
-    # perl functions return the value of the last expression
-    # in the subroutine
-
-    $alinkp="/@alinkp";
+  return $alinkp;
 }
 
 #########################################################################
@@ -538,48 +518,51 @@ sub resolve{
 #         $file is contained in a directory that is listed in the keys of
 #         the %assoc associative array.
 #########################################################################
-sub pathcheck{
-    local ($file, *assoc) = @_;
+sub pathcheck {
+  local ($file, *assoc) = @_;
 
-    @components = split(/\//, $file);
+  @components = split(/\//, $file);
 
-    my ($low_pri);
+  my ($low_pri);
 
-    # we want to find the best (lowest numerical value) priority
-    # that pertains to $file
+  # we want to find the best (lowest numerical value) priority
+  # that pertains to $file
 
-    $low_pri = 9999;
+  $low_pri = 9999;
 
-    $temp = "";
+  $temp = "";
 
-    foreach $comp (@components) {
-	$temp .= "$comp/";
+  foreach $comp (@components) {
+    $temp .= "$comp/";
 
-	if ($assoc{$temp}) {
-	    $t_pri = $assoc{$temp};
-	    if ($t_pri < $low_pri) {
-		$low_pri = $t_pri;
-	    }
-	}
+    if ($assoc{$temp}) {
+      $t_pri = $assoc{$temp};
 
-	chop($temp); # cut off the trailing /
-
-	if ($assoc{$temp}) {
-	    $t_pri = $assoc{$temp};
-	    if ($t_pri < $low_pri) {
-		$low_pri = $t_pri;
-	    }
-	}
-
-	$temp .= "/";  # return trailing /
+      if ($t_pri < $low_pri) {
+	$low_pri = $t_pri;
+      }
     }
 
-    if ($low_pri != 9999) {
-	return $low_pri;
+    chop($temp); # cut off the trailing /
+
+    if ($assoc{$temp}) {
+      $t_pri = $assoc{$temp};
+
+      if ($t_pri < $low_pri) {
+	$low_pri = $t_pri;
+      }
     }
 
-    return 0;
+    $temp .= "/";  # return trailing /
+  }
+
+  if ($low_pri != 9999) {
+    return $low_pri;
+  }
+
+  return 0;
 }
+
 #########################################################################
 #
 #                                                                    link
@@ -590,7 +573,7 @@ sub pathcheck{
 #
 # output: potentially generates a symbolic link from $link to $file
 #         returns 1 if a new link was made, 0 otherwise
-#        
+#
 # link() may not generate a link if an existing link has a higher
 # priority, or if $file or the package that $file is under has been
 # excluded due to a reference in the .exclude file.
@@ -600,280 +583,269 @@ sub pathcheck{
 # over the existing link.
 #
 #########################################################################
-sub link{
-    my ($package, $file, $link) = @_;
+sub link {
+  my ($package, $file, $link) = @_;
 
-    my ($return_value, $where, $oldpackage, $directory, $rwhere);
+  my ($return_value, $where, $oldpackage, $directory, $rwhere);
 
-    $return_value = 0;
+  $return_value = 0;
 
-    # if we are supposed to exclude this file, skip linking it
+  # if we are supposed to exclude this file, skip linking it
 
-    if (!$exclude{$file} && !&pathcheck($file, *exclude) && !$packexclude{$package}) {
+  if (!$exclude{$file} && !&pathcheck($file, *exclude) && !$packexclude{$package}) {
 
-	# if it already exists then do not make link unless the file has priority..
-	# we'll check this down below if we need to.
+    # if it already exists then do not make link unless the file has priority..
+    # we'll check this down below if we need to.
 
-	if (-l $link) {
-	    $rwhere=readlink($link);
+    if (-l $link) {
+      $rwhere=readlink($link);
 
-	    # extract the directory containing the file
-	    # referenced in $link
+      # extract the directory containing the file
+      # referenced in $link
 
-	    $link =~ /(.*)\/[^\/]*$/; # don't mess with this, it works
-	    $directory = $1;
+      $link =~ /(.*)\/[^\/]*$/; # don't mess with this, it works
+      $directory = $1;
 
-	    # find what the link's absolute target is.
+      # find what the link's absolute target is.
 
-	    $where=&resolve($directory, $rwhere);
+      $where=&resolve($directory, $rwhere);
 
-	    # $where is the target of an existing symlink in place
-            # $file is the name of a file that we have been instructed to
-	    # link up into the $dest directory structure
-	    #
-	    # if $where does not equal $file, we need to look to see if we should
-	    # replace the existing link with a new link
-	    #
-	    # note that we never want to touch an existing link that points outside
-	    # of our $depot directory.. we'll check both of these conditions
-	    # with this if
+      # $where is the target of an existing symlink in place
+      # $file is the name of a file that we have been instructed to
+      # link up into the $dest directory structure
+      #
+      # if $where does not equal $file, we need to look to see if we should
+      # replace the existing link with a new link
+      #
+      # note that we never want to touch an existing link that points outside
+      # of our $depot directory.. we'll check both of these conditions
+      # with this if
 
-	    if (("$where" ne "$file") && ("$where" =~ /^$depot/)) {
+      if (("$where" ne "$file") && ("$where" =~ /^$depot/)) {
 
-		$where =~ /^$depot\/([^\/]*)/;
-		$oldpackage = $1;
+	$where =~ /^$depot\/([^\/]*)/;
+	$oldpackage = $1;
 
-		$do_it = 0;
-		$nope = 0;
+	$do_it = 0;
+	$nope = 0;
 
-		# if the old link points to an explicitly excluded target, retarget the link
+	# if the old link points to an explicitly excluded target, retarget the link
 
-		if ($exclude{$where}) {
-		    $do_it = 1;
-		}
-
-		# if the old link points to a target, in an excluded directory tree, retarget the link
-
-		if (!$do_it && &pathcheck($where, *exclude)) {
-		    $do_it = 1;
-		}
-
-		# if the new link target has priority and the old one doesn't, retarget the link
-
-		if (!$do_it && $priority{$file} && !$priority{$where}) {
-		    $do_it = 1;
-		}
-
-		if (!$do_it && !$priority{$file} && $priority{$where}) {
-		    $nope = 1;
-		}
-
-		# if the new link's priority is numerically lower than the old one's, retarget the link
-		# if the old link's priority is numerically lower, then we know for sure that we
-		# should keep the old link, and we won't bother to do any more tests
-
-		if (!$do_it && !$nope && $priority{$file} && $priority{$where}) {
-		    if ($priority{$file} < $priority{$where}) {
-			$do_it = 1;
-		    } else {
-			$nope = 1;
-		    }
-		}
-
-		# if the new link's package has priority and the old link's package doesn't, retarget the link
-
-		if (!$nope && !$do_it && $priority{"$depot/$package"} && !$priority{"$depot/$oldpackage"}) {
-		    $do_it = 1;
-		}
-
-		if (!$nope && !$do_it && !$priority{"$depot/$package"} && $priority{"$depot/$oldpackage"}) {
-		    $nope = 1;
-		}
-		 
-		# if the new link's package is numerically lower than the old one, retarget the link
-		# if the old link's package is numerically lower, then we know for sure that we
-		# should keep the old link, and we won't bother to do any more tests
-		
-		if (!$nope && !$do_it && $priority{"$depot/$package"} && $priority{"$depot/$oldpackage"}) {
-		    if ($priority{"$depot/$package"} < $priority{"$depot/$oldpackage"}) {
-			$do_it = 1;
-		    } else {
-			$nope = 1;
-		    }
-		}
-
-		# if the new link is under a directory that has priority and the old link is not, and we
-		# have not previously seen any decisive reason to keep the old link, retarget the link
-
-		if (!$nope && !$do_it && &pathcheck($where, *priority) && !&pathcheck($file, *priority)) {
-		    $do_it = 1;
-		}
-
-		if (!$nope && !$do_it && !&pathcheck($where, *priority) && &pathcheck($file, *priority)) {
-		    $nope = 1;
-		}
-
-		# if the new link's target is under a directory that has a lower numeric priority value than
-		# the old link, retarget the lin.  if the old link's target is under a directory that has
-		# a lower numeric priority, then we know for sure that we
-		# should keep the old link, and we won't bother to do any more tests
-
-		if (!$nope && !$do_it && &pathcheck($where, *priority) && &pathcheck($file, *priority)) {
-		    if (&pathcheck($file, *priority) < &pathcheck($where, *priority)) {
-			$do_it = 1;
-		    } else {
-			$nope = 1;
-		    }
-		}
-			  
-		if ($do_it) {
-		    
-		    # yay!  we get to replace the old link with a new link!
-
-		    $rfile=$file;
-
-		    # if we are in test mode, just show what we would do
-
-		    if (($switches{'v'}) && ($switches{'n'})){
-			print ("  rm:     $link->\n");
-			print ("          $where\n");
-			print ("  link:   $link ->\n");
-			print ("          $rfile\n");
-		    }   
-		    else {
-			if (!unlink($link)) {
-			    print ("  ERROR:  Could not remove $file") if ($switches{'v'});
-			    print (LOG "  ERROR:  Could not remove $file") if (!($switches{'q'}));
-			}
-			else {
-			    print ("  rm:     $link->\n") if ($switches{'v'});
-			    print ("          $where\n") if ($switches{'v'});
-			    print (LOG "  rm:     $link->\n") if (!($switches{'q'}));
-			    print (LOG "          $where\n") if (!($switches{'q'}));
-			    push(@conflicts, "  $where (removed for: $file)\n");
-			}
-
-			if (!symlink($rfile, $link)) {
-			    print ("  ERROR:  Could not make link to $file");
-			    push(@conflicts, "  $file (link error)\n");
-			}
-			else {	
-			    print ("  link:   $link ->\n") if ($switches{'v'});
-			    print ("          $rfile\n") if ($switches{'v'});				
-			    print (LOG "  link:   $link ->\n") if (!($switches{'q'}));
-			    print (LOG "          $rfile\n") if (!($switches{'q'}));	    
-			    $return_value = 1;
-			}
-		    }
-		} else {
-
-		    # aw!  we don't get to make our link
-
-		    if (&pathcheck($where, *priority) || $priority{$oldpackage}) {
-			if ($switches{'z'}) {
-			    # Hi! You've found the secret debug switch!
-			    print (LOG "  OVERRIDDEN:  Conflict:  $file and \n");
-			    print (LOG "                          $where (file with priority)\n");
-			    print (LOG "               Did not make link to $file\n");
-			}
-		    } else {
-			if (!($switches{'q'})) {
-			    print (LOG "  ERROR:  Conflict:  $file and \n");
-			    print (LOG "                     $where\n");
-			    print (LOG "          Did not make link to $file\n");
-			}
-			if ($switches{'z'}) {
-			    # No one can stop the secret debug switch!
-			    print ("  ERROR:  Conflict:  $file and \n");
-			    print ("                     $where\n");
-			    print ("          Did not make link to $file\n");
-			}
-		    }
-		
-		    # If this conflict wasn't due to a specific order to override in
-		    # .priority or .exclude, then push it on to our conflicts list.
-
-		    if (!$do_it) {
-			push(@conflicts,"  $file (conflict: $where)\n");
-		    }
-		}
-	    }		      
-
-            # at this point, we had a link already existing where we wanted
-	    # to put one, and it either pointed where we wanted it to point,
-	    # or it pointed to a location out of our control.  In either
-	    # case, we won't do anything, and we'll end our if-else processing
-	    # here
-
-        } else {
-
-	    # well, our propspective link-to-be, $link was not a symbolic link.
-	    # let's see if it exists at all.  if it exists and is not a symbolic
-	    # link, we can't touch it.
-
-	    if (-e $link){
-
-		# it exists in some non-symlink fashion.  can't touch it.
-
-		if (!($switches{'q'})){
-		    print (LOG "  ERROR:  $link already exists and is not a link\n");
-		    print (LOG "          Did not make link to link $file\n");
-		}
-		if ($switches{'v'}){
-		    print ("  ERROR:  $link already exists and is not a link\n");
-		    print ("          Did not make link to link $file\n");
-		}
-		push(@conflicts,"  $file (conflict: physical file)\n");
-	    }
-	    else { 
-
-		# okay, there's nothing standing in our way.  make the link.
-
-		# if we're in test mode, just show the action to take
-
-		if (($switches{'n'})&&($switches{'v'})) {
-		    print ("  link:   $link ->\n");
-		    print ("          $file\n");
-		}
-
-		# otherwise, build the link
-
-		elsif (!symlink($file,$link)){
-		    print ("  ERROR: Could not link $file\n") if ($switches {'v'});
-		    print (LOG "  ERROR: Could not link $file\n") if (!($switches {'q'}));
-		    push (@conflicts, "  $file (link failed)\n");
-		}	       
-		else {
-
-		    # yay!
-	       
-		    if (!($switches{'q'})){
-			print (LOG "  link:   $link ->\n");
-			print (LOG "          $file\n");
-		    }
-
-		    if ($switches{'v'}){
-			print ("  link:   $link ->\n");
-			print ("          $file\n");
-		    }
-		    $return_value = 1;
-		}			
-	    }
+	if ($exclude{$where}) {
+	  $do_it = 1;
 	}
-    }
 
+	# if the old link points to a target, in an excluded directory tree, retarget the link
+
+	if (!$do_it && &pathcheck($where, *exclude)) {
+	  $do_it = 1;
+	}
+
+	# if the new link target has priority and the old one doesn't, retarget the link
+
+	if (!$do_it && $priority{$file} && !$priority{$where}) {
+	  $do_it = 1;
+	}
+
+	if (!$do_it && !$priority{$file} && $priority{$where}) {
+	  $nope = 1;
+	}
+
+	# if the new link's priority is numerically lower than the old one's, retarget the link
+	# if the old link's priority is numerically lower, then we know for sure that we
+	# should keep the old link, and we won't bother to do any more tests
+
+	if (!$do_it && !$nope && $priority{$file} && $priority{$where}) {
+	  if ($priority{$file} < $priority{$where}) {
+	    $do_it = 1;
+	  } else {
+	    $nope = 1;
+	  }
+	}
+
+	# if the new link's package has priority and the old link's package doesn't, retarget the link
+
+	if (!$nope && !$do_it && $priority{"$depot/$package"} && !$priority{"$depot/$oldpackage"}) {
+	  $do_it = 1;
+	}
+
+	if (!$nope && !$do_it && !$priority{"$depot/$package"} && $priority{"$depot/$oldpackage"}) {
+	  $nope = 1;
+	}
+
+	# if the new link's package is numerically lower than the old one, retarget the link
+	# if the old link's package is numerically lower, then we know for sure that we
+	# should keep the old link, and we won't bother to do any more tests
+		
+	if (!$nope && !$do_it && $priority{"$depot/$package"} && $priority{"$depot/$oldpackage"}) {
+	  if ($priority{"$depot/$package"} < $priority{"$depot/$oldpackage"}) {
+	    $do_it = 1;
+	  } else {
+	    $nope = 1;
+	  }
+	}
+
+	# if the new link is under a directory that has priority and the old link is not, and we
+	# have not previously seen any decisive reason to keep the old link, retarget the link
+
+	if (!$nope && !$do_it && &pathcheck($where, *priority) && !&pathcheck($file, *priority)) {
+	  $do_it = 1;
+	}
+
+	if (!$nope && !$do_it && !&pathcheck($where, *priority) && &pathcheck($file, *priority)) {
+	  $nope = 1;
+	}
+
+	# if the new link's target is under a directory that has a lower numeric priority value than
+	# the old link, retarget the lin.  if the old link's target is under a directory that has
+	# a lower numeric priority, then we know for sure that we
+	# should keep the old link, and we won't bother to do any more tests
+
+	if (!$nope && !$do_it && &pathcheck($where, *priority) && &pathcheck($file, *priority)) {
+	  if (&pathcheck($file, *priority) < &pathcheck($where, *priority)) {
+	    $do_it = 1;
+	  } else {
+	    $nope = 1;
+	  }
+	}
+
+	if ($do_it) {
+
+	  # yay!  we get to replace the old link with a new link!
+
+	  $rfile=$file;
+
+	  # if we are in test mode, just show what we would do
+
+	  if (($switches{'v'}) && ($switches{'n'})){
+	    print ("  rm:     $link->\n");
+	    print ("          $where\n");
+	    print ("  link:   $link ->\n");
+	    print ("          $rfile\n");
+	  } else {
+	    if (!unlink($link)) {
+	      print ("  ERROR:  Could not remove $file") if ($switches{'v'});
+	      print (LOG "  ERROR:  Could not remove $file") if (!($switches{'q'}));
+	    } else {
+	      print ("  rm:     $link->\n") if ($switches{'v'});
+	      print ("          $where\n") if ($switches{'v'});
+	      print (LOG "  rm:     $link->\n") if (!($switches{'q'}));
+	      print (LOG "          $where\n") if (!($switches{'q'}));
+	      push(@conflicts, "  $where (removed for: $file)\n");
+	    }
+
+	    if (!symlink($rfile, $link)) {
+	      print ("  ERROR:  Could not make link to $file");
+	      push(@conflicts, "  $file (link error)\n");
+	    } else {
+	      print ("  link:   $link ->\n") if ($switches{'v'});
+	      print ("          $rfile\n") if ($switches{'v'});				
+	      print (LOG "  link:   $link ->\n") if (!($switches{'q'}));
+	      print (LOG "          $rfile\n") if (!($switches{'q'}));
+	      $return_value = 1;
+	    }
+	  }
+	} else {
+
+	  # aw!  we don't get to make our link
+
+	  if (&pathcheck($where, *priority) || $priority{$oldpackage}) {
+	    if ($switches{'z'}) {
+	      # Hi! You've found the secret debug switch!
+	      print (LOG "  OVERRIDDEN:  Conflict:  $file and \n");
+	      print (LOG "                          $where (file with priority)\n");
+	      print (LOG "               Did not make link to $file\n");
+	    }
+	  } else {
+	    if (!($switches{'q'})) {
+	      print (LOG "  ERROR:  Conflict:  $file and \n");
+	      print (LOG "                     $where\n");
+	      print (LOG "          Did not make link to $file\n");
+	    }
+	    if ($switches{'z'}) {
+	      # No one can stop the secret debug switch!
+	      print ("  ERROR:  Conflict:  $file and \n");
+	      print ("                     $where\n");
+	      print ("          Did not make link to $file\n");
+	    }
+	  }
+		
+	  # If this conflict wasn't due to a specific order to override in
+	  # .priority or .exclude, then push it on to our conflicts list.
+
+	  if (!$do_it) {
+	    push(@conflicts,"  $file (conflict: $where)\n");
+	  }
+	}
+      }
+
+      # at this point, we had a link already existing where we wanted
+      # to put one, and it either pointed where we wanted it to point,
+      # or it pointed to a location out of our control.  In either
+      # case, we won't do anything, and we'll end our if-else processing
+      # here
+
+    } else {
+
+      # well, our propspective link-to-be, $link was not a symbolic link.
+      # let's see if it exists at all.  if it exists and is not a symbolic
+      # link, we can't touch it.
+
+      if (-e $link){
+
+	# it exists in some non-symlink fashion.  can't touch it.
+
+	if (!($switches{'q'})){
+	  print (LOG "  ERROR:  $link already exists and is not a link\n");
+	  print (LOG "          Did not make link to link $file\n");
+	}
+	if ($switches{'v'}){
+	  print ("  ERROR:  $link already exists and is not a link\n");
+	  print ("          Did not make link to link $file\n");
+	}
+	push(@conflicts,"  $file (conflict: physical file)\n");
+      } else {
+
+	# okay, there's nothing standing in our way.  make the link.
+
+	# if we're in test mode, just show the action to take
+
+	if (($switches{'n'})&&($switches{'v'})) {
+	  print ("  link:   $link ->\n");
+	  print ("          $file\n");
+	} elsif (!symlink($file,$link)){
+	  print ("  ERROR: Could not link $file\n") if ($switches {'v'});
+	  print (LOG "  ERROR: Could not link $file\n") if (!($switches {'q'}));
+	  push (@conflicts, "  $file (link failed)\n");
+	} else {
+	  # yay!
+
+	  if (!($switches{'q'})){
+	    print (LOG "  link:   $link ->\n");
+	    print (LOG "          $file\n");
+	  }
+
+	  if ($switches{'v'}){
+	    print ("  link:   $link ->\n");
+	    print ("          $file\n");
+	  }
+	  $return_value = 1;
+	}			
+      }
+    }
+  } elsif ($switches{'v'}) {
     # $file or $package was excluded.  let the user know if he is interested.
 
-    elsif ($switches{'v'}) {
-	if ($exclude{$file}) {
-	  print "  *** excluding $file\n";
-	}
+    if ($exclude{$file}) {
+      print "  *** excluding $file\n";
     }
+  }
 
-    # ta-da!
+  # ta-da!
 
-    return $return_value;
+  return $return_value;
 }
+
 #########################################################################
 #
 #                                                                 manlink
@@ -881,152 +853,155 @@ sub link{
 # input: $package - name of package to link man pages for
 #
 # output: potentially links man pages into $dest/$man
-#         if a link is made, global $mademan is set to 1        
+#         if a link is made, global $mademan is set to 1
 #
 #########################################################################
-sub manlink{
-    my ($package) = @_;
+sub manlink {
+  my ($package) = @_;
 
-    my ($file, @files, $mfile, @mfiles, $newsuf);
+  my ($file, @files, $mfile, @mfiles, $newsuf);
 
-    # check under $package/$man and link appropriate files under man1, man2, etc
+  # check under $package/$man and link appropriate files under man1, man2, etc
 
-    if (-e "$depot/$package/$man") {
+  if (-e "$depot/$package/$man") {
 
-	# extract all files and directories that don't begin with .
+    # extract all files and directories that don't begin with .
 
-	opendir (MAN, "$depot/$package/$man") || print "Could not open $depot/$package/$man.";
-	@files=grep (!/^\./, readdir(MAN));
-	closedir(MAN);
+    opendir (MAN, "$depot/$package/$man") || print "Could not open $depot/$package/$man.";
+    @files=grep (!/^\./, readdir(MAN));
+    closedir(MAN);
 
-	for $file (@files) {
+    for $file (@files) {
 
-	    if ($exclude{"$depot/$package/$man/$file"} ||
-		&pathcheck("$depot/$package/$man/$file", *exclude)) {
-		
-		# do nothing.. don't link these manpages
+      if ($exclude{"$depot/$package/$man/$file"} ||
+	  &pathcheck("$depot/$package/$man/$file", *exclude)) {
+	
+	# do nothing.. don't link these manpages
+	
+	if ($switches{'v'}){
+	  print ("  Excluding man directory $depot/$package/$man/$file/\n");
+	}
+	
+      } else {
+
+	# if file is a man directory then link all man files under it.
+	# there really shouldn't be anything in the package's man
+	# directory except man subdirectories (i.e., not cat directories),
+	# but there might be readme's or something.  we'll ignore those.
+	
+	if (-d "$depot/$package/$man/$file" && $file =~ /^man([0-9a-z]+)$/) {
+
+	  # we've got a man directory.  $1 is the man dir suffix
+
+	  $suf=$1;
+
+	  # make sure that the appropriate man and cat directories
+	  # exist in $dest/$man..
+	  # ($man should always be eq "man", for all practical purposes)
+
+	  if (!(-e "$dest/$man/man$suf")) {
+	    &makedir("$dest/$man/man$suf");
+	  }
+
+	  if (!(-e "$dest/$man/cat$suf")) {
+	    &makedir("$dest/$man/cat$suf");
+	  }
+
+	  if (-d "$depot/$package/$man/$file") {
+			
+	    opendir (MDIR, "$depot/$package/$man/$file") || print "Could not open $depot/$package/$man/$file";
+	    @mfiles=grep (!/^\./, readdir(MDIR));
+	    closedir (MDIR);
+			
+	    # link all man pages in this man directory into the appropriate $dest directory
+			
+	    for $mfile (@mfiles) {
+
+	      if ($mfile =~ /\.([^\.]+)$/){
+				
+		$newsuf = $1;
+				
+		# if the man page's filename doesn't end in the right suffix, warn the user
+		# and link it where it should go.
+				
+		if ($newsuf ne $suf) {
+
+		  # if the man page ends in a suffix different than
+		  # that of the directory it is contained in,
+		  # we'll want to correct this by placing it in
+		  # the appropriate place.  If the directory
+		  # does not exist, we'll want to create it.
+
+		  if (!-e "$dest/$man/man$newsuf") {
+		    &makedir("$dest/$man/man$newsuf");
+		  }
+
+		  if (!-e "$dest/$man/cat$newsuf") {
+		    &makedir("$dest/$man/cat$newsuf");
+		  }
+		}
+				
+		if (&link($package, "$depot/$package/$man/$file/$mfile", "$dest/$man/man$newsuf/$mfile")) {
+		  if ($newsuf ne $suf) {
+		    if (!($switches{'q'})){
+		      print (LOG "WARNING: suffix does not match directory for $depot/$package/$man/$file/$mfile\n");
+		      print (LOG "         Placed in $dest/$man/$man$newsuf\n");
+		    }
+
+		    if ($switches{'v'}){
+		      print ("WARNING: suffix does not match directory for $depot/$package/$man/$file/$mfile\n");
+		      print ("         Placed in $dest/$man/$man$newsuf\n");
+		    }
+		  }
+
+		  $mademan=1;
+		}
+	      } else {
+				
+		# the filename wasn't valid for a manpage
+				
+		if (!($switches{'q'})){
+		  print (LOG "WARNING: file $depot/$package/$man/$file/$mfile is not properly named for a man page..\n");
+		  print (LOG "         Not linking\n");
+		}
 
 		if ($switches{'v'}){
-		    print ("  Excluding man directory $depot/$package/$man/$file/\n");
+		  print ("WARNING: file $depot/$package/$man/$file/$mfile is not properly named for a man page..\n");
+		  print ("         Not linking\n");
 		}
-		
-	    } else {
-
-		# if file is a man directory then link all man files under it.
-		# there really shouldn't be anything in the package's man
-		# directory except man subdirectories (i.e., not cat directories),
-		# but there might be readme's or something.  we'll ignore those.
-		
-		if (-d "$depot/$package/$man/$file" && $file =~ /^man([0-9a-z]+)$/){
-		    
-		    # we've got a man directory.  $1 is the man dir suffix
-		    
-		    $suf=$1;
-		    
-		    # make sure that the appropriate man and cat directories
-		    # exist in $dest/$man..
-		    # ($man should always be eq "man", for all practical purposes)
-		    
-		    if (!(-e "$dest/$man/man$suf")){ 
-			&makedir("$dest/$man/man$suf");
-		    }
-		    
-		    if (!(-e "$dest/$man/cat$suf")){
-			&makedir("$dest/$man/cat$suf");
-		    }
-		    
-		    if (-d "$depot/$package/$man/$file"){
-			
-			opendir (MDIR, "$depot/$package/$man/$file") || print "Could not open $depot/$package/$man/$file";
-			@mfiles=grep (!/^\./, readdir(MDIR));
-			closedir (MDIR);
-			
-			# link all man pages in this man directory into the appropriate $dest directory
-			
-			for $mfile (@mfiles) { 
-			    
-			    
-			    if ($mfile =~ /\.([^\.]+)$/){ 
-				
-				$newsuf = $1;
-				
-				# if the man page's filename doesn't end in the right suffix, warn the user
-				# and link it where it should go.
-				
-				if ($newsuf ne $suf) {
-				    
-				    # if the man page ends in a suffix different than
-				    # that of the directory it is contained in,
-				    # we'll want to correct this by placing it in
-				    # the appropriate place.  If the directory
-				    # does not exist, we'll want to create it.
-				    
-				    if (!(-e "$dest/$man/man$newsuf")){
-					&makedir("$dest/$man/man$newsuf");
-				    } 
-				    
-				    if (!(-e "$dest/$man/cat$newsuf")){
-					&makedir("$dest/$man/cat$newsuf");
-				    } 
-				    
-				}
-				
-				if (&link($package, "$depot/$package/$man/$file/$mfile", "$dest/$man/man$newsuf/$mfile")) {
-				    if ($newsuf ne $suf) {
-					if (!($switches{'q'})){
-					    print (LOG "WARNING: suffix does not match directory for $depot/$package/$man/$file/$mfile\n");
-					    print (LOG "         Placed in $dest/$man/$man$newsuf\n");
-					} 
-					if ($switches{'v'}){
-					    print ("WARNING: suffix does not match directory for $depot/$package/$man/$file/$mfile\n");
-					    print ("         Placed in $dest/$man/$man$newsuf\n");
-					}   
-				    }
-				    $mademan=1;
-				}
-			    } else {
-				
-				# the filename wasn't valid for a manpage
-				
-				if (!($switches{'q'})){
-				    print (LOG "WARNING: file $depot/$package/$man/$file/$mfile is not properly named for a man page..\n");
-				    print (LOG "         Not linking\n");
-				}
-				if ($switches{'v'}){
-				    print ("WARNING: file $depot/$package/$man/$file/$mfile is not properly named for a man page..\n");
-				    print ("         Not linking\n");
-				}
-			    }
-			}
-		    }
-		    
-		} else {
-		    
-		    # we don't have a man directory.  check to see if we have a file
-		    # that matches a man page filename format.
-		    
-		    if (-f "$depot/$package/$man/$file" && $file =~ /\.([^\.]+)$/) {
-			
-			# file is a man page, link it to the appropriate man directory.
-			
-			# note that this means that the man directory in this package
-			# isn't structured properly, but we can deal with it since we
-			# have the suffix to guide us.
-			
-			if (!(-e "$dest/$man/man$1")) { 
-			    &makedir("$dest/$man/man$1");
-			}
-			if (!(-e "$dest/$man/cat$1")) {
-			    &makedir("$dest/$man/cat$1");
-			}
-			&link($package, "$depot/$package/$man/$file", "$dest/$man/man$1/$file");
-			$mademan=1;
-		    }
-		} # end for $file (@files)
+	      }
 	    }
-	}
+	  }
+	} else {
+
+	  # we don't have a man directory.  check to see if we have a file
+	  # that matches a man page filename format.
+
+	  if (-f "$depot/$package/$man/$file" && $file =~ /\.([^\.]+)$/) {
+
+	    # file is a man page, link it to the appropriate man directory.
+			
+	    # note that this means that the man directory in this package
+	    # isn't structured properly, but we can deal with it since we
+	    # have the suffix to guide us.
+			
+	    if (!(-e "$dest/$man/man$1")) {
+	      &makedir("$dest/$man/man$1");
+	    }
+
+	    if (!(-e "$dest/$man/cat$1")) {
+	      &makedir("$dest/$man/cat$1");
+	    }
+
+	    &link($package, "$depot/$package/$man/$file", "$dest/$man/man$1/$file");
+	    $mademan=1;
+	  }
+	} # end for $file (@files)
+      }
     }
+  }
 }
+
 #########################################################################
 #
 #                                                                procargs
@@ -1038,81 +1013,85 @@ sub manlink{
 #########################################################################
 sub procargs {
 
-    my ($word, $localword);
+  my ($word, $localword);
 
-    while (@ARGV[0] =~ /-(.*)$/){
-	$word=$1;
-	$localword = "";
+  while (@ARGV[0] =~ /-(.*)$/) {
+    $word=$1;
+    $localword = "";
 
-	if ($word =~ /^d/) 
-	{
-	    # redefine depot directory
-	    if (length($word)==1) {	
-		shift(@ARGV);  
-		$localword = @ARGV[0];
-	    } else {
-		$word =~ /^d(.*)$/;	
-		$localword = $1;
-	    }
-	    &removelastslash($localword);
-	    &dircheck($localword);
-	    $depot=$localword;
-	}	
-	elsif ($word =~ /^b/) 
-	{
-	    # redefine software base directory
-	    if (length($word)==1) {	
-		shift(@ARGV);  
-		$localword = @ARGV[0];
-	    } else {
-		$word =~ /^b(.*)$/;	
-		$localword = $1;
-	    }
-	    &removelastslash($localword);
-	    &dircheck($localword);
-	    $dest=$localword;
+    if ($word =~ /^d/) {
+
+      # redefine depot directory
+
+      if (length($word)==1) {	
+	shift(@ARGV);
+	$localword = @ARGV[0];
+      } else {
+	$word =~ /^d(.*)$/;	
+	$localword = $1;
+      }
+
+      &removelastslash($localword);
+      &dircheck($localword);
+      $depot=$localword;
+    } elsif ($word =~ /^b/) {
+
+      # redefine software base directory
+
+      if (length($word)==1) {	
+	shift(@ARGV);
+	$localword = @ARGV[0];
+      } else {
+	$word =~ /^b(.*)$/;	
+	$localword = $1;
+      }
+
+      &removelastslash($localword);
+      &dircheck($localword);
+      $dest=$localword;
+    } elsif ($word =~ /^l/) {
+
+      # redefine log directory
+
+      if (length($word)==1) {
+	shift(@ARGV);
+	$localword = @ARGV[0];
+      } else {
+	$word =~ /^l(.*)$/;	
+	$localword = $1;
+      }
+
+      &removelastslash($localword);
+      &dircheck($localword);
+      $logdir=$localword;
+    } else {
+
+      # set switches
+
+      if ($word =~ /(^[vnqmr]+)$/) {
+	@switches= split (//, $1);
+	for $switch (@switches) {
+	  $switches{$switch}=1;
 	}
-	elsif ($word =~ /^l/) 
-	{
-	    # redefine log directory
-	    if (length($word)==1) {
-		shift(@ARGV);  
-		$localword = @ARGV[0];
-	    } else {
-		$word =~ /^l(.*)$/;	
-		$localword = $1;
-	    }
-	    &removelastslash($localword);
-	    &dircheck($localword);
-	    $logdir=$localword;
-	}
+      } else {
+	print "\"$word\" is an invalid command entry!\n"; 
+	print "Usage:  opt_depot [-vnqmr] [-d\"depot dir\"]\n";
+	print "                  [-l\"log dir\"] [-b\"software based dir\"]\n";
+	exit 0;
+      }
+    }	
 
-	else {
-	    # set switches
-	    if ($word =~ /(^[vnqmr]+)$/) {
-		@switches= split (//, $1);
-		for $switch (@switches) {
-		    $switches{$switch}=1;
-		}
-	    }
-	    else {
-		print "\"$word\" is an invalid command entry!\n"; 
-		print "Usage:  opt_depot [-vnqmr] [-d\"depot dir\"]\n";
-		print "                  [-l\"log dir\"] [-b\"software based dir\"]\n";
-		exit 0;
-	    }
-	}	
-	shift(@ARGV);  
-    }
-    
-    if ($#ARGV>0) {			
-	# too many arguments
+    shift(@ARGV);
+  }
 
-	print "Too many arguments!\n";
-	print "Usage:  opt_depot [-vnqmr] [-d\"depot dir\"] \n";
-	print "                  [-l\"log dir\"] [-b\"software base  dir\"]\n";
-	exit (0);
-    } 
+  if ($#ARGV>0) {			
+    # too many arguments
+
+    print "Too many arguments!\n";
+    print "Usage:  opt_depot [-vnqmr] [-d\"depot dir\"] \n";
+    print "                  [-l\"log dir\"] [-b\"software base  dir\"]\n";
+    exit (0);
+  }
 }
 
 #########################################################################
@@ -1129,42 +1108,43 @@ sub procargs {
 #         handleinit will die.
 #
 #########################################################################
-sub handleinit{
+sub handleinit {
 
-    my ($buf, @dest);
+  my ($buf, @dest);
 
-# read lock and die if found
+  # read lock and die if found
 
-    if (-e "$dest/lock.optdepot") {
-	open (LOCK, "<$dest/lock.optdepot");
-	read (LOCK, $buf, 1024); 
-	die "\"$buf\" may still be using depot.\n";
-    }
+  if (-e "$dest/lock.optdepot") {
+    open (LOCK, "<$dest/lock.optdepot");
+    read (LOCK, $buf, 1024);
+    die "\"$buf\" may still be using depot.\n";
+  }
 
-# create a lock
+  # create a lock
 
-    open (LOCK, ">$dest/lock.optdepot")|| die "Could not create lock";
-    print (LOCK "$ENV{'USER'}");
-    close (LOCK);
+  open (LOCK, ">$dest/lock.optdepot")|| die "Could not create lock";
+  print (LOCK "$ENV{'USER'}");
+  close (LOCK);
 
-# name log file
+  # name log file
 
-    @dest= split (/\//, $dest);           # naming log file
-    shift(@dest);
-    $"=':';
-    $log= "$logdir/@dest";
-    $"=' ';
+  @dest= split (/\//, $dest);           # naming log file
+  shift(@dest);
+  $"=':';
+  $log= "$logdir/@dest";
+  $"=' ';
 
-# open log file and time stamp entry
+  # open log file and time stamp entry
 
-    if (!($switches{'q'})) {
-	open (LOG, ">> $log") || die "Could not open $log";
-	print (LOG "\n\n**opt_depot**  ");
-	($sec, $min, $hour, $mday, $mon, $year)= localtime(time);
-	$mon=$mon + 1;
-	print (LOG "$hour:$min:$sec  $mon\/$mday\/$year\n");
-    }
+  if (!($switches{'q'})) {
+    open (LOG, ">> $log") || die "Could not open $log";
+    print (LOG "\n\n**opt_depot**  ");
+    ($sec, $min, $hour, $mday, $mon, $year)= localtime(time);
+    $mon=$mon + 1;
+    print (LOG "$hour:$min:$sec  $mon\/$mday\/$year\n");
+  }
 }
+
 #########################################################################
 #
 #                                                                prepdirs
@@ -1177,23 +1157,23 @@ sub handleinit{
 #         if prepdirs can't, it dies
 #
 #########################################################################
-sub prepdirs{
+sub prepdirs {
 
-    my ($subdir);
-    
-    for $subdir (@subdirs) {
-	if (!-e "$dest/$subdir") {
-	    &makedir("$dest/$subdir");
-	} elsif (!-d "$dest/$subdir"){
-	    die "ERROR: $dest/$subdir is not a directory";
-	}
+  my ($subdir);
+
+  for $subdir (@subdirs) {
+    if (!-e "$dest/$subdir") {
+      &makedir("$dest/$subdir");
+    } elsif (!-d "$dest/$subdir"){
+      die "ERROR: $dest/$subdir is not a directory";
     }
-    
-    if (!-e "$dest/$man") {
-	&makedir("$dest/$man");
-    } elsif (!-d "$dest/$man") {
-	die "ERROR: $dest/$man is not a directory";
-    }
+  }
+
+  if (!-e "$dest/$man") {
+    &makedir("$dest/$man");
+  } elsif (!-d "$dest/$man") {
+    die "ERROR: $dest/$man is not a directory";
+  }
 }
 
 
@@ -1209,35 +1189,40 @@ sub prepdirs{
 #
 #
 #########################################################################
-sub create_dir{
-    my ($file) = @_;
-    my ($temp, @components);
-    @components = split(/\//, $file);
+sub create_dir {
+  my ($file) = @_;
 
-    foreach $comp (@components) {
-	$temp .= "$comp";
-	if (! -d $temp && ($temp ne "")){
-	    mkdir($temp, 0755) || print "Could not make dir $temp\n";
-	    open (NEW, ">$temp/$opt_file") || die "Waaaah!!!";
-	    print NEW "This file is used by opt_depot to keep track of created directories.\n";
-	    print NEW "Please don't delete me.  Thanks.\n";
-	    close NEW;
-	    if ($switches{'v'}) {
-		print "MKDIR $temp\n";
-	    }
-	}	
-	$temp .= "/";  # add trailing /
-    }
+  my ($temp, @components);
+
+  @components = split(/\//, $file);
+
+  foreach $comp (@components) {
+    $temp .= "$comp";
+
+    if (! -d $temp && ($temp ne "")) {
+      mkdir($temp, 0755) || print "Could not make dir $temp\n";
+      open (NEW, ">$temp/$opt_file") || die "Waaaah!!!";
+      print NEW "This file is used by opt_depot to keep track of created directories.\n";
+      print NEW "Please don't delete me.  Thanks.\n";
+      close NEW;
+
+      if ($switches{'v'}) {
+	print "MKDIR $temp\n";
+      }
+    }	
+
+    $temp .= "/";  # add trailing /
+  }
 }
 
 #########################################################################
 #
-#                                                                 depth_first
+#                                                             depth_first
 # input: * Two packages for comparison
 #        * The current directory under /$dest (ie lib, bin, info, include...)
 #
 # uses: merge_list associative array
-# 
+#
 # output: depth_first takes two packages that have directory conflicts and
 #         determines whether or not to merge these directories by utilizing
 #         a depth_first recursive search and comparing the individual files 
@@ -1246,98 +1231,96 @@ sub create_dir{
 #
 #########################################################################
 sub depth_first {
-    
-    my ($new_pack, $old_pack, $opt_directory,$subdir) = @_;
-    my ($current_dir, @dirs, @files, @contents,$temp,$in_list);
 
-    $current_dir = pop (@all_dirs);
-    opendir(DIR, $current_dir);
-    @contents = readdir(DIR);
-    closedir(DIR);
-    @dirs = grep (("$current_dir/$_" !~ /\/\./) && (-d "$current_dir/$_"), @contents);
+  my ($new_pack, $old_pack, $opt_directory,$subdir) = @_;
 
-    foreach $dir (@dirs){
-	push (@all_dirs, "$current_dir/$dir");
+  my ($current_dir, @dirs, @files, @contents,$temp,$in_list);
+
+  $current_dir = pop (@all_dirs);
+
+  opendir(DIR, $current_dir);
+  @contents = readdir(DIR);
+  closedir(DIR);
+
+  @dirs = grep (("$current_dir/$_" !~ /\/\./) && (-d "$current_dir/$_"), @contents);
+
+  foreach $dir (@dirs) {
+    push (@all_dirs, "$current_dir/$dir");
+  }
+
+  if (@all_dirs != "") {
+    &depth_first($new_pack, $old_pack, $opt_directory,$subdir);
+    # keep searching until the lowest sub-directory if found
+  }
+
+  # Here we're checking to see if the current directory is
+  # a candidate for recursive unification. It's gotta be
+  # in the @path_list array that's specified in the defaults
+
+  $in_list = 0;
+
+  foreach $path_var (@path_list) {
+    $temp_var = "$subdir/";
+
+    if ($temp_var =~ /^$path_var/) {
+      $in_list = 1;
+
+      # The preceeding bit of code checks to see if the directory is
+      # a candidate for recursive unification by checking it against
+      # the directories listed in the $path_list global variable.
+      # If it ain't in the list, then it ain't unified.
     }
-    if (@all_dirs != ""){
-	&depth_first($new_pack, $old_pack, $opt_directory,$subdir);
-	# keep searching until the lowest sub-directory if found
-    }
+  }
 
-    $in_list = 0; # Here we're checking to see if the current directory is 
-                  # a candidate for recursive unification. It's gotta be
-                  # in the @path_list array that's specified in the defaults
+  if ((! defined %merge_list) && (! $in_list)) {
+    return;			# Cheeze-it, nothing's happening in this town
+  }
 
-    foreach $path_var (@path_list){
-	$temp_var = "$subdir/";
-	if ($temp_var =~ /^$path_var/){
-	    $in_list = 1;
+  # @files contains all the non-directory non-hidden files
+  @files = grep (("$current_dir/$_" !~ /\/\./) && (!-d "$current_dir/$_"), @contents);
 
-	    # The preceeding bit of code checks to see if the directory is
-            # a candidate for recursive unification by checking it against
-            # the directories listed in the $path_list global variable.
-            # If it ain't in the list, then it ain't unified.
+  foreach $file (@files) {
+    $new_file = "$current_dir/$file";
+    $old_file = $new_file;
+    $temp = $new_pack;
+    $temp =~ s/(\W)/\\$1/g;
+    $old_file =~ s/$temp/$old_pack/;
 
+    if ((-e $new_file) && (! -e $old_file)) { # a new file! We must merge!!
+
+      if ($exclude{"$new_file"} || &pathcheck("$new_file", *exclude)) {
+	# we're not going to do a merge
+		
+	if ($switches{'v'}) {
+	  print "\n  *** EXCLUDING DIRECTORY: $new_file\n\n";
 	}
+      } elsif (! defined $merge_list{$merge_dir}) { # don't forget exclusion tests!!!!
+	@temp = split /$opt_directory/,$current_dir,2;
+	$merge_dir = pop(@temp);
+	$merge_dir = "$dest/$opt_directory$merge_dir";
+	$merge_list{$merge_dir} = 0;
+	
+	# the preceeding code segment allows the appropriate directory
+	# info to be included in the associative array entry. This 
+	# entry will then be used to make sure all the necessary 
+	# common directories are created.
+      }
+    } elsif ((&pathcheck ($new_file, *priority)) < (&pathcheck ($old_file, *priority))) {
+      if ( $exclude{"$new_file"} || &pathcheck("$new_file", *exclude)) {
+	
+	# we're not going to do a merge
+	
+	if ($switches{'v'}) {
+	  print "\n  *** EXCLUDING DIRECTORY: $new_file\n\n";
+	}
+      } elsif (! defined $merge_list{$merge_dir}) {
+	@temp = split /$opt_directory/,$current_dir,2;
+	$merge_dir = pop(@temp);
+	$merge_dir = "$dest/$opt_directory$current_dir";
+	$merge_list{$merge_dir} = 0;
+      }
     }
-   	
-    if ((! defined %merge_list) && (! $in_list)) {
-	return;			# Cheeze-it, nothing's happening in this town
-    }
-
-    @files = grep (("$current_dir/$_" !~ /\/\./) && (!-d "$current_dir/$_"), @contents); # @files contains all the non-directory non-hidden files
-    
-    foreach $file (@files){
-	$new_file = "$current_dir/$file";
-	$old_file = $new_file;
-        $temp = $new_pack;
-	$temp =~ s/(\W)/\\$1/g;
-	$old_file =~ s/$temp/$old_pack/;
-	if ((-e $new_file) && (! -e $old_file)){ # a new file! We must merge!!
-	    
-	    if ( $exclude{"$new_file"} || &pathcheck("$new_file", *exclude)) {
-		    
-		# we're not going to do a merge
-		
-		if ($switches{'v'}) {
-		    print "\n  *** EXCLUDING DIRECTORY: $new_file\n\n";
-		}
-	  }  
-
-	    # don't forget exclusion tests!!!!
-
-	    elsif (! defined $merge_list{$merge_dir}){
-		@temp = split /$opt_directory/,$current_dir,2;
-		$merge_dir = pop(@temp);
-		$merge_dir = "$dest/$opt_directory$merge_dir";
-		$merge_list{$merge_dir} = 0;
-
-		# the preceeding code segment allows the appropriate directory
-                # info to be included in the associative array entry. This 
-                # entry will then be used to make sure all the necessary 
-                # common directories are created.
-	    }
-
-	} elsif ((&pathcheck ($new_file, *priority)) < (&pathcheck ($old_file, *priority))) {
-
-	    if ( $exclude{"$new_file"} || &pathcheck("$new_file", *exclude)) {
-		
-		# we're not going to do a merge
-		
-		if ($switches{'v'}) {
-		    print "\n  *** EXCLUDING DIRECTORY: $new_file\n\n";
-		}
-	    }  
-
-	    elsif (! defined $merge_list{$merge_dir}){
-		@temp = split /$opt_directory/,$current_dir,2;
-		$merge_dir = pop(@temp);
-		$merge_dir = "$dest/$opt_directory$current_dir";
-		$merge_list{$merge_dir} = 0;
-		
-	    }
-	} 
-    }
+  }
 }
 
 #########################################################################
@@ -1345,145 +1328,152 @@ sub depth_first {
 #                                                                 link_me
 #
 # input: $sub_dir - name of the current directory where link_me is being
-#                       called 
-#        @pack_list - list of packages that are ready to be considered for 
+#                       called
+#        @pack_list - list of packages that are ready to be considered for
 #                     linking under $dest directory
 #        $opt_directory - name of the first directory under /$dest that we are
 #        currently under (ie lib, info, include, bin...)
-#       
+#
 # output: potentially creates links to files under $dest directory
-#              
+#
 # link_me carries out the recursive linking of files into the bin lib info
 # and include directories under $dest
 #
 #########################################################################
 
 sub link_me {
+  my ($subdir,$opt_directory, @pack_list) = @_;
 
-    my ($subdir,$opt_directory, @pack_list) = @_;
-    my (%pack_hash,$common_dir,@temp_list,);
-    my ($i,$old_pack,$new_pack,$temp);
-    print "LINKING:  $subdir\n" if ($switches{'v'});
-    for $package (@pack_list) {
-	if (!$packexclude{$package}) {
-	   
-	    if ( $exclude{"$depot/$package/$subdir"} || &pathcheck("$depot/$package/$subdir", *exclude)) {
-		    
-		# we're excluding this directory
+  my (%pack_hash,$common_dir,@temp_list,);
+  my ($i,$old_pack,$new_pack,$temp);
+
+  print "LINKING:  $subdir\n" if ($switches{'v'});
+
+  for $package (@pack_list) {
+    if (!$packexclude{$package}) {
+      if ( $exclude{"$depot/$package/$subdir"} || &pathcheck("$depot/$package/$subdir", *exclude)) {
+
+	# we're excluding this directory
 		
-		if ($switches{'v'}) {
-		    print "\n  *** EXCLUDING DIRECTORY: $depot/$package/$subdir\n\n";
-		}
-		
-	    } else {
-		
-		if (-d "$depot/$package/$subdir") {
-		    opendir(SUBDIR, "$depot/$package/$subdir") || print "Could not open $depot/$package/$subdir\n";
-		    
-		    # extract all files and directories in
-		    # $package/$subdir that don't begin with .
-		    
-		    @files= grep (!/^\./, readdir(SUBDIR));
-		    
-		    closedir(SUBDIR);
-		    
-		    for $file (@files) {
-			if (-d "$depot/$package/$subdir/$file"){ # don't worry about
-			    # plain files. Just dirs.
-			    $new_pack = "$package/$subdir/$file"; # name of new package.
-				$common_dir = "$subdir/$file";
-			    if (-l "$dest/$subdir/$file" ) { # link already
-				# exists in $dest
-				$old_pack = readlink"$dest/$common_dir";
-				@fields = split /$depot\//, $old_pack, 2; 
-				$old_pack = $fields[1];
-				# previous two lines remove relative link info
-				# from $old_pack  
-				if ($new_pack ne $old_pack){
-				    undef %merge_list;
-				    @all_dirs[0] = $new_pack;
-
-				    # check and see if a merge is actually required
-
-				    if ($switches{'r'}) {
-					&depth_first ($new_pack, $old_pack, $opt_directory,$subdir); 
-				    }
-
-				    if (defined %merge_list){
-					@temp_list[0] = $old_pack;
-					@temp_list[1] = $new_pack;
-					$pack_hash{$common_dir} = [ @temp_list ];
-					system "rm $dest/$common_dir"; # remove the current link
-				
-					foreach $dir (keys %merge_list){
-					    &create_dir ($dir);
-					} 
-				    }
-				    #common sub-directory in $dest/$common_dir
-				    undef @temp_list;  # clean up temp_list
-				    next; # don't link package this time around.
-				} # if new_pack and old_pack aren't the same...
-			    } elsif (-d "$dest/$subdir/$file") { 
-				# there is already a subdirectory built for us.
-				# Cool.
-				if (! defined $pack_hash{$common_dir}){
-				    @temp_list[0] = $new_pack;
-				    $pack_hash{$common_dir} = [ @temp_list ];
-				} else {
-				    @temp_list = @{ $pack_hash{$common_dir}};
-				    push (@temp_list, $new_pack);
-				    $pack_hash{$common_dir} = [ @temp_list ];
-				}
-				undef @temp_list;  # clean up temp_list
-				next; # ditto -- wait to link
-			    } 
-			}
-			&link($package, "$depot/$package/$subdir/$file", "$dest/$subdir/$file");
-		    }
-		}
-	    }
+	if ($switches{'v'}) {
+	  print "\n  *** EXCLUDING DIRECTORY: $depot/$package/$subdir\n\n";
 	}
-    }
-#end loop over packages
-    
-#
-# make recursive call to link_me if necessary
-#
-    
-    if ($switches{'r'} && defined %pack_hash){     # we've got a directory conflict. let's call link_me again
-	foreach $common_dir (keys %pack_hash){
-	    #print"\tSubdirectory: $common_dir\n";
-	    @pack_list = @{ $pack_hash{$common_dir} };
-	    foreach $element (@pack_list) {
-		$temp = $common_dir;
-		$temp =~ s/(\W)/\\$1/g;	# quote meta-chars
-		$element =~ s/\/$temp//; # removes the common directory
-		# name from the package 
-		#print"\tElement: $element\n";
-	    }
+      } else {
+	if (-d "$depot/$package/$subdir") {
+	  opendir(SUBDIR, "$depot/$package/$subdir") || print "Could not open $depot/$package/$subdir\n";
 
-	    $in_list = 0; # Here we're checking to see if the current directory is 
-	                  # a candidate for recursive unification. It's gotta be
-	    		  # in the @path_list array that's specified in the defaults
+	  # extract all files and directories in
+	  # $package/$subdir that don't begin with .
 
-	    foreach $path_var (@path_list){
-		$temp_var = "$common_dir/";
-		if ($temp_var =~ /^$path_var/){
-		    $in_list = 1;
-		    
-		    # The preceeding bit of code checks to see if the directory is
-		    # a candidate for recursive unification by checking it against
-		    # the directories listed in the $path_list global variable.
-		    # If it ain't in the list, then it ain't unified.
+	  @files= grep (!/^\./, readdir(SUBDIR));
 
+	  closedir(SUBDIR);
+
+	  for $file (@files) {
+	    if (-d "$depot/$package/$subdir/$file"){ # don't worry about
+	      # plain files. Just dirs.
+	      $new_pack = "$package/$subdir/$file"; # name of new package.
+	      $common_dir = "$subdir/$file";
+
+	      if (-l "$dest/$subdir/$file" ) { # link already
+		# exists in $dest
+		$old_pack = readlink"$dest/$common_dir";
+		@fields = split /$depot\//, $old_pack, 2;
+		$old_pack = $fields[1];
+		# previous two lines remove relative link info
+		# from $old_pack
+
+		if ($new_pack ne $old_pack){
+		  undef %merge_list;
+		  @all_dirs[0] = $new_pack;
+
+		  # check and see if a merge is actually required
+
+		  if ($switches{'r'}) {
+		    &depth_first ($new_pack, $old_pack, $opt_directory,$subdir);
+		  }
+
+		  if (defined %merge_list){
+		    @temp_list[0] = $old_pack;
+		    @temp_list[1] = $new_pack;
+		    $pack_hash{$common_dir} = [ @temp_list ];
+		    system "rm $dest/$common_dir"; # remove the current link
+
+		    foreach $dir (keys %merge_list){
+		      &create_dir ($dir);
+		    }
+		  }
+
+		  #common sub-directory in $dest/$common_dir
+		  undef @temp_list;  # clean up temp_list
+		  next; # don't link package this time around.
+		} # if new_pack and old_pack aren't the same...
+	      } elsif (-d "$dest/$subdir/$file") {
+		# there is already a subdirectory built for us.
+		# Cool.
+
+		if (! defined $pack_hash{$common_dir}){
+		  @temp_list[0] = $new_pack;
+		  $pack_hash{$common_dir} = [ @temp_list ];
+		} else {
+		  @temp_list = @{ $pack_hash{$common_dir}};
+		  push (@temp_list, $new_pack);
+		  $pack_hash{$common_dir} = [ @temp_list ];
 		}
+
+		undef @temp_list;  # clean up temp_list
+		next; # ditto -- wait to link
+	      }
 	    }
-	    
-	    if ($in_list) {
-		&link_me ($common_dir,$opt_directory, @pack_list); # ah, the mysteries of recursion...  
-	    }
-	}	
+	    &link($package, "$depot/$package/$subdir/$file", "$dest/$subdir/$file");
+	  }
+	}
+      }
     }
+  }
+  #end loop over packages
+
+  #
+  # make recursive call to link_me if necessary
+  #
+
+  if ($switches{'r'} && defined %pack_hash){     # we've got a directory conflict. let's call link_me again
+    foreach $common_dir (keys %pack_hash){
+      #print"\tSubdirectory: $common_dir\n";
+      @pack_list = @{ $pack_hash{$common_dir} };
+
+      foreach $element (@pack_list) {
+	$temp = $common_dir;
+	$temp =~ s/(\W)/\\$1/g;	# quote meta-chars
+	$element =~ s/\/$temp//; # removes the common directory
+	# name from the package 
+	#print"\tElement: $element\n";
+      }
+
+      # Here we're checking to see if the current directory is
+      # a candidate for recursive unification. It's gotta be
+      # in the @path_list array that's specified in the defaults
+
+      $in_list = 0;
+
+      foreach $path_var (@path_list) {
+	$temp_var = "$common_dir/";
+
+	if ($temp_var =~ /^$path_var/) {
+	  $in_list = 1;
+
+	  # The preceeding bit of code checks to see if the directory is
+	  # a candidate for recursive unification by checking it against
+	  # the directories listed in the $path_list global variable.
+	  # If it ain't in the list, then it ain't unified.
+	}
+      }
+
+      if ($in_list) {
+	&link_me ($common_dir,$opt_directory, @pack_list); # ah, the mysteries of recursion...
+      }
+    }	
+  }
 } #link_me
 
 
@@ -1522,20 +1512,24 @@ opendir (DEPOT, $depot) || die "Could not open $depot";
 @packages=grep(-d && !/^\./, readdir(DEPOT));
 closedir(DEPOT);
 
-foreach $subdir (@subdirs){
-    $opt_directory = $subdir; # This is the name of the primary directory
-                              # we're working in (ie lib, bin, info, etc).
+foreach $subdir (@subdirs) {
 
-    if ($subdir ne "$man"){
-	&link_me($subdir,$opt_directory, @packages);
-    }
+  # This is the name of the primary directory
+  # we're working in (ie lib, bin, info, etc).
+
+  $opt_directory = $subdir;
+
+  if ($subdir ne "$man") {
+    &link_me($subdir,$opt_directory, @packages);
+  }
 }
 
 if ($man_is_there){
-    print "LINKING:  $man\n" if ($switches{'v'});
-    foreach $package (@packages){
-	&manlink($package);
-    }
+  print "LINKING:  $man\n" if ($switches{'v'});
+
+  foreach $package (@packages){
+    &manlink($package);
+  }
 }
 
 #
@@ -1545,15 +1539,15 @@ if ($man_is_there){
 $"='';
 
 if (@conflicts[0]) {
-    if (!($switches{'q'})) {
-	print (LOG "\nUNMADE OR UNDONE LINKS:\n");
-	print (LOG "@conflicts");
-    }
+  if (!($switches{'q'})) {
+    print (LOG "\nUNMADE OR UNDONE LINKS:\n");
+    print (LOG "@conflicts");
+  }
 
-    if ($switches{'v'}) {
-	print ("\nUNMADE OR UNDONE LINKS:\n");
-	print ("@conflicts");
-    }
+  if ($switches{'v'}) {
+    print ("\nUNMADE OR UNDONE LINKS:\n");
+    print ("@conflicts");
+  }
 }
 
 #
@@ -1561,21 +1555,23 @@ if (@conflicts[0]) {
 #
 
 if ($mademan && $switches{'m'}) {
-    if ($switches{'q'}) {
-	print (LOG " Rebuilding man page indices\n");
-    }
-    if ($switches{'v'}) {
-	print (" Rebuilding man page indices\n");
-    }
+  if ($switches{'q'}) {
+    print (LOG " Rebuilding man page indices\n");
+  }
 
-    system($catman);
+  if ($switches{'v'}) {
+    print (" Rebuilding man page indices\n");
+  }
 
-    if ($switches{'q'}) {
-	print (LOG "  Man page indices rebuilt \n");
-    }
-    if ($switches{'v'}) {
-	print (" Man page indices rebuilt\n");
-    }
+  system($catman);
+
+  if ($switches{'q'}) {
+    print (LOG "  Man page indices rebuilt \n");
+  }
+
+  if ($switches{'v'}) {
+    print (" Man page indices rebuilt\n");
+  }
 }
 
 close (LOG) if (!($switches{'q'}));
