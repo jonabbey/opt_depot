@@ -54,8 +54,8 @@
 # Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.26 $
-# Last Mod Date: $Date: 2003/10/23 06:48:27 $
+# Version: $Revision: 1.27 $
+# Last Mod Date: $Date: 2004/01/10 05:51:18 $
 #
 #########################################################################
 
@@ -226,7 +226,7 @@ sub read_pack_ex {
 	  next;			# comment
 	}
 
-	if (/^\s*^/) {
+	if (/^\s*$/) {
 	  next;			# blank line
 	}
 
@@ -246,14 +246,20 @@ sub read_pack_ex {
 	    # $1 is the complete relative path and filename
 
 	    $exclude{"$depot/$1"}=1;
-	  } elsif (/^([^\/]+)/) {
+	  } elsif (/^([^\/]+)$/) {
 	    # No leading slash and no embedded slashes
 	    # take this as a package name and version num
 	    # if any is included.
 
-	    # Don't worry about these in per-package exclusions
+	    # We used not to worry about these excludes, on the theory
+	    # that opt_link would deal with them as necessary, but I
+	    # seem to have convinced myself we should allow packages
+	    # to exclude each other at the opt_clean stage even if
+	    # opt_link isn't run.  I don't remember at the moment why
+	    # I thought this was a good change, though.  test8a in the
+	    # test_opt script is predicated on this, though.
 
-	    next;
+	    $packexclude{"$1"}=1;
 	  } else {
 	    logprint("  ERROR:  bad entry in .exclude file \"$_\"", 1);
 	  }
@@ -272,15 +278,20 @@ sub read_pack_ex {
 	    # $1 is the complete relative path and filename
 
 	    $exclude{"$depot/$1"}=1;
-	  } elsif (/^\s*([^\/\s]+)/) {
-	    # No leading slash and no embedded slashes
+	  } elsif (/^\s*([^\/]+)$/) {
+	    # No leading slash and no embedded slashes or whitespace
 	    # take this as a package name and version num
 	    # if any is included.
 	    #
-	    # Don't worry about these in per-package
-	    # exclusions.. opt_link will have handled them
+	    # We used not to worry about these excludes, on the theory
+	    # that opt_link would deal with them as necessary, but I
+	    # seem to have convinced myself we should allow packages
+	    # to exclude each other at the opt_clean stage even if
+	    # opt_link isn't run.  I don't remember at the moment why
+	    # I thought this was a good change, though.  test8a in the
+	    # test_opt script is predicated on this, though.
 
-	    next;
+	    $packexclude{"$1"}=1;
 	  } else {
 	    logprint("  ERROR:  bad entry in .exclude file \"$_\"", 0);
 	  }

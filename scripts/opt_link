@@ -53,8 +53,8 @@
 # Jonathan Abbey 14 October 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.24 $
-# Last Mod Date: $Date: 2003/10/23 06:48:27 $
+# Version: $Revision: 1.25 $
+# Last Mod Date: $Date: 2004/01/10 05:51:18 $
 #
 #####################################################################
 
@@ -703,9 +703,15 @@ sub print_header {
     print"Reading From Primary Exclude File: $exclude_file\n";
 
     if ($get_most_recent) {
-      print"Absolute Priority: Disabled\n\n";
+      print"Absolute Priority: Disabled\n";
     } else {
-      print"Absolute Priority: Enabled\n\n";
+      print"Absolute Priority: Enabled\n";
+    }
+
+    if ($add_only) {
+      print"Adding new links only\n\n";
+    } else {
+      print"Adding and removing links\n\n";
     }
   }
 } # print_header

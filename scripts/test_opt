@@ -4,7 +4,7 @@
 #
 #************************************************************************
 #
-# Copyright (C) 1993-2003  The University of Texas at Austin.
+# Copyright (C) 1993-2004  The University of Texas at Austin.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.44 $
-# Last Mod Date: $Date: 2003/10/15 03:56:49 $
+# Version: $Revision: 1.45 $
+# Last Mod Date: $Date: 2004/01/10 05:51:18 $
 #
 #####################################################################
 
@@ -105,6 +105,10 @@ LOCAL $test_root/sites/local
 LOCALB $test_root/sites/localB
 ENDSITES4
 
+$testsitesI =<< "ENDSITESI";
+IFTOP_TEST $test_root/sites/iftop_test
+ENDSITESI
+
 $testsitesZ =<< "ENDSITES3";
 LOCALB $test_root/sites/localB
 LOCAL $test_root/sites/local
@@ -168,6 +172,16 @@ ENDSITES3
 	  contents => [
 		       {name     => 'externalPack',
 			files    => ['bin/externalTest']}
+		      ]);
+
+%siteI = (label => 'iftop_test',
+	  path => "$test_root/sites/iftop_test",
+	  contents => [
+		       {name     => 'iftop-0.12a-jon',
+			files    => ['bin/iftop']},
+		       {name     => 'iftop-0.15',
+			files    => ['bin/iftop'],
+			excludes => ['iftop-0.12a-jon']}
 		      ]);
 
 %siteZ = (label => 'localZ',
@@ -263,6 +277,60 @@ ENDSITES3
 	  sites  => $testsitesA,
 	  action => 'opt_depot',
 	  priority => "packB/bin\npackB/include",
+	  error_count => 0);
+
+# this variant of test3 is to address the problem reported by Gil with
+# the opt_depot unification logic.  Here is how he defines the problem
+# in his report:
+#
+# --
+#
+# I ran into my first unification problem in opt_depot 3.0.
+#
+# Assume the following packages
+#
+# packagea:
+# /opt/depot/packagea/lib/d1/d2/file1
+#
+# packageb:
+# /opt/depot/packageb/lib/d1/d2/file2
+#
+# packagec:
+# /opt/depot/packagec/lib/d1/d3/d4/file3
+#
+# These should get unified such that d1 and d2 are physical directories
+# created by opt_depot.  Directory d3 should be a symlink to the d3 directory
+# under packagec.  The files file1 and file2 should be symlinks in the
+# d2 directory to file1 and file2 in packagea and packageb respectively.
+#
+# What is happening on my system is the equivalent of packagea hijacking
+# directory d1 (d1 gets symlinked to the d1 directory in packagea), then
+# opt_depot complaining it can't merge the directories under d1 in the
+# other packages.
+#
+# --
+#
+# This test worked without requiring any changes to opt_depot.. I suspect
+# Gil did not have recursive unification enabled for the lib subdirectory
+# in his configuration file.
+
+%test3a = (label  => 'Multi-level unification test',
+	  root   => $test_dir,
+	  start  => ['depot/packA/lib/d1/d2/file1',
+		     'depot/packB/lib/d1/d2/file2',
+		     'depot/packC/lib/d1/d3/d4/file3'],
+	  end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		     'lib/d1/',
+		     'lib/d1/.made_by_opt_depot',
+		     'lib/d1/d2/',
+		     'lib/d1/d2/.made_by_opt_depot',
+		     'lib/d1/d2/file1->depot/packA/lib/d1/d2/file1',
+		     'lib/d1/d2/file2->depot/packB/lib/d1/d2/file2',
+		     'lib/d1/d3->depot/packC/lib/d1/d3'],
+	  endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+	  conf   => $testconfA,
+	  sites  => $testsitesA,
+	  action => 'opt_depot',
 	  error_count => 0);
 
 %test4 = (label  => 'Priority link replacement test',
@@ -632,6 +700,21 @@ ENDSITES3
 	  exclude => 'packA',
 	  error_count => 0);
 
+%test8a = (label => 'Sites clean test',
+	   root  => $test_dir,
+	   start => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		     "depot/iftop-0.12a-jon->".$siteI{'path'}."/iftop-0.12a-jon",
+		     "depot/iftop-0.15->".$siteI{'path'}."/iftop-0.15",
+		     'bin/iftop->depot/iftop-0.12a-jon/bin/iftop'],
+	   end   => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		     "depot/iftop-0.12a-jon->".$siteI{'path'}."/iftop-0.12a-jon",
+		     "depot/iftop-0.15->".$siteI{'path'}."/iftop-0.15"],
+	   endex => ['^depot\/$', '^\.priority$', '^\.exclude$'],
+	   conf  => $testconfA,
+	   sites => $testsitesI,
+	   sitedefs => [\%siteI],
+	   action => 'opt_clean',
+	   error_count => 0);
 
 %test9 = (label  => 'Clean and link test',
 	  root   => $test_dir,
@@ -840,11 +923,11 @@ ENDSITES3
 	   action => 'opt_setup',
 	   error_count => 0);
 
-@tests = (\%test0, \%test1, \%test2, \%test3,
+@tests = (\%test0, \%test1, \%test2, \%test3, \%test3a,
 	  \%test4, \%test4b, \%test4c, \%test4d, \%test4e, \%test4f,
 	  \%test4g, \%test4h,
 	  \%test5, \%test6, \%test7,
-	  \%test8, \%test9, \%test10, \%test11,
+	  \%test8, \%test8a, \%test9, \%test10, \%test11,
 	  \%test12, \%test13, \%test13b, \%test14, \%test15);
 
 #####################################################################
