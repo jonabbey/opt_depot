@@ -52,8 +52,8 @@
 # Jonathan Abbey 29 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.17 $
-# Last Mod Date: $Date: 2003/09/21 06:50:22 $
+# Version: $Revision: 1.18 $
+# Last Mod Date: $Date: 2003/09/21 07:28:29 $
 #
 #####################################################################
 
@@ -133,7 +133,7 @@ sub read_exfile {
     } else {
       # These manually excluded packages have priority over all other
       # exclusions, so we set priority to 0
-	
+
       $excluded{$_} = 0;
       $excluded_by{$_} = "Manual Exclusion";
     }
@@ -308,10 +308,25 @@ sub process_sites {
       $pack_exclude = "$tempsite/$pack/.exclude";
 
       if (exists $excluded{$pack}) { # package's generic name excluded
-	chk_pack_ex($pack,$pack_exclude,$pack_priority);
-	# the call to chk_pack_ex adds the packages exclusions to
-	# the exclusion hash, retaining the transitive property
-	# of exclusions
+
+	# if this package was excluded by another package's exclude
+	# file (the exclude value is greater than zero), we'll assume
+	# that that exclusion was due to another package of more
+	# recent vintage excluding an older version.  If the exclusion
+	# value is zero, then the package was specifically excluded in
+	# the root .exclude file.. in this case, we'll assume it's a
+	# configuration choice rather than a version thing, so we
+	# won't make the call to process the excluded package's
+	# transitive exclusions
+
+	if ($excluded{$pack} > 0) {
+	  # the call to chk_pack_ex adds the packages exclusions to
+	  # the exclusion hash, retaining the transitive property
+	  # of exclusions
+
+	  chk_pack_ex($pack,$pack_exclude,$pack_priority);
+	}
+
 	next;
       }
 
