@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.10 $
-# Last Mod Date: $Date: 2003/08/08 00:18:36 $
+# Version: $Revision: 1.11 $
+# Last Mod Date: $Date: 2003/08/08 01:32:47 $
 #
 #####################################################################
 
@@ -334,7 +334,7 @@ sub logprint {
 sub check_lock {
   my ($application) = @_;
 
-  my ($user, $software, $lock, $mins_ago, $cont);
+  my ($user, $software, $lock, $mins_ago);
   local *LOCK;
 
   if (exists $switches{'s'}) {
@@ -356,13 +356,13 @@ sub check_lock {
     print "\"$user\" may still be using $software.\n";
     $mins_ago= (-M $lock) * 24 * 60;
     printf ("The lock was created %3.1f minutes ago.\n", $mins_ago);
-    print "Would you like to override?";
-    $cont=getc;
-    if (($cont ne "Y") && ($cont ne "y")) {
+
+    print "\n";
+    if (askyn("Would you like to override?", "Yes")) {
+      unlink($lock);
+    } else {
       $lockset = 0;
       return 0;
-    } else {
-      unlink($lock);
     }
   }
 
