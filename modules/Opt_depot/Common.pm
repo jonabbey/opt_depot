@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.6 $
-# Last Mod Date: $Date: 2003/08/07 22:50:34 $
+# Version: $Revision: 1.7 $
+# Last Mod Date: $Date: 2003/08/08 00:09:01 $
 #
 #####################################################################
 
@@ -46,7 +46,7 @@ use Text::ParseWords qw(quotewords);
 # and now a word wrapping module.  Let's set our word wrap limit at 70
 # characters per line while we're at it.
 
-use Text::Wrap qw($columns, &wrap);
+use Text::Wrap qw($columns &wrap);
 $columns = 70;
 
 # and get everything set up for export
@@ -73,7 +73,6 @@ use Exporter;
 # declare our package globals that we're not exporting
 
 our $usage_string;
-our *CONFIG;
 our $log_init;
 our $logfile = "";
 our $lockset = 0;
@@ -838,6 +837,7 @@ sub read_config {
   my ($file, $switchlist) = @_;
 
   my ($temp);
+  local(CONFIG);
 
   open(CONFIG, "$config_file") || die "Could not open $config_file\n";
 
