@@ -112,14 +112,14 @@ sub add_line {
 
   my($new_script);
 
-  open (OUT, ">$script.new") || die "could not open file $script.new";
+  open (OUT, ">scripts/$script.new") || die "could not open file scripts/$script.new";
   print OUT "#!$line\n";
   close (OUT);
 
   # time to append...
 
-  open (OUT, ">>$script.new") || die "could not open file $script.new";
-  open (IN,"$script") || die "could not open file $script.old";
+  open (OUT, ">>scripts/$script.new") || die "could not open file scripts/$script.new";
+  open (IN,"scripts/$script") || die "could not open file scripts/$script";
   while (<IN>) {
     s/<<INSTALL-DIR>>/$dir/;	
     print OUT; # copies the lines of old depot script to new one
