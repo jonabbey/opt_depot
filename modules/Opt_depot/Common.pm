@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.24 $
-# Last Mod Date: $Date: 2003/09/12 01:50:38 $
+# Version: $Revision: 1.25 $
+# Last Mod Date: $Date: 2003/09/12 01:54:34 $
 #
 #####################################################################
 
@@ -623,7 +623,16 @@ sub killdir {
 sub touch {
   my ($touchpath) = @_;
 
+  my ($now);
+
   local(*TEMP);
+
+  $now = time();
+
+  if (-e $touchpath) {
+    utime $now, $now, $touchpath;
+    return 1;
+  }
 
   open(TEMP, ">>$touchpath") || return 0;
   close(TEMP);
