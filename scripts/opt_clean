@@ -55,8 +55,8 @@
 # Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.17 $
-# Last Mod Date: $Date: 2003/08/12 06:54:25 $
+# Version: $Revision: 1.18 $
+# Last Mod Date: $Date: 2003/08/12 07:04:09 $
 #
 #########################################################################
 
@@ -191,7 +191,7 @@ sub read_pack_ex {
   @contents = readdir(IN);
   closedir(IN);
 
-  @allfiles = grep ((-e "$depot/$_") && (!/^\.\.?/), @contents);
+  @allfiles = grep ((-e "$depot/$_") && (!/^\.\.?$/), @contents);
 
   foreach $file (@allfiles) {
     if (-e "$depot/$file/.exclude") {
