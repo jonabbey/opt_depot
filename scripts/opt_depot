@@ -61,8 +61,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.53 $
-# Last Mod Date: $Date: 2003/10/14 22:25:23 $
+# Version: $Revision: 1.54 $
+# Last Mod Date: $Date: 2003/10/14 22:29:00 $
 #
 #####################################################################
 
@@ -1421,7 +1421,7 @@ foreach $subdir (@subdirs) {
   $opt_directory = $subdir;
 
   if ($subdir ne "man") {
-    link_me($subdir,$opt_directory, @packages);
+    link_me($subdir, @packages);
   } else {
     logprint("LINKING:  man\n",0);
 
