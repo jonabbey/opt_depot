@@ -54,8 +54,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.7 $
-# Last Mod Date: $Date: 2003/07/02 01:11:26 $
+# Version: $Revision: 1.8 $
+# Last Mod Date: $Date: 2003/07/02 01:17:08 $
 #
 #####################################################################
 
@@ -1541,7 +1541,11 @@ sub link_me {
 	  }
 	} # end if (-d "$depot/$package/$subdir/$file")
 
-	# no subdirectory unification to worry about, just link the file
+	# no subdirectory unification to worry about, just look to see
+	# if the new file or directory ($depot/$package/$subdir/$file
+	# can be a directory) has priority or exclusion rights over
+	# the current "$dest/$subdir/$file", if any.  if so, we'll
+	# unlink the old and link the new.
 
 	&link($package, "$depot/$package/$subdir/$file", "$dest/$subdir/$file");
       }
