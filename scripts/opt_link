@@ -52,8 +52,8 @@
 # Jonathan Abbey 29 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.19 $
-# Last Mod Date: $Date: 2003/09/21 07:50:25 $
+# Version: $Revision: 1.20 $
+# Last Mod Date: $Date: 2003/09/22 06:59:58 $
 #
 #####################################################################
 
@@ -556,11 +556,20 @@ sub exclude_me {
       if ($ex_priority == 0) {
 	# Ah, a generic exclusion - let the blood orgy begin
 
-	if (!$test) {
-	  unlink ("$depot/$ex_pack");
-	}
+	# but only if the link points to a site volume we've got
+	# defined in our sites file.. if we find a package name in the
+	# exclude file that we wouldn't link if it wasn't there, we
+	# won't be responsible for removing it.
 
-	$activity = 1; # Record this dark and foreboding event
+	$link_site = extractdir(resolve($depot, readlink("$depot/$ex_pack")));
+
+	if (defined $sitedirs{$link_site}) {
+	  if (!$test) {
+	    unlink ("$depot/$ex_pack");
+	  }
+
+	  $activity = 1; # Record this dark and foreboding event
+	}
       } else {
 	# it's not a manual exclusion - check it out
 
