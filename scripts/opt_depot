@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.34 $
-# Last Mod Date: $Date: 2003/08/15 03:19:40 $
+# Version: $Revision: 1.35 $
+# Last Mod Date: $Date: 2003/08/18 21:30:30 $
 #
 #####################################################################
 
@@ -91,14 +91,9 @@ $opt_file = ".made_by_opt_depot";
 # %priority - Contains files and package names
 #             that have priority lines associated with them.
 #
-#             All files and packages listed in the .priority file are
-#             assigned a priority number, starting at 1 for the first
-#             file mentioned in the .priority file and increasing for
-#             each file listed in the .priority file.  In case of a
-#             conflict, files with lower priority numbers in %priority
-#             will be given priority over files with higher priority
-#             numbers (files that are listed later in the .priority
-#             file).
+#             All files and packages listed in the $dest/.priority
+#             file are assigned a priority number, with the earliest
+#             entries in the file given the highest priority value
 #
 #             If a file is involved with a conflict but there are no
 #             priority lines specified for that file, opt_depot will
@@ -217,12 +212,12 @@ sub read_exfile {
 	  # leading slash -- take this as an absolute path name
 	  # $1 is the complete absolute path/filename
 
-	  $exclude{"$1"}=1;
+	  $exclude{removelastslash($1)}=1;
 	} else {
 	  # take this as a depot directory relative path
 	  # $1 is the complete relative path and filename
 
-	  $exclude{"$depot/$1"}=1;
+	  $exclude{removelastslash("$depot/$1")}=1;
 	}
       } else {
 
@@ -236,12 +231,12 @@ sub read_exfile {
 	  # leading slash -- take this as an absolute path name
 	  # $1 is the complete absolute path/filename
 
-	  $exclude{"$1"}=1;
-	} elsif (/^\s*(\S*)/) {
+	  $exclude{removelastslash($1)}=1;
+	} elsif (/^\s*(\S+)/) {
 	  # take this as a depot directory relative path
 	  # $1 is the complete relative path and filename
 	
-	  $exclude{"$depot/$1"}=1;
+	  $exclude{removelastslash("$depot/$1")}=1;
 	} else {
 	  logprint("  ERROR:  bad entry in .exclude file \"$_\"", 1);
 	}
@@ -318,25 +313,21 @@ sub read_pack_ex {
 	    # leading slash -- take this as an absolute path name
 	    # $1 is the complete absolute path/filename
 	    $exclude{"$1"}=1;
-
-	    if ($switches{'z'}) {
-	      print"Excluding $1\n";
-	    }
 	  } elsif (/^\s*([^\/]+\/\S*)/) {
 	    # No leading slash but there are embedded slashes..
 	    # take this as a depot directory relative path
 	    # $1 is the complete relative path and filename
 
 	    $exclude{"$depot/$1"}=1;
-
-	    if ($switches{'z'}) {
-	      print"Excluding $depot/$1\n";
-	    }
 	  } elsif (/^\s*([^\/]+)$/) {
 	    # No leading slash and no embedded slashes take this as a
-	    # package name and version num if any is included.  Don't
-	    # worry about those in per-package exclusions, opt_link
-	    # looks at those at depot link time
+	    # package name.  We don't care about packages in
+	    # per-package exclusion files.. those are for opt_link to
+	    # handle.
+
+	    # Note that this regexp is a bit underspecified, since it
+	    # will encompass whitespace, but we don't care since we're
+	    # just ignoring it anyway
 
 	    next;
 	  } else {
@@ -366,51 +357,60 @@ sub read_pack_ex {
 sub read_prifile {
   my($prifile) = @_;
 
-  my($p);
+  my(@parray, $i);
 
-  if (-e $prifile) {
-    open (PRIFILE, $prifile) || die "Could not open $prifile";
-    $p = 1;
+  if (!-e $prifile) {
+    return;
+  }
 
-    while (<PRIFILE>) {
-      s/\s+$//;			# cut off trailing whitespace
+  open (PRIFILE, $prifile) || die "Could not open $prifile";
 
-      if (/^\s*#/) {
-	next;			# skip comment line
-      }
+  while (<PRIFILE>) {
+    s/\s+$//;			# cut off trailing whitespace
 
-      if (/^\s*$/) {
-	next;			# skip blank line
-      }
-
-      if (/^\s*\"/ || /^\s*\'/) {
-	$_ = parsequoted($_, 1); # take out escapes
-
-	if (/^(\/.*)/) {
-	  # leading slash - absolute filename
-	  # handle priority for individual file
-	  # this clause handles absolute pathnames
-	
-	  $priority{"$1"}= ++$p;
-	} else {
-	  # this clause handles depot relative pathnames
-	  $priority{"$depot/$1"}= ++$p;
-	}
-      } else {
-	if (/^\s*(\/\S+)/) {
-	  # leading slash - absolute filename
-	  # handle priority for individual file
-	  # this clause handles absolute pathnames
-	
-	  $priority{"$1"}= ++$p;
-	} elsif (/^\s*(\S*)$/) {
-	  # this clause handles depot relative pathnames
-	  $priority{"$depot/$1"}= ++$p;
-	}
-      }
+    if (/^\s*#/) {
+      next;			# skip comment line
     }
 
-    close(PRIFILE);
+    if (/^\s*$/) {
+      next;			# skip blank line
+    }
+
+    if (/^\s*\"/ || /^\s*\'/) {
+      $_ = parsequoted($_, 1); # take out escapes
+
+      if (/^(\/.*)/) {
+	# leading slash - absolute filename
+	# handle priority for individual file
+	# this clause handles absolute pathnames
+	
+	unshift(@parray, $1);
+      } else {
+	# this clause handles depot relative pathnames
+	unshift(@parray, "$depot/$1");
+      }
+    } else {
+      if (/^\s*(\/\S+)/) {
+	# leading slash - absolute filename
+	# handle priority for individual file
+	# this clause handles absolute pathnames
+	unshift(@parray, $1);
+      } elsif (/^\s*(\S*)$/) {
+	# this clause handles depot relative pathnames
+	unshift(@parray, "$depot/$1");
+      }
+    }
+  }
+
+  close(PRIFILE);
+
+  # assign ascending priorities, as we go from the last entry from the
+  # priority file towards the first
+
+  $i = 1;
+
+  while ($i <= $#parray) {
+    $priority{$parray[$i]} = $i++;
   }
 }
 
@@ -463,7 +463,7 @@ sub makedir {
 sub smartlink {
   my ($package, $target, $link) = @_;
 
-  my ($oldtarget, $replace_it, $reason);
+  my ($oldtarget, $op, $np, $opp, $npp);
 
   # if we are supposed to exclude this file, skip linking it
 
@@ -491,7 +491,7 @@ sub smartlink {
     return 0;
   }
 
-  # okay, we've got a symlink at $link.  Let's find were it's pointing
+  # okay, we've got a symlink at $link.  Let's find where it's pointing
   # to.
 
   $oldtarget = resolve(extractdir($link), readlink($link));
@@ -512,14 +512,10 @@ sub smartlink {
   # let's check out our priority and exclusions for the old target
   # vs. the new
 
-  $replace_it = 0;
-  $reason = undef;
-
-  # if the old link is excluded, retarget the link
+  # if the old link is excluded, for sure retarget the link
 
   if (pathcheck($oldtarget, *exclude)) {
-    $replace_it = 1;
-    goto go_man_go;
+    return fablink($link, $target);
   }
 
   # --
@@ -531,76 +527,32 @@ sub smartlink {
   #
   # --
 
-  # if the new link target has explicit priority and the old one
-  # doesn't, retarget the link
+  # check explicit priorities for the specific old and new targets
+  # first..
 
-  if ($priority{$target} && !$priority{$oldtarget}) {
-    $replace_it = 1;
-    goto go_man_go;
-  }
+  $op = $priority{$oldtarget};
+  $np = $priority{$target};
 
-  # if the oldtarget has explicit priority, abort
-
-  if (!$priority{$target} && $priority{$oldtarget}) {
-    $replace_it = 0;
-    $reason = "priority";
-    goto go_man_go;
-  }
-
-  # if the new link's explicit priority is numerically lower (but non-zero)
-  # than the old one's, retarget the link
-  #
-  # if the old link's explicit priority is numerically lower, then we
-  # know for sure that we should keep the old link, and we won't
-  # bother to do any more tests
-
-  if ($priority{$target} && $priority{$oldtarget}) {
-    if ($priority{$target} > $priority{$oldtarget}) {
-      $replace_it = 1;
-    } else {
-      $replace_it = 0;
-      $reason = "priority";
-    }
-
-    goto go_man_go;
-  }
-
-  # if the new link is under a directory that has priority and
-  # the old link is not, and we have not previously seen any
-  # decisive reason to keep the old link, retarget the link
-
-  if (!pathcheck($oldtarget, *priority) && pathcheck($target, *priority)) {
-    $replace_it = 1;
-    goto go_man_go;
-  }
-
-  if (pathcheck($oldtarget, *priority) && !pathcheck($target, *priority)) {
-    $replace_it = 0;
-    $reason = "priority";
-    goto go_man_go;
-  }
-
-  # if the new link's target is under a directory that has a lower
-  # non-zero priority value than the old link, retarget the link.
-
-  if (pathcheck($oldtarget, *priority) && pathcheck($target, *priority)) {
-    if (pathcheck($target, *priority) > pathcheck($oldtarget, *priority)) {
-      $replace_it = 1;
-    } else {
-      $replace_it = 0;
-      $reason = "priority";
-    }
-
-    goto go_man_go;
-  }
-
- go_man_go:
-
-  if ($replace_it) {
+  if ($op > $np) {
+    return 0;
+  } elsif ($np > $op) {
     return fablink($link, $target);
   }
 
-  if ($reason ne "priority") {
+  # now check for the old and new path priorities
+
+  $opp = pathcheck($oldtarget, *priority);
+  $npp = pathcheck($target, *priority);
+
+  if ($npp > $opp) {
+    return fablink($link, $target);
+  }
+
+  # $opp is >= $npp, then.  If $opp is 0, $npp must be as well, and we
+  # have a conflict with no priorities to help us resolve it.  Make a
+  # note.
+
+  if (!$opp) {
     push(@conflicts,"  $target (conflict: $oldtarget)\n");
   }
 
@@ -673,7 +625,7 @@ sub manlink {
     return;
   }
 
-  # extract all files and directories that don't begin with .
+  # extract all files and directories
 
   opendir (MAN, "$depot/$package/man") || print "Could not open $depot/$package/man.";
   @files=grep (!/^\.\.?$/, readdir(MAN));
@@ -859,9 +811,7 @@ sub synthesize_dir {
 	close NEW;
       }
 
-      if ($switches{'v'}) {
-	print "MKDIR $temp\n";
-      }
+      logprint("MKDIR $temp\n", 0);
     }	
 
     $temp .= "/";  # add trailing /
@@ -885,23 +835,24 @@ sub synthesize_dir {
 #########################################################################
 sub depth_first {
 
-  my ($new_pack, $old_pack, $opt_directory) = @_;
+  my ($new_pack_root, $old_pack_root, $opt_directory) = @_;
 
   my ($current_dir, @dirs, @files, @contents,$temp);
   my ($pack_prefix, $merge_target);
+  my ($new_file, $old_file);
 
   # The first time we enter this function, we'll prep the @all_dirs
-  # array with the name of the $new_pack.  This should be an
+  # array with the name of the $new_pack_root.  This should be an
   # unqualified package name, as the assumption is that the bulk of
   # the opt_depot script is run after we do a chdir() into the $depot
   # directory.
 
   if ($#all_dirs < 0) {
-    $all_dirs[0] = $new_pack;
+    $all_dirs[0] = $new_pack_root;
   }
 
   # Now we continue with our depth-first traversal.  What we want to
-  # do is to visit all subdirectories of $depot/$new_pack in
+  # do is to visit all subdirectories of $depot/$new_pack_root in
   # depth-first order.  When the recursive traversal phase is done, we
   # will see if any files exist in the subdirectory ($current_dir)
   # that we are visiting in both the new package we are linking in and
@@ -916,48 +867,56 @@ sub depth_first {
   @contents = readdir(DIR);
   closedir(DIR);
 
-  @dirs = grep (("$current_dir/$_" !~ /\/\./) && (-d "$current_dir/$_"), @contents);
+  @dirs = grep (!/^\.\.?$/ && -d "$current_dir/$_", @contents);
+  @files = grep (!-d "$current_dir/$_", @contents);
 
   foreach $dir (@dirs) {
     push (@all_dirs, "$current_dir/$dir");
   }
 
   if ($#all_dirs >= 0) {
-    depth_first($new_pack, $old_pack, $opt_directory);
+    depth_first($new_pack_root, $old_pack_root, $opt_directory);
   }
 
   # now that we've finished recursing down, let's take a look at
   # what's in this directory and see if we need to add some merge
   # stuff here
 
-  @files = grep (("$current_dir/$_" !~ /\/\./) && (!-d "$current_dir/$_"), @contents);
-
   foreach $file (@files) {
     $new_file = "$current_dir/$file";
 
-    # copy $new_file string to $old_file, replacing the $new_pack
-    # prefix with the $old_pack prefix, so that we can compare the
+    # copy $new_file string to $old_file, replacing the $new_pack_root
+    # prefix with the $old_pack_root prefix, so that we can compare the
     # existence of files in the common relative location of the new
     # and old packages we're looking at merging
 
     $old_file = $new_file;
-    $temp = $new_pack;
+    $temp = $new_pack_root;
     $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
-    $old_file =~ s/^$temp/$old_pack/;
+    $old_file =~ s/^$temp/$old_pack_root/;
 
-    $pack_prefix = first_path_element($new_pack);
+    print "\nHey! \$new_file is $new_file, \$old_file is $old_file\n";
+
+    $pack_prefix = first_path_element($new_pack_root);
+
+    if ($pack_prefix ne $new_pack_root) {
+      print "Woah, guess the first_path_element call in depth_first was needed after all..\n";
+      print "\$pack_prefix = $pack_prefix\n";
+      print "\$new_pack_root = $new_pack_root\n";
+    }
 
     if ($current_dir =~ /^$pack_prefix\/$opt_directory\/(.*)$/) {
       $merge_target = "$dest/$opt_directory/$1";
+      print "\nHey!  \$merge_target is $merge_target\n";
     } else {
       print "Error, couldn't break the '$pack_prefix/$opt_directory' prefix from '$current_dir'\n";
       next;
     }
 
-    if (!exists $merge_list{$merge_target}) {
+    if (!defined $merge_list{$merge_target}) {
       if ((-e $new_file && !-e $old_file) ||
-	  (pathcheck($new_file, *priority) < pathcheck($old_file, *priority))) {
-	if (pathcheck("$new_file", *exclude)) {
+	  (pathcheck($new_file, *priority) > pathcheck($old_file, *priority))) {
+	if (pathcheck($new_file, *exclude)) {
 	  logprint("\n  *** EXCLUDING DIRECTORY: $new_file\n\n", 0);
 	} else {
 	  $merge_list{$merge_target} = 1;
@@ -1002,12 +961,7 @@ sub link_me {
 
     if (-d "$depot/$package/$subdir") {
       opendir(SUBDIR, "$depot/$package/$subdir") || print "Could not open $depot/$package/$subdir\n";
-
-      # extract all files and directories in
-      # $package/$subdir that don't begin with .
-
       @files= grep (!/^\.\.?$/, readdir(SUBDIR));
-
       closedir(SUBDIR);
 
       for $file (@files) {
@@ -1024,7 +978,7 @@ sub link_me {
 
 	    $old_pack = readlink("$dest/$common_dir");
 
-	    if ($old_pack =~ /^$depot\/?(.*)/) {
+	    if ($old_pack =~ /^$depot\/(.*)/) {
 	      $old_pack = $1;
 	    } else {
 	      # old link points outside of the depot tree, leave it alone
@@ -1068,7 +1022,7 @@ sub link_me {
 	    # Cool.  We'll still need to record the subdirectories
 	    # for further recursion.
 
-	    if (! exists $pack_hash{$common_dir}) {
+	    if (! defined $pack_hash{$common_dir}) {
 	      @temp_list[0] = $new_pack;
 	      $pack_hash{$common_dir} = [ @temp_list ];
 	    } else {
