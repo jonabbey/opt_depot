@@ -52,8 +52,8 @@
 # Jonathan Abbey 29 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.18 $
-# Last Mod Date: $Date: 2003/09/21 07:28:29 $
+# Version: $Revision: 1.19 $
+# Last Mod Date: $Date: 2003/09/21 07:50:25 $
 #
 #####################################################################
 
@@ -240,7 +240,7 @@ sub scan_depot {
   foreach $package (@allpackages) {
     # set default priority of package to 0.
     # We'll check against @optlinks in a second
-    $installed{$package} = 0;		
+    $installed{$package} = 0;
   }
 
   foreach $link (@optlinks) {
@@ -258,7 +258,7 @@ sub scan_depot {
 
       $prev_site = extractdir($prev_link);
 
-      if (exists $sitedirs{$prev_site}) {
+      if (defined $sitedirs{$prev_site}) {
 	$prev_installed{$link} = $priority{$sitedirs{$prev_site}};
 
 	# we've accounted for this link, and we know we can regenerate
@@ -307,7 +307,7 @@ sub process_sites {
     foreach $pack (@allpacks) {
       $pack_exclude = "$tempsite/$pack/.exclude";
 
-      if (exists $excluded{$pack}) { # package's generic name excluded
+      if (defined $excluded{$pack}) { # package's generic name excluded
 
 	# if this package was excluded by another package's exclude
 	# file (the exclude value is greater than zero), we'll assume
@@ -330,7 +330,7 @@ sub process_sites {
 	next;
       }
 
-      if (exists $excluded{"$sitelabel:$pack"}) { # ex is site specific
+      if (defined $excluded{"$sitelabel:$pack"}) { # ex is site specific
 	next;
       }
 
@@ -382,7 +382,7 @@ sub chk_pack_ex {
     if (/^\s*\'/ || /^\s*\"/) {
       $_ = parsequoted($_, 1); # process escapes
     }
-	
+
     if (/\//) {
       # if we've got a slash in the name, don't exclude it,
       # we're just interested in package exclusion
@@ -407,7 +407,7 @@ sub chk_pack_ex {
       # check to see that each is not already installed
       # from a higher priority package site
 
-      if (exists $installed{$package} && $installed{$package} < $priort) {
+      if (defined $installed{$package} && $installed{$package} < $priort) {
 	# the package cannot exclude another which has a higher (lower
 	# integer value) priority - therefore we can't install it
 
@@ -416,7 +416,7 @@ sub chk_pack_ex {
 
 	# remove this if it's currently linked
 	$excluded{$packname} = $priort;
-				
+
 	return 0; # we must not install this bad, BAD package.
       }
     }
@@ -428,11 +428,11 @@ sub chk_pack_ex {
 
     $excluded{$package} = $priort; # add to exclusion hash
 
-    if (! exists $excluded_by{$package}) {
+    if (! defined $excluded_by{$package}) {
       $excluded_by{$package} = $packname;
     }
 
-    if (exists $installed{$package}) {
+    if (defined $installed{$package}) {
       delete $installed{$package};# if it's in the installed hash remove it
     }
   }
@@ -456,7 +456,7 @@ sub chk_pack_ex {
 sub install_package {
   my ($packname,$pack_priority) = @_;
 
-  unless (exists $installed{$packname}) {
+  unless (defined $installed{$packname}) {
     $installed{$packname} = $pack_priority;
   }
 }
@@ -625,7 +625,7 @@ sub print_info {
 	if (!$switches{'q'} && !$test) {
 	  print LOG "\tAdded link: $pack\n";
 	}
-	
+
 	if ($verbose || $test) {
 	  print "\tAdded link: $pack\n";
 	}
@@ -636,7 +636,7 @@ sub print_info {
 	if (!$switches{'q'} && !$test) {
 	  print LOG "\tRemoved link: $pack\n";
 
-	  if (exists $excluded_by{$pack}) {
+	  if (defined $excluded_by{$pack}) {
 	    print LOG "\t\tExcluded By: $excluded_by{$pack}\n";
 	  }
 	}
@@ -644,7 +644,7 @@ sub print_info {
 	if ($verbose || $test) {
 	  print "\tRemoved link: $pack\n";
 
-	  if (exists $excluded_by{$pack}) {
+	  if (defined $excluded_by{$pack}) {
 	    print "\t\tExcluded By: $excluded_by{$pack}\n";
 	  }
 	}
@@ -700,9 +700,9 @@ if (!check_lock("opt_link")) {
   exit(1);
 }
 
-if (exists $switches{'v'}) {$verbose = 1;}
-if (exists $switches{'n'}) {$test = 1;}
-if (exists $switches{'g'}) {$get_most_recent = 1;}
+if (defined $switches{'v'}) {$verbose = 1;}
+if (defined $switches{'n'}) {$test = 1;}
+if (defined $switches{'g'}) {$get_most_recent = 1;}
 
 # File containing all the manually entered exclusion information
 
