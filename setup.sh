@@ -5,18 +5,53 @@
 #
 # Get enough information from the user to be able to find Perl 5
 #
+# ############################################################
+#
+# opt_depot
+#
+# Copyright (C) 1993-2003 The University of Texas at Austin.
+#
+# Contact information
+#
+# Author Email: opt-depot@arlut.utexas.edu
+# Email mailing list: opt-depot-users@arlut.utexas.edu
+#
+# US Mail:
+#
+# Computer Science Division
+# Applied Research Laboratories
+# The University of Texas at Austin
+# PO Box 8029, Austin TX 78713-8029
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+# 02111-1307, USA
+#
+# Written by: Computer Science Division, Applied Research Laboratories,
+# University of Texas at Austin  opt-depot@arlut.utexas.edu
+#
 # Release: $Name:  $
-# Version: $Revision: 1.7 $
-# Last Mod Date: $Date: 2003/07/09 02:21:44 $
+# Version: $Revision: 1.8 $
+# Last Mod Date: $Date: 2003/07/10 00:57:53 $
 #
 ###############################################################################
 
 depot_version="2.02"
 
-# 
-# Figure out how to do an echo without trailing newline
 #
-
+# subroutine to do an echo without trailing newline
+#
 prompt ()
 {
   if [ `echo "Z\c"` = "Z" ] > /dev/null 2>&1; then
@@ -59,6 +94,12 @@ EOF
         ;;
     esac
   else
+    echo "Perl has been located as $_perl_loc"
+    echo
+    echo "###########################################################"
+    $_perl_loc -v   # this call to perl prints out the version info needed
+    echo "###########################################################"
+    echo
     echo "$_perl_loc is too old, we require Perl 5.0"
     echo "or later for opt_depot"
     echo
