@@ -42,12 +42,12 @@
 # University of Texas at Austin  opt-depot@arlut.utexas.edu
 #
 # Release: $Name:  $
-# Version: $Revision: 1.8 $
-# Last Mod Date: $Date: 2003/07/10 00:57:53 $
+# Version: $Revision: 1.9 $
+# Last Mod Date: $Date: 2003/08/07 03:59:35 $
 #
 ###############################################################################
 
-depot_version="2.02"
+depot_version="3.0"
 
 #
 # subroutine to do an echo without trailing newline
@@ -159,12 +159,4 @@ echo
 echo "The following line will be added to the opt_depot scripts:"
 echo "#!$perl_loc"
 
-$perl_loc scripts/install.pl  -IGetopt $perl_loc
-if [ -f "opt.config" ]; then  
-  $perl_loc scripts/modify_archives 
-else
-  exit
-fi
-
-echo " "
-$perl_loc scripts/opt_copy $perl_loc
+$perl_loc scripts/opt_install $perl_loc
