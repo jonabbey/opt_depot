@@ -6,8 +6,8 @@
 # Get enough information from the user to be able to find Perl 5
 #
 # Release: $Name:  $
-# Version: $Revision: 1.6 $
-# Last Mod Date: $Date: 2003/07/08 03:54:10 $
+# Version: $Revision: 1.7 $
+# Last Mod Date: $Date: 2003/07/09 02:21:44 $
 #
 ###############################################################################
 
@@ -41,7 +41,6 @@ EOF
   if [ $? = 0 ]; then
     echo "Perl has been located as $_perl_loc"
     echo
-#  echo "### The following is pertinent perl version information ###"
     echo "###########################################################"
     $_perl_loc -v   # this call to perl prints out the version info needed
     echo "###########################################################"
