@@ -46,8 +46,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.14 $
-# Last Mod Date: $Date: 2003/08/12 06:44:12 $
+# Version: $Revision: 1.15 $
+# Last Mod Date: $Date: 2003/08/12 06:45:57 $
 #
 #########################################################################
 
@@ -349,6 +349,13 @@ sub cleandir {
       !-e "$dir/$opt_file") {
     return;
   }
+
+  # we may have removed symlinks above.. let's re-scan $dir one more
+  # time
+
+  opendir(DIR, "$dir") || die "Could not reopen(x2) $dir";
+  @contents = readdir(DIR);
+  closedir(DIR);
 
   # were there any non-symlinks left that we needed to worry about?
 
