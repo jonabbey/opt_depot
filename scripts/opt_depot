@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.23 $
-# Last Mod Date: $Date: 2003/08/08 01:35:47 $
+# Version: $Revision: 1.24 $
+# Last Mod Date: $Date: 2003/08/08 01:55:12 $
 #
 #####################################################################
 
@@ -976,7 +976,7 @@ sub depth_first {
   my ($new_pack, $old_pack, $opt_directory) = @_;
 
   my ($current_dir, @dirs, @files, @contents,$temp);
-  my ($merge_target);
+  my ($pack_prefix, $merge_target);
 
   # The first time we enter this function, we'll prep the @all_dirs
   # array with the name of the $new_pack.  This should be an
@@ -1033,11 +1033,12 @@ sub depth_first {
     $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
     $old_file =~ s/^$temp/$old_pack/;
 
-    if ($current_dir =~ /^$old_pack\/$opt_directory\/(.*)$/) {
+    $pack_prefix = first_path_element($new_pack);
+
+    if ($current_dir =~ /^$pack_prefix\/$opt_directory\/(.*)$/) {
       $merge_target = "$dest/$opt_directory/$1";
     } else {
-      print "Error, couldn't break the '$opt_directory' prefix from '$current_dir'\n";
-      print "old_pack is $old_pack, new_pack is $new_pack.\n";
+      print "Error, couldn't break the '$pack_prefix/$opt_directory' prefix from '$current_dir'\n";
       next;
     }
 
