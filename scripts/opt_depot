@@ -61,8 +61,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.54 $
-# Last Mod Date: $Date: 2003/10/14 22:29:00 $
+# Version: $Revision: 1.55 $
+# Last Mod Date: $Date: 2003/10/14 22:46:54 $
 #
 #####################################################################
 
@@ -159,6 +159,8 @@ sub needs_unify {
     if ($temp !~ /\/$/) {
       $temp = "$p/";
     }
+
+    $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
 
     if ($match =~ /^$temp/) {
       return 1;
