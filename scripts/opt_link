@@ -46,234 +46,42 @@
 # running opt_link from a directory other than depot itself
 # Erik Grostic 17 July 1997
 #
+# v3.0
+# Reworked a lot of code to use the new perl 5 features, and the Opt_depot::Common
+# module.
+# Jonathan Abbey 29 July 2003
+#
 # Release: $Name:  $
-# Version: $Revision: 1.5 $
-# Last Mod Date: $Date: 2003/07/19 02:45:31 $
+# Version: $Revision: 1.6 $
+# Last Mod Date: $Date: 2003/07/30 23:31:29 $
 #
 #####################################################################
 
-use Getopt::Std; # Used to get command line arguments
 use English;
+use FindBin qr($RealBin);
 
-$version = "2.02";
+use lib "$RealBin/../modules";
+use Opt_depot::Common;
+
+$version = "3.0";
 
 $activity = 0;
 
 ##defaults#############################################################
 
-
-# name of each individual package's exclusion file
-
-$exclude = ".exclude";
-
 # ordered priority listing of various package site labels and their
 # corresopnding directories
 
-$sites_file = "<<INSTALL-DIR>>/etc/sites";
+$sites_file = "$RealBin/../etc/sites";
 
-# configuration file containing $dest, $depot and $logdir vars The
-# <<->> string is replaced with the installation directory during the
-# copy process
+# configuration file containing $dest, $depot and $logdir vars
 
-$config_file = "<<INSTALL-DIR>>/etc/opt.config";
+$config_file = "$RealBin/../etc/opt.config";
 
 # The global variable $test is used with the -n command line option.
 # If it is true, then no actual linking or removal is performed
 
 $test = 0;
-
-##########################################################################
-#
-#                                                              print_usage
-#
-##########################################################################
-sub print_usage {
-  print "Usage:  opt_link [-vnq] [-f\"config file\"] [-d\"depot dir\"] [-l\"log directory\"] [-b\"base directory\"]\n";
-}
-
-##########################################################################
-#
-#                                                           get_vars
-# input: none
-#
-# output: uses the opt_config.serv file to gain the values of the
-#         $dest and $depot variables
-#
-##########################################################################
-
-sub get_vars {
-  my($i, $word, $localword, $check_local);
-
-  # we'll want to check for a local (dest relative) config file,
-  # unless we find a -f option
-
-  $check_local = 1;
-
-  # scan through our command line parameters to find the -f parameter,
-  # if it exists
-
-  $i = 0;
-
-  while ($ARGV[$i] =~ /^-(.*)$/) {
-    $word=$1;
-    $i = $i + 1;
-
-    if ($word =~ /^f/) {
-      # redefine config file location
-
-      if (length($word)==1) {	
-	$localword = $ARGV[$i];
-	$i = $i + 1;
-      } else {
-	$word =~ /^f(.*)$/;	
-	$localword = $1;
-      }
-
-      if (-r $localword) {
-	$config_file = $localword;
-	$check_local = 0;
-      } else {
-	die "Can't find/read $localword";
-      }
-    }
-  }
-
-  open(CONFIG,"$config_file") || die "Could not open $config_file\n";
-
-  while (<CONFIG>) {
-    if (/^Base:\s*(.*)/) {
-      $dest = $1;
-    }
-
-    if (/^Depot:\s*(.*)/) {
-      $depot = $1;
-    }
-
-    if (/^Log:\s*(.*)/) {
-      $logdir = $1;
-    }
-
-    if (/^Subdirs:\s*(.*)/) {
-      $dirs = $1;
-      $dirs =~ tr/\s//;
-      @subdirs = split /,/, $dirs;
-    }
-  }
-
-  close(CONFIG);
-
-  # The following lines are there in case a client has a local copy of the
-  # configuration file. This file should be placed into the $dest directory,
-  # and will override the file on the server.
-
-  if ($check_local && -e "$dest/opt.config") {
-    open(CONFIG,"$dest/opt.config") || die "Could Not open $dest/opt.config";
-
-    while (<CONFIG>) {
-      if (/^Base:\s*(.*)/) {
-	$dest = $1;
-      }
-
-      if (/^Depot:\s*(.*)/) {
-	$depot = $1;
-      }
-
-      if (/^Log:\s*(.*)/) {
-	$logdir = $1;
-      }
-
-      if (/^Subdirs:\s*(.*)/) {
-	$dirs = $1;
-	$dirs =~ tr/\s//;
-	@subdirs = split /,/, $dirs;
-      }
-    }
-
-    close(CONFIG);
-  }
-}
-
-#########################################################################
-#
-#                                                                 resolve
-#
-# input: $dir - absolute pathname of current directory
-#        $link - string containing the readlink() results for a
-#                symbolic link in $dir to be processed
-#
-# returns: absolute pathname of the target of the symbolic link
-#
-#########################################################################
-sub resolve {
-  my($dir, $link) = @_;
-
-  my(@alinkp, $d, $alinkp);
-
-  # make array representations of
-  # the current directory and symbolic link
-
-  # if we have a leading / in our $dir or $link,
-  # we'll need to shift to get rid of the leading
-  # empty array element
-
-  @dirp=split(/\//, $dir);
-  shift(@dirp) if (!($dirp[0]));
-  @linkp=split(/\//, $link);
-  shift(@linkp) if (!($linkp[0]));
-
-  # @alinkp is an array that we will build to contain the absolute
-  # link target pathname.  If the link does not begin with a /, it is
-  # a relative link, and we need to place our current directory into
-  # the @alinkp array.
-
-  if ($link !~ /^\//) {
-    @alinkp=@dirp;
-  }
-
-  # modify the @alinkp array according
-  # to each path component of the @linkp array
-  # (an array representation of the symbolic link
-  # given to us), to arrive at the ultimate absolute
-  # pathname of the symbolic link
-
-  $d = shift(@linkp);
-
-  while ($d) {
-    if ($d eq "..") {
-      pop(@alinkp);
-    } elsif ($d ne ".") {
-      push(@alinkp, $d);
-    }
-
-    $d=shift(@linkp);
-  }
-
-  # perl functions return the value of the last expression
-  # in the subroutine
-
-  $alinkp = join('/',@alinkp);
-}
-
-#########################################################################
-#
-#                                                              extractdir
-#
-# input: $filepath, a string containing a fully qualified path, terminating
-#        in a filename
-#
-# output: a string containing just the directory from $filepath
-#
-#########################################################################
-sub extractdir {
-  my ($filepath) = @_;
-
-  my (@comps);
-
-  @comps =split(/\//, $filepath);
-  pop @comps;
-
-  return join('/', @comps);
-}
 
 #####################################################################
 #
@@ -287,27 +95,56 @@ sub extractdir {
 #####################################################################
 
 sub read_exfile {
-  my($excludefile) = @_;
+  my ($excludefile) = @_;
 
-  if (-e $excludefile) {
-    open(EXCLUDEFILE,"$excludefile") || die "Could not open $excludefile \n";
+  if (!-e $excludefile) {
+    return;
   }
 
-  while (<EXCLUDEFILE>) {
-    if (/^\s*#/) {
-      next;
-    } elsif (/^\s*$/) {
-      next;
-    } else {
-      chomp;
+  open(EXCLUDEFILE,"$excludefile") || die "Could not open $excludefile \n";
 
+  while (<EXCLUDEFILE>) {
+    s/\s+$//;			# cut off trailing whitespace
+
+    if (/^$/ || /^\s*#/) {
+      next;
+    }
+
+    if (/^\s*\'/ || /^\s*\"/) {
+      $_ = parsequoted($_,0);	# leave in escapes
+
+      # if we have an unescaped :, treat that as a label separator,
+      # and skip this entry
+
+      if (!/(?:\\.|[^:])*$/) {	
+	next;
+      }
+
+      # now take out escapes
+
+      s/\\(.)/$1/g;
+    } else {
+      # no quotations, so we'll use the older, simpler parse logic
+
+      if (/:/) {	
+	next; # a labelled exclusion. Forget about it.
+      }
+    }
+
+    if ($_ =~ /\//) {
+      # if we've got a slash in the name, don't exclude it,
+      # we're just interested in full package exclusion
+      next
+    } else {
       # These manually excluded packages have priority over all other
       # exclusions, so we set priority to 0
-
+	
       $excluded{$_} = 0;
       $excluded_by{$_} = "Manual Exclusion";
     }
   }
+
+  close (EXCLUDEFILE);
 } # read_exfile
 
 #####################################################################
@@ -324,27 +161,51 @@ sub read_exfile {
 #####################################################################
 
 sub read_site_file {
-  my($sitefile) = @_;
-  my($i)= 1; # one is the highest level of priority that a label can have
-             # since physically installed packages have priority zero.
+  my ($sitefile) = @_;
+  my ($label, $tmpstr);
+
+  # we're going to loop over the site file, reading label/path pairs.
+  # we'll store this information in the %sitedirs and %priority
+  # hashes.. a given label is mapped to its priority in the %priority
+  # hash.  lower integer priority values translate to a higher
+  # priority level.. we give higher priority levels to the sites that
+  # are listed earlier in the site file.
+
+  my $i= 1;
 
   open(SITEFILE,"$sitefile") || die "Could not open $sitefile \n";
 
   while (<SITEFILE>) {
-    if (/^\s*#/) {
+    s/\s+$//;			# cut off trailing whitespace
+
+    if (/^$/ || /^\s*#/) {
       next;
-    } elsif (/^\s*$/) {
-      next;
-    } elsif (/^\s*(\S+)\s*(\S+)/) {
-      $priority{$1} = $i; # -stores the priority level associated
-                          #  with a label
-      push(@sites,$2);    # -saves all the package directories in a list
-                          #  ordered according to priority
-      $sitedirs{$2} = $1; # -records the directory information associated
-                          #  with a label (directory is $key)
-      $i++; # increment the priority level
+    }
+
+    if (/^\s*(\S+)\s*(.+)/) {
+      $label = $1;
+
+      # now, really, we can't have a colon in the site labels or the
+      # label:package syntax in .exclude and .priority files will fail.
+
+      if ($label =~ /:/) {
+	die("Error, $sitefile contains a site label ($label) which contains a colon\n";
+      }
+
+      $tmpstr = $2;
+
+      if ($tmpstr =~ /^\'/ || $tmpstr =~ /^\"/) {
+	$tmpstr = parsequoted($tmpstr,1); # process escapes
+      }
+
+      $priority{$label} = $i;
+      push(@sites,$tmpstr);
+      $sitedirs{$tmpstr} = $label;
+      $i++;
     }
   }
+
+  close(SITEFILE);
 } # read_site_file
 
 #####################################################################
@@ -365,76 +226,103 @@ sub read_site_file {
 sub scan_depot {
   my ($depotdir) = @_;
 
-  my (@allpackages,@optlinks,$label,$targetdir,@temp_pack,$directory);
-  my ($prev_label,$prev_priority,$prev_link);
+  my (@allpackages,@optlinks);
+  my ($prev_link,$prev_site,$link,$package);
 
-  opendir(OPT,"$depotdir") || print "could not open $depotdir";
-  @allpackages = grep (-d "$depotdir/$_", readdir OPT);
+  opendir(OPT,"$depotdir") || logprint("could not open $depotdir", 1);
+  @allpackages = grep (-d "$depotdir/$_" && !/^\.\.?$/, readdir OPT);
   rewinddir(OPT);
-
   @optlinks = grep (-l "$depotdir/$_", readdir OPT); # read in links only
-  foreach (@allpackages) {
+  closedir(OPT);
+
+  foreach $package (@allpackages) {
     # set default priority of package to 0.
     # We'll check against @optlinks in a second
-    $installed{$_} = 0;		
+    $installed{$package} = 0;		
   }
 
-  foreach (@optlinks) {
-    $prev_link =  readlink "$depotdir/$_"; # name of existing site
+  foreach $link (@optlinks) {
+    $prev_link = resolve($depotdir, readlink("$depotdir/$link"));
 
-    if ($prev_link !~ /^\//) {
-      # if prev_link is not absolute
-      $prev_link = "$depotdir/$prev_link";
-    }
-
-    if (!(-e $prev_link)) {	# clean up links to non-existing packages
-      print "Removing $depotdir/$_ link to non-existent package\n";
+    if (!-e $prev_link) {	# clean up links to non-existing packages
+      logprint("Removing $depotdir/$link link to non-existent package\n", 1);
 
       if (!$test) {
-	unlink("$depotdir/$_") || print "Could not unlink $depotdir/$_\n";
+	unlink("$depotdir/$link") || logprint("Could not unlink $depotdir/$link\n", 1);
+	delete $installed{$link};
+      }
+    } else {
+      # get the path to the site that the package was linked from
+
+      $prev_site = extractdir($prev_link);
+
+      if (exists $sitedirs{$prev_site}) {
+	$prev_installed{$link} = $priority{$sitedirs{$prev_site}};
+
+	# we've accounted for this link, and we know we can regenerate
+	# or unmake it according to our priority and exclusion
+	# files.. take it out of the list we generated of
+	# directories/directory links under $depotdir.
+
+	delete $installed{$link};
+      } else {
+	logprint("Package $link is linked to an undefined site $prev_site\n", 1);
       }
     }
-
-    $directory = &extractdir("$depotdir/$_");
-    $prev_link=&resolve($directory, $prev_link);
-
-    @temp_pack = split(/\//,$prev_link); # remove pack name from site
-    pop (@temp_pack);
-    $prev_link = join('/',@temp_pack);
-    $prev_label = $sitedirs{$prev_link};
-    $prev_priority = $priority{$prev_label};
-    $prev_installed{$_} = $prev_priority;
-    delete $installed{$_};	# pretend it's not there, just in case its
-				# going to be excluded during this run
   }
-
-  delete $installed{"."};  # neither of these two entries should be in
-  delete $installed{".."}; # the %installed hash
 } # scan_depot
 
 #####################################################################
 #
-#                                                     install_package
-# input: * $packname - name of the package to be added
-#                    to %installed
-#        * $pack_priority - the priority of the package to be installed
+#                                                       process_sites
+# input: none
 #
-# uses:  * %installed - contains packages which are slated for installation
+# uses:  * @sites array
+#        * %priority hash
+#        * %excluded hash
+#        * %installed hash
 #
-# output: $packname now has an entry in the %installed hash
+# output: %installed contains the packages which should be installed,
+#         and %excluded contains the packages which are to be excluded
 #
 #####################################################################
 
-sub install_package {
-  my ($packname,$pack_priority) = @_;
+sub process_sites {
+  my (@allpacks,$pack_priority,$pack_exclude,$pack,$tempsite);
 
-  # check to see if it's already
-  # in %installed hash
+  # the site volumes are ordered by priority in the @sites array, so
+  # we are starting with the highest-priority site volume and working
+  # our way down
 
-  unless (defined $installed{$packname}) {
-    $installed{$packname} = $pack_priority;
+  foreach $tempsite (@sites) {
+    $sitelabel = $sitedirs{$tempsite}; # stores the corresponding label
+    $pack_priority = $priority{$sitelabel}; # priority of site volume
+
+    opendir(PACKSITE,"$tempsite")|| logprint("Could not open directory $tempsite\n", 1);
+    @allpacks = grep (-d "$tempsite/$_" && !/^\.\.?$/, readdir PACKSITE);
+    closedir(PACKSITE);
+
+    foreach $pack (@allpacks) {
+      $pack_exclude = "$tempsite/$pack/.exclude";
+
+      if (defined $excluded{$pack}) { # package's generic name excluded
+	chk_pack_ex($pack,$pack_exclude,$pack_priority);
+	# the call to chk_pack_ex adds the packages exclusions to
+	# the exclusion hash, retaining the transitive property
+	# of exclusions
+	next;
+      }
+
+      if (defined $excluded{"$sitelabel:$pack"}) { # ex is site specific
+	next;
+      }
+
+      if (chk_pack_ex($pack,$pack_exclude,$pack_priority)) {
+	install_package($pack,$pack_priority);
+      }
+    }
   }
-}
+} # process_sites
 
 #####################################################################
 #
@@ -457,70 +345,104 @@ sub install_package {
 #####################################################################
 
 sub chk_pack_ex {
-  my($packname,$packex,$priort) = @_;
+  my ($packname,$packex,$priort) = @_;
 
-  my(@pack_exclusions);
+  my (@pack_exclusions);
 
-  if (-e $packex) {
-    # if a package has exclusion file
-
-    open(PACKEX,"$packex") || print"Error: Could not open $packex\n";
-
-    # read the package's exclude file
-
-    while (<PACKEX>) {
-      if(/^\s*#/) {
-	next;
-      } elsif (/^\s*$/) {
-	next;
-      } else {
-	push(@pack_exclusions, $_);
-      }
-    }
-
-    if (! $get_most_recent) {	# if get_most_recent is true then forget
-				# about priority conflicts
-
-      foreach (@pack_exclusions) {
-				# check to see that each is not already installed
-				# from a higher priority package site
-	chomp;
-
-	if (defined $installed{$_} && $installed{$_} < $priort) {
-	  # the package cannot exclude another which has
-	  # a higher priority - therefore we can't install it
-
-	  print "## Priority Conflict: could not install $packname\n";
-	  print "\tCould not exclude $_\n";
-
-	  $excluded{$packname} = $priort; # remove this if it's
-				          # currently linked
-	  return 0; # we must not install this bad, BAD package.
-	}
-      }
-    }
-
-    foreach (@pack_exclusions) {	
-      # since there are no conflicts we can add these packages to the
-      # exclusions to hash
-
-      chomp;
-
-      $excluded{$_} = $priort; # add to exclusion hash
-
-      if (! defined $excluded_by{$_}) {
-	$excluded_by{$_} = $packname;
-      }
-
-      if (defined $installed{$_}) {
-	delete $installed{$_};# if it's in the installed hash remove it
-      }
-    }
-    undef(@pack_exclusions); # clear out the array
-    close(PACKEX);
+  if (!-e $packex) {
+    return 1;
   }
-  return 1; # package is good to go.
-} # chk_pack_ex
+
+  open(PACKEX,"$packex") || logprint("Error: Could not open $packex\n", 1);
+
+  while (<PACKEX>) {
+    s/\s+$//;			# cut off trailing whitespace
+
+    if (/^$/ || /^\s*#/) {
+      next;
+    }
+
+    if (/^\s*\'/ || /^\s*\"/) {
+      $_ = parsequoted($_, 1); # process escapes
+    }
+	
+    if (/\//) {
+      # if we've got a slash in the name, don't exclude it,
+      # we're just interested in package exclusion
+      next;
+    }
+
+    push(@pack_exclusions, $_);
+  }
+
+  close(PACKEX);
+
+  # if $get_most_recent is set, we have to ignore the fact that one site
+  # volume has a higher priority (was listed earlier) in the sites file..
+
+  # if $get_most_recent is not set, however, we're going to look to see
+  # if a given package has already been installed from a site volume with
+  # higher priority, in which case we have to forget about the $packname
+  # chk_pack_ex() was called on being installed
+
+  unless ($get_most_recent) {
+    foreach (@pack_exclusions) {
+      # check to see that each is not already installed
+      # from a higher priority package site
+
+      if (defined $installed{$_} && $installed{$_} < $priort) {
+	# the package cannot exclude another which has a higher (lower
+	# integer value) priority - therefore we can't install it
+
+	logprint("## Priority Conflict: could not install $packname\n", 1);
+	logprint("\tCould not exclude $_\n", 1);
+
+	# remove this if it's currently linked
+	$excluded{$packname} = $priort;
+				
+	return 0; # we must not install this bad, BAD package.
+      }
+    }
+  }
+
+  foreach (@pack_exclusions) {	
+    # since there are no conflicts we can add these packages to the
+    # exclusions to hash
+
+    $excluded{$_} = $priort; # add to exclusion hash
+
+    if (! defined $excluded_by{$_}) {
+      $excluded_by{$_} = $packname;
+    }
+
+    if (defined $installed{$_}) {
+      delete $installed{$_};# if it's in the installed hash remove it
+    }
+  }
+
+  return 1;
+}
+
+#####################################################################
+#
+#                                                     install_package
+#
+# This subroutine is used to record a priority value for a package to
+# be installed in the depot directory, if and only if there is not
+# already a package by that name installed from a non site volume
+# source.
+#
+# This information is stored in the global %installed hash.
+#
+#####################################################################
+
+sub install_package {
+  my ($packname,$pack_priority) = @_;
+
+  unless (defined $installed{$packname}) {
+    $installed{$packname} = $pack_priority;
+  }
+}
 
 #####################################################################
 #
@@ -536,63 +458,58 @@ sub chk_pack_ex {
 #
 #####################################################################
 sub link_me {
-  my($pack,$newlink,$oldlink,$oldpriority,$oldlabel,@temp_pack,$rwhere);
-  my($directory,$link);
+  my ($pack,$newlink,$oldlink,$oldpriority,$oldlabel,@temp_pack);
 
   foreach $pack (keys %installed) {
-    $newlink = @sites[$installed{$pack} - 1]; # what the site should be
 
-    if ($installed{$pack} > 0) {
-      # $pack is not physically installed
+    if ($installed{$pack} == 0) {
+      next;			# skip a physically installed package
+    }
 
-      if (-l "$depot/$pack") {
-	# A link exists. Check it.
+    # XXX is it necessary to have this assumption that the priority
+    # value mapped to in %installed is directly correlated to the site
+    # volume?  Need to look over all the code in opt_link and verify
+    # that that relation reliably holds. XXX
 
-	#oldlink
-	$rwhere =  readlink "$depot/$pack";
-	# extract the directory containing the file
-	# referenced in $link
+    # XXX might be better to do a direct mapping from package name to
+    # the site directory it was linked from.. ? XXX
 
-	$link = "$depot/$pack";
-	$directory = &extractdir($link);
-	$oldlink=&resolve($directory, $rwhere);
+    $newlink = $sites[$installed{$pack} - 1]; # what the site should be
 
-	# absolute name of existing site
+    if (-l "$depot/$pack") {
+      # A link exists. Check it.
 
-	@temp_pack = split(/\//,$oldlink);
-	pop (@temp_pack);
-	$oldlink = join('/',@temp_pack);
+      $oldlink = extractdir(resolve($depot, readlink("$depot/$pack")));
 
-	if ($oldlink ne $newlink) {
-	  # remove oldlink and make new one if the old one isn't in
-	  # installed
+      if ($oldlink ne $newlink) {
+	# remove oldlink and make new one if the old one isn't in
+	# installed
 
-	  $oldlabel = $sitedirs{$oldlink};
-	  $old_priority = $priority{$oldlabel};
+	$oldlabel = $sitedirs{$oldlink};
+	$old_priority = $priority{$oldlabel};
 
-	  unless ($installed{$pack} == $old_priority) {
-	    # if the link is not from the site it's supposed to be from
-	    # then remove it and replace with the correct link
+	unless ($installed{$pack} == $old_priority) {
+	  # if the link is not from the site it's supposed to be from
+	  # then remove it and replace with the correct link
 
-	    print "Replacing link $oldlink/$pack with $newlink/$pack\n";
+	  logprint("Replacing link $oldlink/$pack with $newlink/$pack\n", 1);
 
-	    if (!$test){
-	      unlink "$depot/$pack" || print"Could not unlink $oldlink/$pack\n";
-	      symlink ("$newlink/$pack","$depot/$pack") || print "Could not link $newlink/$pack to $depot/$pack\n";
-	    }
-
-	    $activity = 1; # yes, we've actually done something
+	  if (!$test) {
+	    unlink "$depot/$pack" || logprint("Could not unlink $oldlink/$pack\n", 1);
+	    symlink ("$newlink/$pack","$depot/$pack") || logprint("Could not link $newlink/$pack to $depot/$pack\n", 1);
 	  }
-	}
-      } else {
-	# No old link to remove. Just make the new one
 
-	if (!$test){
-	  symlink ("$newlink/$pack","$depot/$pack") || print "Could not link $newlink/$pack to $depot/$pack\n";
+	  $activity = 1; # yes, we've actually done something
 	}
-
-	$activity = 1; # Self destruct enabled.
       }
+    } else {
+      # No old link to remove. Just make the new one
+
+      if (!$test) {
+	symlink ("$newlink/$pack","$depot/$pack") || logprint("Could not link $newlink/$pack to $depot/$pack\n", 1);
+      }
+
+      $activity = 1; # Self destruct enabled.
     }
   }
 } # link_me
@@ -611,16 +528,15 @@ sub link_me {
 #
 #####################################################################
 sub exclude_me {
-  my($ex_pack,$label,$ex_site,$ex_priority,$link_site,@temp_pack,$rwhere);
-  my($link,$directory);
+  my ($ex_pack,$label,$ex_site,$ex_priority,$link_site);
 
   foreach $ex_pack (keys %excluded) {
-    if ($ex_pack =~ /^\s*(\S+):(\S+)/) {
+    if ($ex_pack =~ /^\s*([^:]+):(.+)/) {
       # exclusion is in the form of <label>:<package>
       $label = $1;
       $ex_pack = $2;
       $ex_priority = $priority{$label};
-    } else{
+    } else {
       $label = "";
       $ex_priority = $excluded{$ex_pack};
     }
@@ -639,18 +555,8 @@ sub exclude_me {
       } else {
 	# it's not a manual exclusion - check it out
 
-	$ex_site = @sites[$ex_priority - 1];
-
-	$rwhere = readlink("$depot/$ex_pack");
-	# extract the directory containing the file
-	# referenced in $link
-	$link = "$depot/$ex_pack";
-	$directory = &extractdir($link);
-	$link_site=&resolve($depot, $rwhere);
-
-	@temp_pack = split(/\//,$link_site);
-	pop (@temp_pack);
-	$link_site = join('/',@temp_pack);
+	$ex_site = $sites[$ex_priority - 1];
+	$link_site = extractdir(resolve($depot, readlink("$depot/$ex_pack")));
 
 	if (($ex_site eq $link_site)|| ($label eq "")) {
 
@@ -663,7 +569,7 @@ sub exclude_me {
 	    if (unlink ("$depot/$ex_pack")) { # My eyes!!!!
 	      $activity = 1; # Yesss!
 	    } else {
-	      print"Could not unlink $depot/$ex_pack\n";
+	      logprint("Could not unlink $depot/$ex_pack\n", 1);
 	    }
 	  }
 	}
@@ -672,57 +578,6 @@ sub exclude_me {
   }
 } #exclude_me
 
-#####################################################################
-#
-#                                                       process_sites
-# input: none
-#
-# uses:  * @sites array
-#        * %priority hash
-#        * %excluded hash
-#        * %installed hash
-#
-# output: %installed contains the packages which should be installed,
-#         and %excluded contains the packages which are to be excluded
-#
-#####################################################################
-
-sub process_sites {
-  my(@allpacks,$pack_priority,$pack_exclude,$pack);
-
-  foreach (@sites) {
-    $tempsite = $_; # stores the package site directory
-    $sitelabel = $sitedirs{$tempsite}; # stores the corresponding label
-    $pack_priority = $priority{$sitelabel}; # priority of site volume
-
-    opendir(PACKSITE,"$_")|| print"Could not open directory $_\n";
-    @allpacks = grep (-d "$tempsite/$_", readdir PACKSITE);
-    closedir (PACKSITE);
-
-    foreach (@allpacks) {
-      $pack = $_;
-      $pack_exclude = "$tempsite/$pack/$exclude";
-
-      if ($pack eq "." || $pack eq "..") {
-	next;
-      }
-
-      if (defined $excluded{$pack}) { # package's generic name excluded
-	&chk_pack_ex($pack,$pack_exclude,$pack_priority);
-	# the call to chk_pack_ex adds the packages exclusions to
-	# the exclusion hash, retaining the transitive property
-	# of exclusions
-	next;
-      }
-
-      if (defined $excluded{"$sitelabel:$pack"}) { # ex is site specific
-	next;
-      }
-
-      &install_package($pack,$pack_priority) if &chk_pack_ex ($pack,$pack_exclude,$pack_priority);
-    }
-  }
-} # process_sites
 
 #######################################################################
 #
@@ -736,15 +591,15 @@ sub process_sites {
 # output: prints some info
 #
 #######################################################################
-sub print_info{
-  my(@allpacks,$sitedirs,$pack_priority,$tempsite);
+sub print_info {
+  my (@allpacks,$sitedirs,$pack_priority,$tempsite);
 
   foreach (@sites) {
     if ($verbose || $test) {
       print"\nSite: $_ \n";
     }
 
-    if ($logging && !$test) {
+    if (!$switches{'q'} && !$test) {
       print LOG "\nSite: $_\n";
     }
 
@@ -760,7 +615,7 @@ sub print_info{
       if (($installed{$_} == $pack_priority) &&
 	  ($prev_installed{$_} != $pack_priority)) {
 
-	if ($logging && !$test) {
+	if (!$switches{'q'} && !$test) {
 	  print LOG "\tAdded link: $_\n";
 	}
 	
@@ -771,7 +626,7 @@ sub print_info{
 
       if (($prev_installed{$_} == $pack_priority) &&
 	  ($installed{$_} != $pack_priority)) {
-	if ($logging && !$test) {
+	if (!$switches{'q'} && !$test) {
 	  print LOG "\tRemoved link: $_\n";
 
 	  if (defined $excluded_by{$_}) {
@@ -790,47 +645,6 @@ sub print_info{
     }
   }
 } # print_info
-
-#######################################################################
-#
-#                                                              init_log
-# input: none
-#
-# uses: LOG filehandle
-#
-# output: opens the log file and prints the initial time and date
-#         information to the file
-#
-#######################################################################
-sub init_log {
-  my (@dest,$log);
-
-  @dest= split (/\//, $dest);           # naming log file
-  shift(@dest);
-
-  $log = "$logdir/".join(':', @dest);
-
-  if ($logging && !$test) {
-    open(LOG,">>$log") || print "Could not open file $log\n";
-    print LOG "\n\t**opt_link**  ".`date`."\n";
-  }
-} # init_log
-
-#######################################################################
-#
-#                                                             close_log
-# input: none
-#
-# uses: LOG filehandle
-#
-# output: closes the log file
-#
-#######################################################################
-sub close_log {
-  if ($logging) {
-    close(LOG)
-  }
-} # close_log
 
 #######################################################################
 #
@@ -859,127 +673,24 @@ sub print_header {
   }
 } # print_header
 
-#########################################################################
-#
-#                                                                procargs
-#
-# input: @ARGV - global command line arguments array
-#
-# output: sets variables that can be changed on the command line
-#
-#########################################################################
-sub procargs {
-
-  my ($word, $localword);
-
-  # note that we look for -f in the get_vars subroutine, so that we
-  # can allow for changes to the location of the opt.config file, but
-  # still override any other parameters defined in opt.config on the
-  # command line, here
-
-  while ($ARGV[0] =~ /^-(.*)$/) {
-    $word=$1;
-    $localword = "";
-
-    if ($word =~ /^d/) {
-
-      # redefine depot directory
-
-      if (length($word)==1) {	
-	shift(@ARGV);
-	$localword = $ARGV[0];
-      } else {
-	$word =~ /^d(.*)$/;	
-	$localword = $1;
-      }
-
-      &removelastslash($localword);
-      &dircheck($localword);
-      $depot=$localword;
-    } elsif ($word =~ /^b/) {
-
-      # redefine software base directory
-
-      if (length($word)==1) {	
-	shift(@ARGV);
-	$localword = $ARGV[0];
-      } else {
-	$word =~ /^b(.*)$/;	
-	$localword = $1;
-      }
-
-      &removelastslash($localword);
-      &dircheck($localword);
-      $dest=$localword;
-    } elsif ($word =~ /^l/) {
-
-      # redefine log directory
-
-      if (length($word)==1) {
-	shift(@ARGV);
-	$localword = @ARGV[0];
-      } else {
-	$word =~ /^l(.*)$/;	
-	$localword = $1;
-      }
-
-      &removelastslash($localword);
-      &dircheck($localword);
-      $logdir=$localword;
-    } else {
-
-      # set switches
-
-      if ($word =~ /(^[qvng]+)$/) {
-	@switches= split (//, $1);
-	for $switch (@switches) {
-	  $switches{$switch}=1;
-	}
-      } else {
-	print "\"$word\" is an invalid command entry!\n";
-	&print_usage();
-	exit 0;
-      }
-    }	
-
-    shift(@ARGV);
-  }
-
-  $logging = 1;
-
-  if ($switches{'q'}) {
-    $logging = 0;
-  }
-
-  if ($switches{'v'}) {
-    $verbose = 1;
-  }
-
-  if ($switches{'n'}) {
-    $test = 1;
-  }
-
-  if ($switches{'g'}) {
-    $get_most_recent = 1;
-  }
-
-  if ($#ARGV>0) {			
-    # too many arguments
-
-    print "Too many arguments!\n";
-    &print_usage();
-    exit (0);
-  }
-}
-
 ##########################################################################
 #                                                                        #
 #                                MAIN                                    #
 #                                                                        #
 ##########################################################################
 
-&get_vars;
-&procargs;
+
+$usage_string =<<'ENDUSAGE';
+Usage:  opt_link [-qvng] [-f\"config file\"] [-d\"depot dir\"]
+                 [-l\"log directory\"] [-b\"base directory\"]
+ENDUSAGE
+
+read_prefs($usage_string, $config_file, "qvng", @ARGV);
+init_log("opt_log $version");
+
+$switches{'v'} && $verbose = 1;
+$switches{'n'} && $test = 1;
+$switches{'g'} && $get_most_recent = 1;
 
 # File containing all the manually entered exclusion information
 
@@ -993,15 +704,16 @@ if (-e "$dest/sites") {
   $sites_file = "$dest/sites";
 }
 
-&print_header;
-&read_site_file($sites_file);
-&read_exfile($exclude_file);
-&scan_depot($depot);
-&process_sites;
-&link_me;
-&exclude_me;
-&init_log;
+print_header();
+read_site_file($sites_file);
+read_exfile($exclude_file);
+scan_depot($depot);
+process_sites();
+link_me();
+exclude_me();
+
 if ($activity) {
-  &print_info;
+  print_info();
 }
-&close_log;
+
+close_log();
