@@ -55,8 +55,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.46 $
-# Last Mod Date: $Date: 2003/10/11 02:10:49 $
+# Version: $Revision: 1.47 $
+# Last Mod Date: $Date: 2003/10/11 03:14:15 $
 #
 #####################################################################
 
@@ -980,123 +980,132 @@ sub link_me {
   my (%pack_hash, $common_dir, @temp_list);
   my ($i, $old_target, $old_pack, $new_pack, $temp, $element, $conflict);
   my (@recurse_list);
+  my ($change_made);
 
   logprint("LINKING:  $subdir\n", 0);
 
-  foreach $package (@pack_list) {
-    if (pathcheck("$depot/$package/$subdir", %exclude)) {
-      logprint("\n  *** EXCLUDING DIRECTORY: $depot/$package/$subdir\n\n", 0);
+  do {
+    $change_made = 0;
 
-      next;
-    }
+    foreach $package (@pack_list) {
+      if (pathcheck("$depot/$package/$subdir", %exclude)) {
+	logprint("\n  *** EXCLUDING DIRECTORY: $depot/$package/$subdir\n\n", 0);
+	
+	next;
+      }
 
-    if (!-d "$depot/$package/$subdir") {
-      next;
-    }
+      if (!-d "$depot/$package/$subdir") {
+	next;
+      }
 
-    if (opendir(SUBDIR, "$depot/$package/$subdir")) {
-      @files= grep (!/^\.\.?$/, readdir(SUBDIR));
-      closedir(SUBDIR);
-    } else {
-      logprint("Could not open $depot/$package/$subdir\n", 1);
-    }
+      if (opendir(SUBDIR, "$depot/$package/$subdir")) {
+	@files= grep (!/^\.\.?$/, readdir(SUBDIR));
+	closedir(SUBDIR);
+      } else {
+	logprint("Could not open $depot/$package/$subdir\n", 1);
+      }
 
-    foreach $file (@files) {
-      undef @temp_list;
-      $common_dir = "$subdir/$file";
+      foreach $file (@files) {
+	undef @temp_list;
+	$common_dir = "$subdir/$file";
+	
+	if (-d "$depot/$package/$common_dir") {
+	  # we're looking at a subdirectory.. unify?
 
-      if (-d "$depot/$package/$common_dir") {
-	# we're looking at a subdirectory.. unify?
+	  $new_pack = "$package/$common_dir";
 
-	$new_pack = "$package/$common_dir";
+	  if (-l "$dest/$common_dir" ) {
+	    # link already exists in $dest
 
-	if (-l "$dest/$common_dir" ) {
-	  # link already exists in $dest
+	    logprint("Found already exists link $dest/$common_dir->" . readlink("$dest/$common_dir") . "\n", -1);
 
-	  logprint("Found already exists link $dest/$common_dir->" . readlink("$dest/$common_dir") . "\n", -1);
+	    $old_target = resolve(extractdir("$dest/$common_dir"),
+				  readlink("$dest/$common_dir"));
 
-	  $old_target = resolve(extractdir("$dest/$common_dir"),
-				readlink("$dest/$common_dir"));
-
-	  if ($old_target !~ /^$depot\/(.*)/) {
-	    # old link points outside of the depot tree, leave it alone
-	    next;
-	  }
-
-	  $old_pack = $1;
-
-	  # $old_pack now has a depot directory-relative path from
-	  # the old link
-
-	  if ($new_pack eq $old_pack) {
-	    # nothing to do, the link points where we think it should
-	    # here
-	    next;
-	  }
-
-	  undef %merge_list;
-
-	  # check and see if a merge is actually required, which may
-	  # be the case if the old target is itself a directory and
-	  # our command-line/config file options indicate that we
-	  # should do recursive unification under $subdir
-
-	  if (!-d $old_target) {
-	    logprint("LINKME-ERROR: $old_target is not a directory", -1);
-	  }
-
-	  if (-d $old_target && needs_unify($subdir)) {
-	    depth_first($new_pack, $old_pack);
-
-	    # if we've decided to merge things, let's remove the
-	    # old symlink and create as many subdirectories as
-	    # necessary.  We'll create records in %pack_hash of
-	    # directories we'll need to continue to recurse down
-	    # into in order to possibly do deeper directory
-	    # unification
-
-	    if (defined %merge_list) {
-	      @temp_list[0] = $old_pack;
-	      @temp_list[1] = $new_pack;
-	      $pack_hash{$common_dir} = [ @temp_list ];
-	      unlink("$dest/$common_dir"); # remove old symlink
-
-	      foreach $dir (keys %merge_list) {
-		synthesize_dir($dir);
-	      }
-
-	      next; # we've made directories, we'll do the linking through recursion
+	    if ($old_target !~ /^$depot\/(.*)/) {
+	      # old link points outside of the depot tree, leave it alone
+	      next;
 	    }
-	  }  # end if (-d $old_target && ..)
-	} elsif (-d "$dest/$common_dir") {
-	  # there is already a subdirectory built for us.
-	  # Cool.  We'll still need to record the subdirectories
-	  # for further recursion.
 
-	  if (! defined $pack_hash{$common_dir}) {
-	    @temp_list[0] = $new_pack;
-	    $pack_hash{$common_dir} = [ @temp_list ];
-	  } else {
-	    @temp_list = @{ $pack_hash{$common_dir}};
-	    push (@temp_list, $new_pack);
-	    $pack_hash{$common_dir} = [ @temp_list ];
+	    $old_pack = $1;
+
+	    # $old_pack now has a depot directory-relative path from
+	    # the old link
+
+	    if ($new_pack eq $old_pack) {
+	      # nothing to do, the link points where we think it should
+	      # here
+	      next;
+	    }
+
+	    undef %merge_list;
+
+	    # check and see if a merge is actually required, which may
+	    # be the case if the old target is itself a directory and
+	    # our command-line/config file options indicate that we
+	    # should do recursive unification under $subdir
+
+	    if (!-d $old_target) {
+	      logprint("LINKME-ERROR: $old_target is not a directory", -1);
+	    }
+
+	    if (-d $old_target && needs_unify($subdir)) {
+	      depth_first($new_pack, $old_pack);
+
+	      # if we've decided to merge things, let's remove the
+	      # old symlink and create as many subdirectories as
+	      # necessary.  We'll create records in %pack_hash of
+	      # directories we'll need to continue to recurse down
+	      # into in order to possibly do deeper directory
+	      # unification
+
+	      if (defined %merge_list) {
+		@temp_list[0] = $old_pack;
+		@temp_list[1] = $new_pack;
+		$pack_hash{$common_dir} = [ @temp_list ];
+		unlink("$dest/$common_dir"); # remove old symlink
+		
+		foreach $dir (keys %merge_list) {
+		  synthesize_dir($dir);
+		}
+		
+		$change_made = 1;
+		
+		next; # we've made directories, we'll do the linking through recursion
+	      }
+	    }  # end if (-d $old_target && ..)
+	  } elsif (-d "$dest/$common_dir") {
+	    # there is already a subdirectory built for us.
+	    # Cool.  We'll still need to record the subdirectories
+	    # for further recursion.
+
+	    if (! defined $pack_hash{$common_dir}) {
+	      @temp_list[0] = $new_pack;
+	      $pack_hash{$common_dir} = [ @temp_list ];
+	    } else {
+	      @temp_list = @{ $pack_hash{$common_dir}};
+	      push (@temp_list, $new_pack);
+	      $pack_hash{$common_dir} = [ @temp_list ];
+	    }
+
+	    next; # ditto -- wait to recurse to link
 	  }
-
-	  next; # ditto -- wait to recurse to link
+	} # end if (-d "$depot/$package/$common_dir")
+	
+	# no subdirectory unification to worry about, just look to see
+	# if the new file or directory ($depot/$package/$subdir/$file
+	# can be a directory) has priority or exclusion rights over
+	# the current "$dest/$subdir/$file", if any.  if so, we'll
+	# unlink the old and link the new.
+	
+	logprint("Calling smartlink on ($package, $depot/$package/$common_dir, $dest/$common_dir)\n", -1);
+	
+	if (smartlink($package, "$depot/$package/$common_dir", "$dest/$common_dir")) {
+	  $change_made = 1;
 	}
-      } # end if (-d "$depot/$package/$common_dir")
-
-      # no subdirectory unification to worry about, just look to see
-      # if the new file or directory ($depot/$package/$subdir/$file
-      # can be a directory) has priority or exclusion rights over
-      # the current "$dest/$subdir/$file", if any.  if so, we'll
-      # unlink the old and link the new.
-
-      logprint("Calling smartlink on ($package, $depot/$package/$common_dir, $dest/$common_dir)\n", -1);
-
-      smartlink($package, "$depot/$package/$common_dir", "$dest/$common_dir");
-    } # foreach $file
-  } # foreach $package
+      } # foreach $file
+    } # foreach $package
+  } until (!$change_made);
 
   #
   # make recursive call to link_me if necessary..
