@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.35 $
-# Last Mod Date: $Date: 2003/08/18 21:30:30 $
+# Version: $Revision: 1.36 $
+# Last Mod Date: $Date: 2003/08/18 21:48:14 $
 #
 #####################################################################
 
@@ -851,6 +851,10 @@ sub depth_first {
     $all_dirs[0] = $new_pack_root;
   }
 
+  print "\nentering depth_first\n--------------------\n";
+  printwrap(join(', ', @all_dirs));
+  print "\n";
+
   # Now we continue with our depth-first traversal.  What we want to
   # do is to visit all subdirectories of $depot/$new_pack_root in
   # depth-first order.  When the recursive traversal phase is done, we
@@ -895,7 +899,7 @@ sub depth_first {
     $temp =~ s/(\W)/\\$1/g;	# backslash escape any special chars
     $old_file =~ s/^$temp/$old_pack_root/;
 
-    print "\nHey! \$new_file is $new_file, \$old_file is $old_file\n";
+    printwrap("\nHey! \$new_file is $new_file, \$old_file is $old_file\n");
 
     $pack_prefix = first_path_element($new_pack_root);
 
