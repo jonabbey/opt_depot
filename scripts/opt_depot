@@ -56,8 +56,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.39 $
-# Last Mod Date: $Date: 2003/08/20 01:34:10 $
+# Version: $Revision: 1.40 $
+# Last Mod Date: $Date: 2003/08/21 01:50:29 $
 #
 #####################################################################
 
@@ -357,7 +357,7 @@ sub read_pack_ex {
 sub read_prifile {
   my($prifile) = @_;
 
-  my(@parray, $i);
+  my(@parray, $i, $item);
 
   if (!-e $prifile) {
     return;
@@ -395,7 +395,7 @@ sub read_prifile {
 	# handle priority for individual file
 	# this clause handles absolute pathnames
 	unshift(@parray, $1);
-      } elsif (/^\s*(\S*)$/) {
+      } elsif (/^\s*(\S*)/) {
 	# this clause handles depot relative pathnames
 	unshift(@parray, "$depot/$1");
       }
@@ -405,12 +405,13 @@ sub read_prifile {
   close(PRIFILE);
 
   # assign ascending priorities, as we go from the last entry from the
-  # priority file towards the first
+  # priority file towards the first.. we used unshift above so that the
+  # last entry in the file is first in our list
 
   $i = 1;
 
-  while ($i <= $#parray) {
-    $priority{$parray[$i]} = $i++;
+  foreach $item (@parray) {
+    $priority{$item} = $i++;
   }
 }
 
@@ -851,11 +852,13 @@ sub depth_first {
     $all_dirs[0] = $new_pack_root;
   }
 
-  print "\nentering depth_first\n--------------------\n\@all_dirs = ";
-  printwrap(join(', ', @all_dirs));
-  print "\n\$new_pack_root = $new_pack_root\n";
-  print "\$old_pack_root = $old_pack_root\n";
-  print "\$opt_directory = $opt_directory\n";
+  if (0) {
+    print "\nentering depth_first\n--------------------\n\@all_dirs = ";
+    printwrap(join(', ', @all_dirs));
+    print "\n\$new_pack_root = $new_pack_root\n";
+    print "\$old_pack_root = $old_pack_root\n";
+    print "\$opt_directory = $opt_directory\n";
+  }
 
   # Now we continue with our depth-first traversal.  What we want to
   # do is to visit all subdirectories of $depot/$new_pack_root in
@@ -907,7 +910,9 @@ sub depth_first {
 
     if ($current_dir =~ /^$pack_prefix\/$opt_directory\/(.*)$/) {
       $merge_target = "$dest/$opt_directory/$1";
-      print "\nHey!  \$merge_target is $merge_target\n";
+      if (0) {
+	print "\nHey!  \$merge_target is $merge_target\n";
+      }
     } else {
       print "Error, couldn't break the '$pack_prefix/$opt_directory' prefix from '$current_dir'\n";
       next;
@@ -948,7 +953,8 @@ sub link_me {
   my ($subdir, $opt_directory, @pack_list) = @_;
 
   my (%pack_hash, $common_dir, @temp_list);
-  my ($i, $old_pack, $new_pack, $temp, $element, $tempfoo);
+  my ($i, $old_target, $old_pack, $new_pack, $temp, $element, $conflict);
+  my (@recurse_list);
 
   logprint("LINKING:  $subdir\n", 0);
 
@@ -982,46 +988,50 @@ sub link_me {
 	if (-l "$dest/$common_dir" ) {
 	  # link already exists in $dest
 
-	  $old_pack = resolve(extractdir("$dest/$common_dir"),
-			      readlink("$dest/$common_dir"));
+	  $old_target = resolve(extractdir("$dest/$common_dir"),
+				readlink("$dest/$common_dir"));
 
-	  if ($old_pack =~ /^$depot\/(.*)/) {
-	    $old_pack = $1;
-	  } else {
+	  if ($old_target !~ /^$depot\/(.*)/) {
 	    # old link points outside of the depot tree, leave it alone
 	    next;
+	  } else {
+	    $old_pack = $1;
 	  }
 
 	  # $old_pack now has a depot directory-relative path from
 	  # the old link
 
-	  if ($new_pack ne $old_pack) {
-	    undef %merge_list;
+	  if ($new_pack eq $old_pack) {
+	    # nothing to do, the link points where we think it should
+	    # here
+	    next;
+	  }
 
-	    # check and see if a merge is actually required
+	  undef %merge_list;
 
-	    if (needs_unify($subdir)) {
-	      depth_first($new_pack, $old_pack, $opt_directory);
+	  # check and see if a merge is actually required
 
-	      # if we've decided to merge things, let's remove the
-	      # old symlink and create as many subdirectories as
-	      # necessary.  We'll create records in %pack_hash of
-	      # directories we'll need to continue to recurse down
-	      # into in order to possibly do deeper directory
-	      # unification
+	  if (needs_unify($subdir)) {
+	    depth_first($new_pack, $old_pack, $opt_directory);
 
-	      if (defined %merge_list) {
-		@temp_list[0] = $old_pack;
-		@temp_list[1] = $new_pack;
-		$pack_hash{$common_dir} = [ @temp_list ];
-		unlink("$dest/$common_dir"); # remove old symlink
+	    # if we've decided to merge things, let's remove the
+	    # old symlink and create as many subdirectories as
+	    # necessary.  We'll create records in %pack_hash of
+	    # directories we'll need to continue to recurse down
+	    # into in order to possibly do deeper directory
+	    # unification
 
-		foreach $dir (keys %merge_list) {
-		  synthesize_dir($dir);
-		}
+	    if (defined %merge_list) {
+	      @temp_list[0] = $old_pack;
+	      @temp_list[1] = $new_pack;
+	      $pack_hash{$common_dir} = [ @temp_list ];
+	      unlink("$dest/$common_dir"); # remove old symlink
 
-		next; # we've made directories, we'll do the linking through recursion
+	      foreach $dir (keys %merge_list) {
+		synthesize_dir($dir);
 	      }
+
+	      next; # we've made directories, we'll do the linking through recursion
 	    }
 	  }
 	} elsif (-d "$dest/$common_dir") {
@@ -1049,10 +1059,8 @@ sub link_me {
       # unlink the old and link the new.
 
       smartlink($package, "$depot/$package/$common_dir", "$dest/$common_dir");
-    }
+    } # foreach $file
   } # foreach $package
-
-  #end loop over packages
 
   #
   # make recursive call to link_me if necessary..
@@ -1062,26 +1070,23 @@ sub link_me {
     return;
   }
 
-  # we've got a directory conflict. let's call link_me again
+  # we've got one or more directory conflicts. let's call link_me
+  # again to resolve each
 
-  foreach $tempfoo (keys %pack_hash) {
-    #print"\tSubdirectory: $tempfoo\n";
-    @pack_list = @{ $pack_hash{$tempfoo} };
+  foreach $conflict (keys %pack_hash) {
+    #print"\tSubdirectory: $conflict\n";
+    @recurse_list = @{ $pack_hash{$conflict} };
 
-    foreach $element (@pack_list) {
-      $temp = $tempfoo;
+    foreach $element (@recurse_list) {
+      $temp = $conflict;
       $temp =~ s/(\W)/\\$1/g;	# quote meta-chars
       $element =~ s/\/$temp//; # removes the common directory
       # name from the package
       #print"\tElement: $element\n";
     }
 
-    # Here we're checking to see if the current directory is
-    # a candidate for recursive unification. It's gotta be
-    # in the @unify_list array that's specified in the defaults
-
-    if (needs_unify($tempfoo)) {
-      link_me($tempfoo,$opt_directory, @pack_list); # ah, the mysteries of recursion...
+    if (needs_unify($conflict)) {
+      link_me($conflict,$opt_directory, @recurse_list);
     }
   }	
 }
