@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.17 $
-# Last Mod Date: $Date: 2003/08/13 23:21:38 $
+# Version: $Revision: 1.18 $
+# Last Mod Date: $Date: 2003/08/13 23:23:45 $
 #
 #####################################################################
 
@@ -370,6 +370,8 @@ sub printparams {
     logprint(safifystring($_), -1);
     $first = 0;
   }
+
+  logprint("\n", -1);
 
   if (!defined $switches{'R'} && defined $switches{'r'}) {
     logprint("        recurse: ", -1);
