@@ -2,24 +2,12 @@
 #
 ########### defaults ##################################################
 
+use FindBin qw($RealBin);
+
+use lib "$RealBin/../modules";
+use Opt_depot::Common;
+
 $sites_file = "sites";
-
-#########################################################################
-#
-#                                                         removelastslash
-#
-# input: a pathname to test
-#
-# this function will remove a trailing slash from the directory name
-# input
-#
-#########################################################################
-
-sub removelastslash {
-  if ($_[0] =~ /\/$/) {
-    chop $_[0];
-  }
-} # removelastslash
 
 #########################################################################
 #
@@ -32,9 +20,11 @@ sub removelastslash {
 #########################################################################
 
 sub display_sites {
-  local($i,$numsites);
+  my ($i,$numsites);
+
   undef @sites;  # cleans up output from previous runs
   undef @labels; # ditto
+
   $i = 1;
   $numsites = 0;
 
@@ -44,10 +34,10 @@ sub display_sites {
     open(IN, ">$sites_file") || die "Could not open $sites_file";
   }
 
-  print"## Current Package Archives ##\n\n";
+  print "## Current Package Archives ##\n\n";
 
   if (-z IN) {
-    print"\t** NONE **\n";
+    print "\t** NONE **\n";
   } else {	
     while(<IN>) {
       if (/^\s*(\S*)\s*(\S*)/) {
@@ -81,38 +71,40 @@ $i,        $labels[$i],  $sites[$i]
 ##########################################################################
 
 sub add_archive {
-  local($ans,$i);
+  my($ans,$i);
+
   print"\nPlease enter the DIRECTORY of the package archive\n";
   print"** Be sure to include all necessary path info including leading slashes\n";
   print"----> ";
   $path = <STDIN>;
   chop($path);
-  &removelastslash($path);
+  removelastslash($path);
+
   print"Please enter the LABEL which is to be associated with this archive\n"; 
   print"----> ";
   $label = <STDIN>;
   chop($label);
+
   print"Please enter the PRIORITY NUMBER of the new package archive\n";
   print"** Packages with the lowest priority are usually linked first\n";
   print"----> ";
   $priority = <STDIN>;
   chop($priority);
+
   print"Directory: $path\n";
   print"Priority:  $priority\n";
   print"Label:     $label\n\n";
-  print"Is this information correct?(y/n)";
-  $ans = <STDIN>;
-  unless ($ans =~ /^y/i) {
+
+  unless (askyn("Is this information correct?")) {
     print"Package Archive not added to sites file\n";
     next;
   }
 
   if (defined $sites[$priority]) {
     print"\n** Site $sites[$priority] already exists with that priority\n";
-    print"** Do you still wish $path to have priority $priority?(y/n)";
-    $ans = <STDIN>;
-    unless ($ans =~ /^y/i) { # assume an error was made entering priority
-      print"Package Archive not added to sites file\n";
+
+    unless (askyn("** Do you still wish $path to have priority $priority?")) {
+      print "Package Archive not added to sites file\n";
       next;
     } else { # no error. give the new one higher priority
       open(OUT,">$sites_file") || die "Error: Could not write to $sites_file";
@@ -158,17 +150,17 @@ sub add_archive {
 ##########################################################################
 
 sub delete_archive {
-  local($ans,$remove_me,$i);
+  my ($ans,$remove_me,$i);
+
   print"\nPlease enter the priority number of the archive to be removed ---> ";
+
   $remove_me = <STDIN>;
 
   if (! defined $sites[$remove_me]) {
     print"Error: No archive currently exists with priority $remove_me\n";
     return;
   } else {
-    print"\nDelete archive $sites[$remove_me]?(y/n)";
-    $ans = <STDIN>;
-    unless ($ans =~ /^y/i) {
+    unless (askyn("\nDelete archive $sites[$remove_me]?")) {
       print"Package Archive not deleted from sites file\n";
       next;
     }
@@ -187,32 +179,37 @@ sub delete_archive {
   }
 }
 
-#########################################################################
+##########################################################################
+#
+#                                                               edit_sites
+#
+# This subroutine handles the editing and creation of the sites file
+# for the opt_depot suite installation
 #
 #
-#                                MAIN
-#
-#
-#########################################################################
+##########################################################################
 
-$done = 0;
-while (!$done) {
-  &display_sites;
+sub edit_sites {
+  my $done = 0;
 
-  print"\nPlease choose an option:\n";
-  print"\t[A]dd a package archive to the Archive list\n";
-  print"\t[D]elete a package from the Archive list\n";
-  print"\t[Q]uit\n\n";
-  print"Choice ----> ";
-  $choice = <STDIN>;
+  while (!$done) {
+    display_sites();
 
-  if ($choice =~ /^a/i) {
-    &add_archive;
-  } elsif ($choice =~ /^d/i) {
-    &delete_archive;
-  } elsif ($choice =~ /^q/i) {
-    $done = 1;
-  } else {
-    print"Invalid option. Please try again\n\n";
+    print"\nPlease choose an option:\n";
+    print"\t[A]dd a package archive to the Archive list\n";
+    print"\t[D]elete a package from the Archive list\n";
+    print"\t[Q]uit\n\n";
+    print"Choice ----> ";
+    $choice = <STDIN>;
+
+    if ($choice =~ /^a/i) {
+      add_archive();
+    } elsif ($choice =~ /^d/i) {
+      delete_archive();
+    } elsif ($choice =~ /^q/i) {
+      $done = 1;
+    } else {
+      print"Invalid option. Please try again\n\n";
+    }
   }
 }
