@@ -61,8 +61,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.56 $
-# Last Mod Date: $Date: 2003/10/14 23:02:24 $
+# Version: $Revision: 1.57 $
+# Last Mod Date: $Date: 2003/10/14 23:35:08 $
 #
 #####################################################################
 
@@ -1072,7 +1072,7 @@ sub depth_first {
   # the old package that was already linked.  If so, and if the
   # priority supports any files from the new package to be linked,
   # we'll add an entry to our returned list, indicating that that
-  # directory needs to be created under $dest/$opt_directory
+  # relative directory needs to be created under $dest
 
   $current_dir = pop (@all_dirs);
 
@@ -1183,7 +1183,7 @@ sub link_me {
   my ($subdir, @pack_list) = @_;
 
   my (%pack_hash, $local_path);
-  my ($i, $old_target, $old_pack_relative, $new_pack_relative, $temp, $element, $conflict);
+  my ($old_target, $old_pack_relative, $new_pack_relative, $temp, $element, $conflict);
   my (@recurse_list);
   my ($change_made);
   my (@results1, @results2, $el2, $el1, %merge_list2, %merge_list);
@@ -1416,11 +1416,6 @@ opendir (DEPOT, $depot) || die "Could not open $depot";
 closedir(DEPOT);
 
 foreach $subdir (@subdirs) {
-  # This is the name of the primary directory
-  # we're working in (ie lib, bin, info, etc).
-
-  $opt_directory = $subdir;
-
   if ($subdir ne "man") {
     link_me($subdir, @packages);
   } else {
