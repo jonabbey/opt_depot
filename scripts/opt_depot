@@ -61,8 +61,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.49 $
-# Last Mod Date: $Date: 2003/10/13 07:04:38 $
+# Version: $Revision: 1.50 $
+# Last Mod Date: $Date: 2003/10/13 08:32:11 $
 #
 #####################################################################
 
@@ -77,7 +77,7 @@ $version = "3.0";
 ## defaults #########################################################
 
 $debug = 0;
-$force_verbose = 0;
+$force_verbose = 1;
 
 # configuration file containing $dest, $depot and $logdir vars
 
@@ -993,13 +993,22 @@ sub synthesize_dir {
 #                                                             depth_first
 # input: * Two packages for comparison
 #
-# uses: merge_list associative array, global @all_dirs
+# uses: global @all_dirs
 #
 # output: depth_first takes two packages that have directory conflicts and
 #         determines whether or not to merge these directories by utilizing
 #         a depth_first recursive search and comparing the individual files
 #         of the directory and sub-directories.
 #
+# Note that depth_first only checks one half of the comparison, that
+# between the package listed in $new_path and that in $old_path.. in order
+# to properly check to see whether we truly need to do a merge, we have
+# to do both the forward check and the reverse check and make sure that
+# both agree on whatever portion of subdirectories we need to merge
+#
+# returns: an array of directories that need to be created, based on
+# the presence under the $new_path of some files that we'll want to link
+# into a common directory
 #
 #########################################################################
 sub depth_first {
@@ -1010,6 +1019,7 @@ sub depth_first {
   my ($pack_prefix, $merge_target);
   my ($new_file, $old_file);
   my ($dir, $new_dir, $old_dir);
+  my (@results, $found);
 
   if (!-d $old_path || !-d $new_path) {
     logprint("Ditching depth_first entry because one of $old_path and $new_path aren't directories\n", -1);
@@ -1042,8 +1052,8 @@ sub depth_first {
   # that we are visiting in both the new package we are linking in and
   # the old package that was already linked.  If so, and if the
   # priority supports any files from the new package to be linked,
-  # we'll add an entry to %merge_list, indicating that that directory
-  # needs to be created under $dest/$opt_directory
+  # we'll add an entry to our returned list, indicating that that
+  # directory needs to be created under $dest/$opt_directory
 
   $current_dir = pop (@all_dirs);
 
@@ -1052,7 +1062,7 @@ sub depth_first {
   closedir(DIR);
 
   @dirs = grep (!/^\.\.?$/ && -d "$current_dir/$_", @contents);
-  @files = grep (!-d "$current_dir/$_", @contents);
+  @files = grep (!/^\.\.?$/, @contents);
 
   foreach $dir (@dirs) {
     $new_dir = "$current_dir/$dir";
@@ -1066,7 +1076,7 @@ sub depth_first {
   }
 
   if ($#all_dirs >= 0) {
-    depth_first($new_path, $old_path);
+    @results = depth_first($new_path, $old_path);
   }
 
   # now that we've finished recursing down, let's take a look at
@@ -1089,14 +1099,20 @@ sub depth_first {
       next;
     }
 
-    if (!defined $merge_list{$merge_target}) {
+    foreach $element (@results) {
+      if ($element eq $merge_target) {
+	$found = 1;
+      }
+    }
+
+    if (!$found) {
       if ((-e $new_file && !-e $old_file) ||
 	  (pathcheck("$depot/$new_file", %priority) > $priority{"$depot/$old_file"})) {
 	if (pathcheck("$depot/$new_file", %exclude)) {
 	  logprint("\n  *** EXCLUDING DIRECTORY: $new_file\n\n", 0);
 	} else {
 	  logprint("MERGING $merge_target\n", -1);
-	  $merge_list{$merge_target} = 1;
+	  push @results, $merge_target;
 	}
       } else {
 	if (!-e $new_file) {
@@ -1112,6 +1128,8 @@ sub depth_first {
       logprint("ALREADY SET TO MERGE $merge_target\n", -1);
     }
   }
+
+  return @results;
 }
 
 #########################################################################
@@ -1139,6 +1157,7 @@ sub link_me {
   my ($i, $old_target, $old_pack, $new_pack, $temp, $element, $conflict);
   my (@recurse_list);
   my ($change_made);
+  my (@results1, @results2, $el2, $el1, %merge_list2, %merge_list);
 
   logprint("LINKING:  $subdir\n", 0);
 
@@ -1211,7 +1230,25 @@ sub link_me {
 	    }
 
 	    if (-d $old_target && needs_unify($subdir)) {
-	      depth_first($new_pack, $old_pack);
+	      @results1 = depth_first($new_pack, $old_pack);
+
+	      logprint("WWWW depth_first($new_pack, $old_pack)[1] returned @results1\n", -1);
+
+	      if (scalar(@results1)) {
+		@results2 = depth_first($old_pack, $new_pack);
+
+		logprint("WWWW depth_first($old_pack, $new_pack)[2] returned @results2\n", -1);
+	      }
+
+	      foreach $el2 (@results2) {
+		$merge_list2{$el2} = 1;
+	      }
+
+	      foreach $el1 (@results1) {
+		if (defined $merge_list2{$el1}) {
+		  $merge_list{$el1} = 1;
+		}
+	      }
 
 	      # if we've decided to merge things, let's remove the
 	      # old symlink and create as many subdirectories as
@@ -1220,7 +1257,7 @@ sub link_me {
 	      # into in order to possibly do deeper directory
 	      # unification
 
-	      if (defined %merge_list) {
+	      if (scalar(keys(%merge_list))) {
 		@temp_list[0] = $old_pack;
 		@temp_list[1] = $new_pack;
 		$pack_hash{$common_dir} = [ @temp_list ];
