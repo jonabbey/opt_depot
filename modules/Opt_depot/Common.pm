@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.23 $
-# Last Mod Date: $Date: 2003/08/14 02:10:36 $
+# Version: $Revision: 1.24 $
+# Last Mod Date: $Date: 2003/09/12 01:50:38 $
 #
 #####################################################################
 
@@ -69,6 +69,7 @@ use Exporter;
 	     &init_log &close_log &logprint &printparams
 	     &check_lock &clear_lock
 	     &create_dir &testmakedir &dircheck &extractdir &killdir
+	     &touch
 	     &first_path_element
 	     &removelastslash &resolve &make_absolute &pathcheck
 	     &read_prefs
@@ -77,11 +78,11 @@ use Exporter;
 
 # declare our package globals that we're not exporting
 
-our $usage_string;
-our $log_init;
-our $lockset = 0;
-our $debug = 1;
-our $logdebug = 1;
+#our $usage_string;
+#our $log_init;
+#our $lockset = 0;
+#our $debug = 1;
+#our $logdebug = 1;
 
 #########################################################################
 #
@@ -493,11 +494,16 @@ sub create_dir {
     $temp .= "$comp";
 
     if (! -d $temp && ($temp ne "")) {
-      mkdir($temp, 0777) || print "Could not make dir $temp\n";
+      if (!mkdir($temp, 0777)) {
+	print "Could not make dir $temp\n";
+	return 0;
+      }
     }
 
     $temp .= "/";  # add trailing /
   }
+
+  return 1;
 }
 
 #########################################################################
@@ -595,6 +601,32 @@ sub killdir {
   if ($errcount > 0) {
     return 0;
   }
+
+  return 1;
+}
+
+#########################################################################
+#
+#                                                                   touch
+#
+# input: a pathname
+#
+# touch will attempt to open the pathname for append and then
+# close it again without writing anything, so as to update the modification
+# time of the file if it already exists, or to create it as a zero length
+# file if it does not.
+#
+# Returns 1 on success, 0 on failure.
+#
+#########################################################################
+
+sub touch {
+  my ($touchpath) = @_;
+
+  local(*TEMP);
+
+  open(TEMP, ">>$touchpath") || return 0;
+  close(TEMP);
 
   return 1;
 }
