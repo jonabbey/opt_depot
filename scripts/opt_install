@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.7 $
-# Last Mod Date: $Date: 2003/08/08 00:14:40 $
+# Version: $Revision: 1.8 $
+# Last Mod Date: $Date: 2003/08/08 00:16:46 $
 #
 #####################################################################
 
@@ -534,6 +534,7 @@ sub create_config {
   # figure out what subdirectories we'll want to link
 
   @subdirs = ('bin', 'include', 'info', 'lib', 'man');
+  print "\n";
   edit_list("link directory", @subdirs);
 
   print "\n";
@@ -545,6 +546,7 @@ sub create_config {
     if (askyn("Do you want to specify a restricted list of subdirectories for recursive directory unification?")) {
       # figure out what directories we want to handle recursively
       @recurse = ('include', 'lib');
+      print "\n";
       edit_list("recursively linked directory", @recurse);
     } else {
       printwrap("The opt_depot scripts will always perform recursive directory unification where possible.\n");
