@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.32 $
-# Last Mod Date: $Date: 2003/09/21 07:42:44 $
+# Version: $Revision: 1.33 $
+# Last Mod Date: $Date: 2003/09/22 07:05:38 $
 #
 #####################################################################
 
@@ -77,6 +77,17 @@ AlwaysRecurse: No
 Recurse: include,lib,info
 ENDTESTCONF1
 
+$testconfB =<< "ENDTESTCONF2";
+Base: $test_dir
+Depot: $test_dir/depot
+Log: $test_logdir/opt_depot.log
+SiteFile: $test_etc/sites
+Subdirs: bin,include,info,lib,man
+AlwaysRecurse: No
+Recurse: include,lib,info
+GetMostRecent: Yes
+ENDTESTCONF2
+
 $testsitesA =<< "ENDSITES1";
 ENDSITES1
 
@@ -87,6 +98,17 @@ ENDSITES2
 $testsitesC =<< "ENDSITES3";
 LOCALB $test_root/sites/localB
 LOCAL $test_root/sites/local
+ENDSITES3
+
+$testsitesD =<< "ENDSITES4";
+LOCAL $test_root/sites/local
+LOCALB $test_root/sites/localB
+ENDSITES4
+
+$testsitesZ =<< "ENDSITES3";
+LOCALB $test_root/sites/localB
+LOCAL $test_root/sites/local
+LOCALZ $test_root/sites/localZ
 ENDSITES3
 
 %siteA = (label => 'local',
@@ -139,6 +161,20 @@ ENDSITES3
 			files    => ['ARLUT_README',
 				     'bin/space invaders',
 				     'man/man5/space.5']}
+		      ]);
+
+%siteC = (label => 'localC',
+	  path => "$test_root/sites/localC",
+	  contents => [
+		       {name     => 'externalPack',
+			files    => ['bin/externalTest']}
+		      ]);
+
+%siteZ = (label => 'localZ',
+	  path => "$test_root/sites/localZ",
+	  contents => [
+		       {name     => 'siteZPack',
+			files    => ['bin/siteZtest']}
 		      ]);
 
 %test0 = (label  => 'Simple single-package link test',
@@ -375,7 +411,6 @@ ENDSITES3
 	  priority => 'packB',
 	  error_count => 0);
 
-
 %test10 = (label  => 'Simple site volume test',
 	  root   => $test_dir,
 	  start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
@@ -431,10 +466,111 @@ ENDSITES3
 	   action => 'opt_link',
 	   error_count => 0);
 
+# test13 uses $testsitesD to put siteA ahead of siteB in the priority
+# order.  Since packA-1.0 on siteA excludes packB-1.0, packB-2.0 from
+# the lower priority site volume gets linked in, otherwise (as with
+# packA-1.0 and packC-1.0, we keep the packages from the higher
+# priority site volumes, even as packages on the lower priority site
+# volume attempts to exclude them
+
+%test13 = (label  => 'Multiple site volume test 2',
+	   root   => $test_dir,
+	   start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/',
+		      "depot/packA-1.0->".$siteA{'path'}."/packA-1.0",
+		      "depot/packB-2.0->".$siteB{'path'}."/packB-2.0",
+		      "depot/packC-1.0->".$siteA{'path'}."/packC-1.0",
+		      "depot/packX-1.2->".$siteA{'path'}."/packX-1.2",
+		      "depot/packY-4.51->".$siteB{'path'}."/packY-4.51"],
+	   endex  => ['^\.priority$', '^\.exclude$'],
+	   conf   => $testconfA,
+	   sites  => $testsitesD,
+	   sitedefs => [\%siteA, \%siteB],
+	   action => 'opt_link',
+	   error_count => 0);
+
+# test14 uses $testsitesD to put siteA ahead of siteB in the priority
+# order, and asserts $testconfB to make opt_link use the GetMostRecent
+# (-g) algorithm, allowing packages to exclude each other across site
+# volumes regardless of site volume priority
+
+%test14 = (label  => 'GetMostRecent multiple site volume test',
+	   root   => $test_dir,
+	   start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/',
+		      "depot/packA-2.0->".$siteB{'path'}."/packA-2.0",
+		      "depot/packB-2.0->".$siteB{'path'}."/packB-2.0",
+		      "depot/packC-2.0->".$siteB{'path'}."/packC-2.0",
+		      "depot/packX-1.2->".$siteA{'path'}."/packX-1.2",
+		      "depot/packY-4.51->".$siteB{'path'}."/packY-4.51"],
+	   endex  => ['^\.priority$', '^\.exclude$'],
+	   conf   => $testconfB,
+	   sites  => $testsitesD,
+	   sitedefs => [\%siteA, \%siteB],
+	   exclude => 'packA-1.0',
+	   action => 'opt_link',
+	   error_count => 0);
+
+# test15 is a nice big full opt_setup test, based on test12.  note
+# that we have a integral whitespace test for the packY-4.51 'space
+# invaders' bin file.  We're also using the .priority file to give
+# packA-2.0 priority for the bin/hi and lib/test.so linkages, even
+# though we'd expect packA-2.0 to effectively have priority anyway
+# since it comes first in the alphabetical readdir for opt_depot.
+#
+# We also have a linkage to a package (externalPack) on a site volume
+# (siteC) which is not mentioned in the sites file for this test, and
+# whose depot link should therefore be retained without change,
+# despite our excluding it for depot and clean.  We're also linking
+# to a package (siteZPack) which is in a our list of site volumes,
+# so the manual exclusion should cause its depot package link to be
+# deleted from depot
+
+%test15 = (label  => 'Deluxe multiple site volume opt_setup test',
+	   root   => $test_dir,
+	   start  => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/',
+		      'depot/packA-1.0->'.$siteA{'path'}.'/packA-1.0',
+		      'depot/externalPack->'.$siteC{'path'}.'/externalPack',
+		      'bin/externalTest->depot/externalPack/bin/externalTest',
+		      'depot/siteZPack->'.$siteZ{'path'}.'/siteZPack',
+		      'bin/siteZtest->depot/siteZPack/bin/siteZtest'],
+	   end    => ['bin/', 'lib/', 'man/', 'include/', 'info/',
+		      'depot/', 'man/man1/', 'man/man5/', 'man/manl/',
+		      "depot/packA-2.0->".$siteB{'path'}."/packA-2.0",
+		      "depot/packB-2.0->".$siteB{'path'}."/packB-2.0",
+		      "depot/packC-2.0->".$siteB{'path'}."/packC-2.0",
+		      "depot/packX-1.2->".$siteA{'path'}."/packX-1.2",
+		      "depot/packY-4.51->".$siteB{'path'}."/packY-4.51",
+		      'depot/externalPack->'.$siteC{'path'}.'/externalPack',
+		      'bin/hi->depot/packA-2.0/bin/hi',
+		      'lib/test.so->depot/packA-2.0/lib/test.so',
+		      'bin/hiC->depot/packC-2.0/bin/hiC',
+		      'lib/testC.so->depot/packC-2.0/lib/testC.so',
+		      'lib/test2.so->depot/packB-2.0/lib/test2.so',
+		      'include/hiC.h->depot/packC-2.0/include/hiC.h',
+		      'bin/asteroids->depot/packX-1.2/bin/asteroids',
+		      'man/man1/asteroids.1->depot/packX-1.2/man/man1/asteroids.1',
+		      'man/manl/hiC.l->depot/packC-2.0/man/manl/hiC.l',
+		      'bin/space invaders->depot/packY-4.51/bin/space invaders',
+		      'man/man5/space.5->depot/packY-4.51/man/man5/space.5'],
+	   endex  => ['^\.priority$', '^\.exclude$', '^man\/cat.*'],
+	   conf   => $testconfA,
+	   sites  => $testsitesZ,
+	   sitedefs => [\%siteA, \%siteB, \%siteC, \%siteZ],
+	   exclude => "packA-1.0\nexternalPack\nsiteZPack",
+	   priority => 'packA-2.0',
+	   action => 'opt_setup',
+	   error_count => 0);
+
 @tests = (\%test0, \%test1, \%test2, \%test3,
 	  \%test4, \%test5, \%test6, \%test7,
 	  \%test8, \%test9, \%test10, \%test11,
-	  \%test12);
+	  \%test12, \%test13, \%test14, \%test15);
 
 #####################################################################
 
@@ -530,7 +666,9 @@ sub setup_test {
     @site_ary = @{$href->{'sitedefs'}};
 
     foreach $site (@site_ary) {
-      init_site($site);
+      if (!init_site($site)) {
+	return 0;
+      }
     }
   }
 
@@ -664,10 +802,20 @@ sub exclusion_check {
 #	to a target (if they should be links) or to empty string if
 #	they are physical directories and files.
 #
-# unexpected_check recurses on the path string, looking at each item found
-# and seeing whether it is in the test description's end state.  Any
-# path element listed in the test description's endex end state exclusion
-# list will not be checked.
+# unexpected_check is designed to recurse on the filesystem under the
+# test_dir base specified in $test_href, looking at every file and
+# directory under that tree.  unexpected_check is responsible for
+# making sure that we do, indeed, expect to see everything that we
+# find.. if we find something that we don't expect to see,
+# unexpected_check will catch that and report it as an error.
+#
+# unexpected_check is thus complementary to expected_check, which is
+# responsible for making sure we do positively find everything we want
+# to see.  If the directory tree under the $test_href->{'root'} was
+# wholly empty, unexpected_check wouldn't complain at all, because we
+# would not see any files or directories that we didn't expect to see.
+#
+# Get it?
 #
 # returns a count of the number of errors detected during the recursive
 # directory check.
@@ -841,12 +989,17 @@ sub expected_check {
 	$desired_target = $test_href->{'root'} . "/" . $after;
       }
 
-	if (!-e $itempath) {
-	  print "Error, symlink missing in test " . $test_href->{'label'} . "\n";
-	  print "symlink $itempath is supposed to point to $desired_target\n\n";
-	  $error_count++;
-	  next;
-	}
+      # We're only going to complain if what we expect to see does not
+      # exist in any form.  If what we're expecting did exist but in
+      # an inappropriate form, unexpected_check will have caught that
+      # and complained.
+
+      if (!-e $itempath) {
+	print "Error, symlink missing in test " . $test_href->{'label'} . "\n";
+	print "symlink $itempath is supposed to point to $desired_target\n\n";
+	$error_count++;
+	next;
+      }
     } else {
       $itempath = $test_href->{'root'} . "/" . $item;
 
