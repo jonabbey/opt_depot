@@ -1,4 +1,3 @@
-#
 # opt_install v3.0 -*- Perl -*-
 #
 # Perl script for handling installation of opt_depot 3.0
@@ -29,13 +28,14 @@
 # Written by Erik Grostic, Jonathan Abbey
 #
 # v3.0
-# Combined the opt_depot 2.x install.pl and opt_copy scripts
+# Combined the opt_depot 2.x install.pl, modify_archive, and opt_copy
+# scripts.
+#
 # Jonathan Abbey 25 July 2003
 #
-#
 # Release: $Name:  $
-# Version: $Revision: 1.3 $
-# Last Mod Date: $Date: 2003/08/07 04:00:40 $
+# Version: $Revision: 1.4 $
+# Last Mod Date: $Date: 2003/08/07 22:40:28 $
 #
 #####################################################################
 
@@ -59,6 +59,10 @@ $version = "3.0";
 	 "man/manl/opt_nuke.l");
 
 $where_perl_is = @ARGV[0];
+
+if (!-x $where_perl_is) {
+  die "Can't find $where_perl_is";
+}
 
 #########################################################################
 #
@@ -122,11 +126,126 @@ sub fix_perms {
       } else {
 	next;
       }
+    } else {
+      $done = 1;
     }
   }
 } # fix_perms
+#########################################################################
+#
+#                                                            display_list
+# input: a list descriptor
+#        an @array of strings to list
+#
+# output: Prints to <stdout> the current values in @array
+#
+#########################################################################
 
+sub display_list {
+  my ($descriptor, @list) = @_;
+  my ($i,$numsites);
 
+  print "## Current $descriptor list ##\n\n";
+
+  print "-> " . join(',', @list);
+}
+
+##########################################################################
+#
+#                                                                 add_list
+# input: a list descriptor
+#        an @array of strings to edit
+#
+# output: interactively asks for and adds a string to the list
+#
+##########################################################################
+
+sub add_list {
+  my ($descriptor, @list) = @_;
+
+  my $add;
+
+  print "\nEnter the $descriptor to add\n";
+  print "> ";
+  $add = <STDIN>;
+  chop $add;
+
+  push @list, $add;
+}
+
+##########################################################################
+#
+#                                                              delete_list
+# input: a list descriptor
+#        an @array of strings to edit
+#
+# output: interactively asks for and removes a string from the list
+#
+##########################################################################
+
+sub delete_list {
+  my ($descriptor, @list) = @_;
+
+  my ($remove, $i, $ok);
+
+  print "\nEnter the $descriptor to remove\n";
+  print "> ";
+  $remove = <STDIN>;
+  chop $remove;
+
+  $i = 0;
+  $ok = 0;
+  while ($i <= $#list) {
+    if ($list[$i] eq $remove) {
+      delete $list[$i];
+      $ok = 1;
+    }
+
+    $i++;
+  }
+
+  if (!$ok) {
+    printwrap("List did not contain '$remove', no change made.\n");
+  }
+}
+
+##########################################################################
+#
+#                                                                edit_list
+#
+# input: a list descriptor
+#        an @array of strings to edit
+#
+# This subroutine handles the editing and creation of a list of strings
+#
+##########################################################################
+
+sub edit_sites {
+  my ($descriptor, @list) = @_;
+
+  my $done = 0;
+
+  while (!$done) {
+    display_list($descriptor, @list);
+
+    print"\nPlease choose an option:\n";
+    print"\t[A]dd a $descriptor to the list\n";
+    print"\t[D]elete a $descriptor from the list\n";
+    print"\t[Q]uit editing $descriptor list\n\n";
+    print"Choice ----> ";
+    $choice = <STDIN>;
+
+    if ($choice =~ /^a/i) {
+      add_list($descriptor,@list);
+    } elsif ($choice =~ /^d/i) {
+      delete_list($descriptor,@list);
+    } elsif ($choice =~ /^q/i) {
+      $done = 1;
+    } else {
+      print"Invalid option. Please try again\n\n";
+    }
+  }
+}
 
 #########################################################################
 #
@@ -192,6 +311,8 @@ $i,        $labels[$i],  $sites[$i]
 sub add_archive {
   my($ans,$i);
 
+  my $tempstring;
+
   print"\nPlease enter the DIRECTORY of the package archive\n";
   print"** Be sure to include all necessary path info including leading slashes\n";
   print"----> ";
@@ -199,7 +320,7 @@ sub add_archive {
   chop($path);
   removelastslash($path);
 
-  print"Please enter the LABEL which is to be associated with this archive\n"; 
+  print"Please enter the LABEL which is to be associated with this archive\n";
   print"----> ";
   $label = <STDIN>;
   chop($label);
@@ -231,10 +352,12 @@ sub add_archive {
       $i = 0;
       foreach (@sites) {
 	if ($i == $priority) {
-	  print OUT "$label\t$path\n";
+	  $tempstring = safifystring($path);
+	  print OUT "$label\t$tempstring\n";
 	}
 	if ($sites[$i] ne "") {
-	  print OUT "$labels[$i]\t$_\n";
+	  $tempstring = safifystring($_);
+	  print OUT "$labels[$i]\t$tempstring\n";
 	}
 	$i++;
       }
@@ -249,7 +372,8 @@ sub add_archive {
     $i = 0;
     foreach (@sites) {
       if ($sites[$i] ne "") {
-	print OUT "$labels[$i]\t$_\n";
+	$tempstring = safifystring($_);
+	print OUT "$labels[$i]\t$tempstring\n";
       }
       $i++;
     }
@@ -271,6 +395,8 @@ sub add_archive {
 sub delete_archive {
   my ($ans,$remove_me,$i);
 
+  my $tempstring;
+
   print"\nPlease enter the priority number of the archive to be removed ---> ";
 
   $remove_me = <STDIN>;
@@ -289,7 +415,8 @@ sub delete_archive {
     $i = 0;
     foreach (@sites) {
       unless ($i == $remove_me) {
-	print OUT "$labels[$i]\t$_\n" if (defined $sites[$i]);
+	$tempstring = safifystring($_);
+	print OUT "$labels[$i]\t$tempstring\n" if (defined $sites[$i]);
       }
       $i++;
     }
@@ -343,6 +470,8 @@ sub edit_sites {
 
 sub create_config {
 
+  my $tempstring;
+
   #################### find dest ##################
 
   $dest = askstring("What directory is to contain the link target directories (bin, include, etc.)?",
@@ -354,6 +483,7 @@ sub create_config {
 
   ################### find depot ##################
 
+  print "\n";
   $depot = askstring("Where do you want the depot directory?",
 		     "$dest/depot");
 
@@ -363,6 +493,7 @@ sub create_config {
 
   ################# find logdir ##################
 
+  print "\n";
   if (askyn("Do you want the opt_depot scripts to keep an activity log?")) {
 
     # use our old log file calculation algorithm, and let's see whether
@@ -391,21 +522,52 @@ sub create_config {
     $log = undef;
   }
 
+  # figure out what subdirectories we'll want to link
+
+  @subdirs = ('bin', 'include', 'info', 'lib', 'man');
+  edit_list("link directory", @subdirs);
+
+  if (askyn("Do you want the opt_depot scripts to perform recursive directory unification?")) {
+    print "\n";
+
+    if (askyn("Do you want to specify a restricted list of subdirectories for recursive directory unification?")) {
+      # figure out what directories we want to handle recursively
+      @recurse = ('include', 'lib');
+      edit_list("recursively linked directory", @recurse);
+    } else {
+      printwrap("The opt_depot scripts will always perform recursive directory unification where possible.\n");
+      $alwaysrecurse = 1;
+    }
+  }
+
   ################## final checkout #################
 
   print"\nYou have entered the following information\n";
   print"------------------------------------------\n";
-  print"Primary directory: $dest\n";
-  print"Depot directory: $depot\n";
+  $tempstring = safifystring($dest);
+  print"Primary directory: $tempstring\n";
+  $tempstring = safifystring($depot);
+  print"Depot directory: $tempstring\n";
 
   if (defined $log) {
+    $tempstring = safifystring($log);
     if (-d $log) {
-      print "Log directory: $log\n\n";
+      print "Log directory: $tempstring\n\n";
     } elsif (-e $log) {
-      print "Log file: $log\n\n";
+      print "Log file: $tempstring\n\n";
     }
   } else {
     print "Logging: No logging\n\n";
+  }
+
+  $tempstring = join(',', @subdirs);
+  print "Subdirectories: $tempstring\n";
+
+  if ($alwaysrecurse) {
+    print "AlwaysRecurse: Yes\n";
+  } else {
+    $tempstring = join(',', @recurse);
+    print "Recursively handled subdirectoryes: $tempstring\n";
   }
 
   unless (askyn("\nIs this information correct?(y/n)")) {
@@ -417,17 +579,39 @@ sub create_config {
   open(OUT,">$config") || die "Could not create $config\n";
   print"\n** Writing information to $config\n";
 
-  print OUT "Base:$dest\n";
-  print OUT "Depot:$depot\n";
+  $tempstring = safifystring($dest);
+  print OUT "Base: $tempstring\n";
+  $tempstring = safifystring($depot);
+  print OUT "Depot: $tempstring\n";
 
   if (defined $log) {
-    print OUT "Log:$log\n";
+    $tempstring = safifystring($log);
+    print OUT "Log: $tempstring\n";
   } else {
     print OUT "Log:       # no logging\n";
   }
 
-  print OUT "Subdirs: bin,include,info,man,lib\n";
-  print OUT "Recurse: include/\n";
+  if (defined $sites_file) {
+    $tempstring = safifystring($sites_file);
+    print OUT "SiteFile: $tempstring\n";
+  }
+
+  $tempstring = join(',', @subdirs);
+  print OUT "Subdirs: " . $tempstring . "\n";
+
+  if ($alwaysrecurse) {
+    print OUT "AlwaysRecurse: Yes\n";
+    print OUT "Recurse:\n";
+  } else {
+    print OUT "AlwaysRecurse: No\n";
+
+    if ($#recurse >= 0) {
+      $tempstring = join(',', @recurse);
+      print OUT "Recurse: $tempstring\n";
+    } else {
+      print OUT "Recurse:\n";
+    }
+  }
 
   close(OUT);
 }
@@ -461,8 +645,12 @@ mkdir "$targetdir/man/manl", 0777;
 
 foreach $script (@opt_scripts) {
   if (-e "scripts/$script") {
-    mod_copy($new_line, "scripts/$script", "$targetdir/bin/$script");
-    chmod 0755, "$targetdir/bin/$script"; # fixperms doesn't know what's meant to be executable
+    mod_copy($where_perl_is, "scripts/$script", "$targetdir/bin/$script");
+
+    # we'll chmod here.. fixperms can't figure out to make something
+    # executable on its own
+
+    chmod 0755, "$targetdir/bin/$script";
   } else {
     printwrap "\tERROR: Could not locate scripts/$script for copying\n";
   }
@@ -476,17 +664,15 @@ foreach $manual (@mans) {
   }
 }
 
-# We've done the initial install.. now let's build the config file
+# We've done the initial install.. now let's build the config and
+# sites files
 
-$config = "$targetdir/etc/opt.config";
+$config = "$targetdir/etc/opt.config"
+$sites_file = "$targetdir/etc/sites";;
 
 print "\nCreating config file $config\n";
 
 create_config();
-
-# We've done the initial install.. now let's configure the sites file
-
-$sites_file = "$targetdir/etc/sites";
 
 print "\nCreating sites file $sites_file\n";
 
