@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.28 $
-# Last Mod Date: $Date: 2003/09/20 07:50:01 $
+# Version: $Revision: 1.29 $
+# Last Mod Date: $Date: 2003/09/21 06:49:54 $
 #
 #####################################################################
 
@@ -488,7 +488,7 @@ sub create_dir {
   my ($file) = @_;
   my ($temp, @components);
 
-  $file =~ s/\/\//\/g;		# get rid of any slash bounces
+  $file =~ s/\/\//\//g;		# get rid of any slash bounces
 
   @components = split(/\//, $file);
 
