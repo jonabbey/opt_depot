@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.34 $
-# Last Mod Date: $Date: 2003/10/07 20:45:39 $
+# Version: $Revision: 1.35 $
+# Last Mod Date: $Date: 2003/10/07 21:07:00 $
 #
 #####################################################################
 
@@ -813,7 +813,7 @@ sub subpathcheck ($$\%) {
 
   removelastslash($path);
 
-  if (!-d $path || -l _) {
+  if (!-d $path) {
     logprint("Subpathcheck ASSERT ERROR: non-directory item $path submitted\n", 1);
     exit(1);
   }
@@ -902,7 +902,7 @@ sub totalpriority ($\%) {
 
   removelastslash($path);
 
-  if (!-d $path || -l _) {
+  if (!-d $path) {
     return $pri1;
   }
 
