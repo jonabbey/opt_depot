@@ -30,8 +30,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.15 $
-# Last Mod Date: $Date: 2003/09/16 23:29:27 $
+# Version: $Revision: 1.16 $
+# Last Mod Date: $Date: 2003/09/16 23:29:46 $
 #
 #####################################################################
 
@@ -580,7 +580,7 @@ sub run_test {
   # start the recurse_check from our base directory
 
   @end_ary = @{$href->{'end'}};
-  
+
   foreach $item (@end_ary) {
     if ($item =~ /->/) {
       ($before, $after) = split /->/, $item;
