@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.14 $
-# Last Mod Date: $Date: 2003/08/08 01:11:10 $
+# Version: $Revision: 1.15 $
+# Last Mod Date: $Date: 2003/08/08 01:16:50 $
 #
 #####################################################################
 
@@ -113,7 +113,7 @@ sub fix_perms {
   print "\n";
 
   my $done = 0;
-  my (@grouplist, $defgroup,$gid);
+  my (@grouplist, $defgroup, $gid);
 
   # find a reasonable default group
 
@@ -123,10 +123,11 @@ sub fix_perms {
 
   @grouplist = ("other", "root", "bin", "sys", "users");
 
-  foreach $defgroup (@grouplist) {
-    $gid = (getgrnam($defgroup))[2];
+  foreach (@grouplist) {
+    $gid = (getgrnam($_))[2];
 
     if (defined $gid) {
+      $defgroup = $_;
       last;
     }
   }
@@ -137,7 +138,9 @@ sub fix_perms {
 	      "of the opt_depot 3.0 package directory?")) {
       # yay! we get to run it! AWRIGHT.
 
+      print "\n";
       $owner = askstring("Please enter the name of the owner", "root");
+      print "\n";
       $group = askstring("Please enter the group name", "$defgroup");
 
       print "\n";
