@@ -46,8 +46,8 @@
 #
 #
 # Release: $Name:  $
-# Version: $Revision: 1.13 $
-# Last Mod Date: $Date: 2003/08/12 06:41:54 $
+# Version: $Revision: 1.14 $
+# Last Mod Date: $Date: 2003/08/12 06:44:12 $
 #
 #########################################################################
 
@@ -269,10 +269,11 @@ sub read_pack_ex {
 #
 # cleandir() recursively scans through the supplied directory, removing
 # any symbolic links that point to non-existent files in the $depot
-# directory tree.
+# directory tree, or which have been excluded by an .exclude file.
 #
-# cleandir() will also remove links pointing to a package's tree if that
-# package has been placed in the .exclude file in the $dest directory.
+# if opt_clean is run with recursion enabled, cleandir() will also
+# take the opportunity to undo recursive directory unification as may
+# be practical.
 #
 #########################################################################
 sub cleandir {
