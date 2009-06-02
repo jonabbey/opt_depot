@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.45 $
-# Last Mod Date: $Date: 2004/01/10 05:51:18 $
+# Version: $Revision: 1.46 $
+# Last Mod Date: $Date: 2009/06/02 22:23:00 $
 #
 #####################################################################
 
@@ -1015,6 +1015,11 @@ sub setup_test {
   $label = $href->{'label'};
   $rootdir = $href->{'root'};
   $startary = $href->{'start'};
+
+  # necessary because File::Path::rmtree() won't allow deleting a
+  # directory our cwd is in
+
+  chdir("/");
 
   killdir($rootdir);
   create_dir($rootdir);
