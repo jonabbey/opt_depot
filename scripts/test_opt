@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.46 $
-# Last Mod Date: $Date: 2009/06/02 22:23:00 $
+# Version: $Revision: 1.47 $
+# Last Mod Date: $Date: 2009/06/02 22:28:52 $
 #
 #####################################################################
 
@@ -636,12 +636,13 @@ ENDSITES3
 		     'lib/perl5/spam/', 'lib/perl5/spam/.made_by_opt_depot',
 		     'lib/perl5/spam/y.pl->depot/packB/lib/perl5/spam/y.pl',
 		     'lib/perl5/spam/mod->depot/packC/lib/perl5/spam/mod',
-		     'include/test.h->depot/packB/include/test.h'],
+		     'include/test.h->depot/packC/include/test.h'],
 	  endex  => ['^depot\/$', '^\.priority$', '^\.exclude$'],
 	  conf   => $testconfA,
 	  sites  => $testsitesA,
 	  action => 'opt_depot',
 	  exclude => 'packA',
+	  priority => "packC",
 	  error_count => 0);
 
 %test6 = (label  => 'Simple clean test',
