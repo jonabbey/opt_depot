@@ -2,8 +2,8 @@ opt_depot README
 ----------------
 
 Jonathan Abbey <jonabbey@arlut.utexas.edu>
-Version: $Revision: 1.5 $
-Last Mod Date: $Date: 2003/09/17 06:41:05 $
+Version: $Revision: 1.6 $
+Last Mod Date: $Date: 2009/06/02 22:36:13 $
 
 What Is It
 ----------
@@ -79,6 +79,12 @@ In addition, version 3.0 features the following changes:
 
   New test/validation script for regression testing
 
+Recent changes:
+
+2 June 2009: Version 3.01 fixes an incompatibility in the test_opt
+             validation suite that caused it to fail when run under
+             modern versions of Perl.
+
 How Do I Validate Everything?
 -----------------------------
 
@@ -150,7 +156,7 @@ want to just hit Q to continue when faced with this question.
 Copyright and Contact Information
 ---------------------------------
 
-Copyright (C) 1993-2003 The University of Texas at Austin.
+Copyright (C) 1993-2009 The University of Texas at Austin.
 
 Contact information
 
