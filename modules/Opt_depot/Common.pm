@@ -32,8 +32,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.41 $
-# Last Mod Date: $Date: 2004/02/11 00:51:48 $
+# Version: $Revision: 1.42 $
+# Last Mod Date: $Date: 2009/06/02 22:21:16 $
 #
 #####################################################################
 
@@ -599,13 +599,18 @@ sub killdir {
 
   local $SIG{__WARN__} = sub {$errcount++};	# have to use local for dynamic scope
 
-  rmtree($filepath, 0, 0);
+  rmtree($filepath, {verbose=>0, safe=>0, keep_root=>0, error=> \my $err});
 
-  if ($errcount > 0) {
-    return 0;
+  $returncode = 1;
+
+  if (defined $err) {
+      for $error (@$err) {
+	  print $error;
+	  $returncode = 0;
+      }
   }
 
-  return 1;
+  return $returncode;
 }
 
 #########################################################################
