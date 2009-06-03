@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.47 $
-# Last Mod Date: $Date: 2009/06/02 22:28:52 $
+# Version: $Revision: 1.48 $
+# Last Mod Date: $Date: 2009/06/03 20:57:36 $
 #
 #####################################################################
 
@@ -1021,8 +1021,8 @@ sub setup_test {
   # directory our cwd is in
 
   chdir("/");
-
   killdir($rootdir);
+
   create_dir($rootdir);
   chdir($rootdir);
 
@@ -1503,11 +1503,13 @@ print "Tests Ran: $tests_run\tTests Succeeded: " . ($tests_run-$test_failures) .
 
 if ($clean_up) {
   if (!$test_failures) {
+    chdir("/");			# to prevent blocking killdir()
     killdir($test_root);
   } else {
     print "\n";
     if (!askyn("There were failures encountered.. do you wish to retain the test tree in $test_root?")) {
-      killdir($test_root);
+      chdir("/");
+      killdir($test_root);	# to prevent blocking killdir()
     }
   }
 }
