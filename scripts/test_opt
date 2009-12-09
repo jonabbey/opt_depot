@@ -1,4 +1,4 @@
-# test_opt v3.0 -*- Perl -*-
+# test_opt v3.0.2 -*- Perl -*-
 #
 # Testing harness for the opt_depot scripts
 #
@@ -29,8 +29,8 @@
 # 10 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.49 $
-# Last Mod Date: $Date: 2009/12/09 00:22:28 $
+# Version: $Revision: 1.50 $
+# Last Mod Date: $Date: 2009/12/09 00:25:49 $
 #
 #####################################################################
 
@@ -40,7 +40,7 @@ use FindBin qw($RealBin $RealScript);
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
-$version = "3.20";
+$version = "3.02";
 
 $| = 1;				# auto-flush
 
