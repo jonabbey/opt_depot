@@ -7,7 +7,7 @@
 #
 # opt_depot
 #
-# Copyright (C) 1993-2003 The University of Texas at Austin.
+# Copyright (C) 1993-2009 The University of Texas at Austin.
 #
 # Contact information
 #
@@ -45,12 +45,12 @@
 # Jonathan Abbey 17 September 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.7 $
-# Last Mod Date: $Date: 2003/09/18 01:01:59 $
+# Version: $Revision: 1.8 $
+# Last Mod Date: $Date: 2009/12/09 00:33:12 $
 #
 ###############################################################################
 
-depot_version="3.0"
+depot_version="3.02"
 
 #
 # subroutine to do an echo without trailing newline
