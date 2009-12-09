@@ -7,7 +7,8 @@
 #
 #************************************************************************
 #
-# Copyright (C) 2003  The University of Texas at Austin.
+# Copyright (C) 2003-2009
+# The University of Texas at Austin.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -32,8 +33,8 @@
 # 23 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.42 $
-# Last Mod Date: $Date: 2009/06/02 22:21:16 $
+# Version: $Revision: 1.43 $
+# Last Mod Date: $Date: 2009/12/09 00:26:36 $
 #
 #####################################################################
 
@@ -56,7 +57,7 @@ use File::Path qw(&rmtree);
 # and get everything set up for export
 
 use vars qw($VERSION @ISA @EXPORT $PERL_SINGLE_QUOTE);
-$VERSION="3.0";
+$VERSION="3.02";
 
 require 5.000;
 
