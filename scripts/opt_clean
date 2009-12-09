@@ -1,5 +1,5 @@
 #
-# opt_clean v3.0 -*- Perl -*-
+# opt_clean v3.02 -*- Perl -*-
 #
 # This is a perl script that will find all the links under
 # $dest and ensures that the files pointed to under $depot
@@ -9,7 +9,7 @@
 #
 #***********************************************************************
 #
-# Copyright (C) 1997-2003  The University of Texas at Austin.
+# Copyright (C) 1997-2009  The University of Texas at Austin.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -54,8 +54,8 @@
 # Jonathan Abbey 12 August 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.27 $
-# Last Mod Date: $Date: 2004/01/10 05:51:18 $
+# Version: $Revision: 1.28 $
+# Last Mod Date: $Date: 2009/12/09 00:30:39 $
 #
 #########################################################################
 
@@ -65,7 +65,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
-$version = "3.0";
+$version = "3.02";
 
 ## defaults #########################################################
 

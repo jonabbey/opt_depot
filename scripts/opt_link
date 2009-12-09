@@ -1,4 +1,4 @@
-# opt_link  -*- Perl -*-
+# opt_link 3.02 -*- Perl -*-
 #
 # This is a perl script that will create links from the $depot directory to
 # the software packages contained in the central package archives. There
@@ -7,7 +7,7 @@
 #
 #***********************************************************************
 #
-# Copyright (C) 1993-2003  The University of Texas at Austin.
+# Copyright (C) 1993-2009  The University of Texas at Austin.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -53,8 +53,8 @@
 # Jonathan Abbey 14 October 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.25 $
-# Last Mod Date: $Date: 2004/01/10 05:51:18 $
+# Version: $Revision: 1.26 $
+# Last Mod Date: $Date: 2009/12/09 00:30:40 $
 #
 #####################################################################
 
@@ -64,7 +64,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
-$version = "3.0";
+$version = "3.02";
 
 $activity = 0;
 

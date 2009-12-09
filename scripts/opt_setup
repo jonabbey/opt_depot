@@ -1,11 +1,11 @@
-# opt_setup v3.0 -*- Perl -*-
+# opt_setup v3.02 -*- Perl -*-
 #
 # this will run all the scripts necessary to set up
 # the opt directory (opt_link, clean_it, and opt_depot).
 # For more details, see individual scripts.
 #
 #***********************************************************************
-# Copyright (C) 1993-2003  The University of Texas at Austin.
+# Copyright (C) 1993-2009  The University of Texas at Austin.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -53,8 +53,8 @@
 # Jonathan Abbey 15 October 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.18 $
-# Last Mod Date: $Date: 2003/10/15 20:28:00 $
+# Version: $Revision: 1.19 $
+# Last Mod Date: $Date: 2009/12/09 00:30:40 $
 #
 ##########################################################################
 
@@ -66,7 +66,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
-$version = "3.0";
+$version = "3.02";
 
 ## defaults #########################################################
 

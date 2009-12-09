@@ -1,10 +1,10 @@
-# opt_install v3.0 -*- Perl -*-
+# opt_install v3.02 -*- Perl -*-
 #
 # Perl script for handling installation of opt_depot 3.0
 #
 #************************************************************************
 #
-# Copyright (C) 1997-2003  The University of Texas at Austin.
+# Copyright (C) 1997-2009  The University of Texas at Austin.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -34,8 +34,8 @@
 # Jonathan Abbey 25 July 2003
 #
 # Release: $Name:  $
-# Version: $Revision: 1.36 $
-# Last Mod Date: $Date: 2003/10/13 08:33:38 $
+# Version: $Revision: 1.37 $
+# Last Mod Date: $Date: 2009/12/09 00:30:40 $
 #
 #####################################################################
 
@@ -45,7 +45,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
-$version = "3.0";
+$version = "3.02";
 
 @opt_scripts = ("opt_depot",
 		"opt_nuke",
