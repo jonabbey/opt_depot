@@ -180,14 +180,14 @@ sub fix_perms {
       if ($answer =~ /:/) {
 	($owner, $group) = split /:/, $answer;
 
-	if (getgrnam($group) && getpwnam($owner)) {
+	if (defined(getgrnam($group)) && defined(getpwnam($owner))) {
 	  print "\nSetting permissions\n";
 	  system("$targetdir/bin/fixperms", "-o$owner", "-g$group", "$targetdir");
 	  $done = 1;
 	} else {
-	  if (!getgrnam($group)) {
+	  if (!defined(getgrnam($group))) {
 	    print "\nNo such group $group\n";
-	  } elsif (!getpwnam($owner)) {
+	  } elsif (!defined(getpwnam($owner))) {
 	    print "\nNo such user $owner\n";
 	  }
 	}
