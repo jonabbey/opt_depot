@@ -180,14 +180,14 @@ sub fix_perms {
       if ($answer =~ /:/) {
 	($owner, $group) = split /:/, $answer;
 
-	if (defined(getgrnam($group)) && defined(getpwnam($owner))) {
+	if (getgrnam($group) && getpwnam($owner)) {
 	  print "\nSetting permissions\n";
 	  system("$targetdir/bin/fixperms", "-o$owner", "-g$group", "$targetdir");
 	  $done = 1;
 	} else {
-	  if (!defined(getgrnam($group))) {
+	  if (!getgrnam($group)) {
 	    print "\nNo such group $group\n";
-	  } elsif (!defined(getpwnam($owner))) {
+	  } elsif (!getpwnam($owner)) {
 	    print "\nNo such user $owner\n";
 	  }
 	}
@@ -646,7 +646,7 @@ sub create_config {
   $tempstring = safifystring($depot);
   print"Depot directory: $tempstring\n";
 
-  if (defined $log) {
+  if ($log) {
     $tempstring = safifystring($log);
     if (-d $log) {
       print "Log directory: $tempstring\n\n";
@@ -682,14 +682,14 @@ sub create_config {
   $tempstring = safifystring($depot);
   print OUT "Depot: $tempstring\n";
 
-  if (defined $log) {
+  if ($log) {
     $tempstring = safifystring($log);
     print OUT "Log: $tempstring\n";
   } else {
     print OUT "Log:       # no logging\n";
   }
 
-  if (defined $sites_file) {
+  if ($sites_file) {
     $tempstring = safifystring($sites_file);
     print OUT "SiteFile: $tempstring\n";
   }

@@ -403,7 +403,7 @@ sub cleandir {
 
   @nonlinks = grep ((!-l "$dir/$_") && (!/^\.\.?$/) && ($_ ne $opt_file), @contents);
 
-  if (defined @nonlinks && $#nonlinks >= 0) {
+  if (@nonlinks) {
     # we've got something which is not a link or opt_depot-created
     # file..  no need to worry about collapsing or removing the
     # directory, we're done.
@@ -418,7 +418,7 @@ sub cleandir {
 
   @links = grep (-l "$dir/$_", @contents);
 
-  if (defined @links && $#links >= 0) {
+  if (@links) {
     # get location of first package as a comparison value.
 
     $first = extractdir(readlink("$dir/@links[0]"));
