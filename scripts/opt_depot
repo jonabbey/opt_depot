@@ -1,4 +1,4 @@
-# opt_depot v3.02 -*- Perl -*-
+# opt_depot v3.03 -*- Perl -*-
 #
 # This script will go through the $depot directory and find files in
 # specific subdirectories of various packages and make links in the
@@ -72,7 +72,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
-$version = "3.02";
+$version = "3.03";
 
 ## defaults #########################################################
 

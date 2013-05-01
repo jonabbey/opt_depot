@@ -1,4 +1,4 @@
-# opt_install v3.02 -*- Perl -*-
+# opt_install v3.03 -*- Perl -*-
 #
 # Perl script for handling installation of opt_depot 3.0
 #
@@ -45,7 +45,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
-$version = "3.02";
+$version = "3.03";
 
 @opt_scripts = ("opt_depot",
 		"opt_nuke",

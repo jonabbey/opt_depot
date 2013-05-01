@@ -1,5 +1,5 @@
 #
-# opt_nuke v3.02 -*- Perl -*-
+# opt_nuke v3.03 -*- Perl -*-
 #
 # This is a perl script that will find all the links under
 # $dest and removes them if they point to a file under
@@ -61,7 +61,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
-$version = "3.02";
+$version = "3.03";
 
 ## defaults #########################################################
 

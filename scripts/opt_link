@@ -1,4 +1,4 @@
-# opt_link 3.02 -*- Perl -*-
+# opt_link 3.03 -*- Perl -*-
 #
 # This is a perl script that will create links from the $depot directory to
 # the software packages contained in the central package archives. There
@@ -64,7 +64,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/../modules";
 use Opt_depot::Common;
 
-$version = "3.02";
+$version = "3.03";
 
 $activity = 0;
 
