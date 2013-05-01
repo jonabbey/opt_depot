@@ -53,7 +53,7 @@
 #
 ###############################################################################
 
-depot_version="3.02"
+depot_version="3.03"
 
 #
 # subroutine to do an echo without trailing newline

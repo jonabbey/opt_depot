@@ -57,7 +57,7 @@ use File::Path qw(&rmtree);
 # and get everything set up for export
 
 use vars qw($VERSION @ISA @EXPORT $PERL_SINGLE_QUOTE);
-$VERSION="3.02";
+$VERSION="3.03";
 
 require 5.000;
 
